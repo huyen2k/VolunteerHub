@@ -1,4 +1,4 @@
-# 🗂️ VolunteerHub - Data Model Design (MongoDB)
+# 🗂️ Data Model Design (MongoDB)
 
 ## 1. Tổng quan
 Hệ thống sử dụng **MongoDB** để lưu trữ dữ liệu phi quan hệ (NoSQL), tập trung vào:
@@ -89,7 +89,7 @@ Quản lý việc đăng ký, thoái đăng ký và hoàn thành sự kiện c�
 ---
 
 ### 3.4. `channels`
-> Mỗi sự kiện sau khi được duyệt sẽ có một kênh trao đổi riêng (tương tự “tường Facebook”).
+Mỗi sự kiện sau khi được duyệt sẽ có một kênh trao đổi riêng (tương tự “tường Facebook”).
 
 ```js
 {
