@@ -3,7 +3,7 @@ import apiService from "./api";
 export const authService = {
   // Đăng nhập cho người dùng --> Đẩy email + password lên
   async login(email, pass) {
-    return apiService.post("/auth/login", { email, password });
+    return apiService.post("/auth/login", { email, pass });
   },
 
   // Register user
