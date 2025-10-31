@@ -1,0 +1,24 @@
+###
+### Lấy danh sách tất cả người dùng (có Basic Auth)
+GET http://localhost:8080/api/v1/users
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+
+###
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+
+###
+### Send POST request with json body
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}

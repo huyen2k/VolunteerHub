@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    container_name: volunteerhub_app
+    ports:
+      - "3309:3309"
+    networks:
+      - app
+    working_dir: /app
+    command: [ "./mvnw", "spring-boot:run" ]
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_CLUSTER}
+      - SPRING_DATA_MONGODB_DATABASE=${MONGO_DATABASE}
+      - SPRING_PROFILES_ACTIVE=dev
+    restart: always
+networks:
+  app:
+    driver: bridge

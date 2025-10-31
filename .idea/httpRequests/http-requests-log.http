@@ -1,0 +1,487 @@
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2Nzg=
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2Nzg=
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+content-length: 0
+
+###
+
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+content-length: 0
+
+<> 2025-10-31T121403.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+content-length: 0
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+content-length: 0
+
+<> 2025-10-31T121332.200.json
+
+###
+
+POST http://localhost:8080/api/v1/events
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+content-length: 0
+
+<> 2025-10-31T121051.200.json
+
+###
+
+POST http://localhost:8080/api/v1/events
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T120401.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T120042.200.json
+
+###
+
+POST https://examples.http-client.intellij.net/post
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+x-http2-scheme: https
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+<> 2025-10-31T120039.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T115429.200.json
+
+###
+
+GET http://localhost:8080/api/v1/users
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T115414.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T115024.200.json
+
+###
+
+POST https://examples.http-client.intellij.net/post
+Content-Type: application/json
+Content-Length: 193
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+x-http2-scheme: https
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng"
+}
+
+<> 2025-10-31T114958.200.json
+
+###
+
+POST https://examples.http-client.intellij.net/post
+Content-Type: application/json
+Content-Length: 193
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+x-http2-scheme: https
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng"
+}
+
+<> 2025-10-31T114934.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T114906.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T114726.200.json
+
+###
+
+POST https://examples.http-client.intellij.net/post
+Content-Type: application/json
+Content-Length: 193
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+x-http2-scheme: https
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng"
+}
+
+<> 2025-10-31T114702.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T114538.200.json
+
+###
+
+GET http://localhost:8080/api/v1/users
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T094809.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T094726.200.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T093726.500.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T004214.500.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T003958.500.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=13EA692A6D99EDA61DFF2B9781D62FD3
+content-length: 0
+
+<> 2025-10-31T003524.500.json
+
+###
+
+GET http://localhost:8080/api/v1/events
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=B1BF8C10BC223EEF2646DE4055762A82
+content-length: 0
+
+###
+
+GET http://localhost:8080/api/v1/users
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=B1BF8C10BC223EEF2646DE4055762A82
+content-length: 0
+
+<> 2025-10-30T105928.200.json
+
+###
+
+GET http://localhost:8080/api/v1/users
+Accept: application/json
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Cookie: JSESSIONID=B1BF8C10BC223EEF2646DE4055762A82
+content-length: 0
+
+###
+
+GET http://localhost:8080/api/v1/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=B1BF8C10BC223EEF2646DE4055762A82
+content-length: 0
+
+###
+
+GET http://localhost:8080/api/v1/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=B1BF8C10BC223EEF2646DE4055762A82
+content-length: 0
+
+###
+
+GET http://localhost:8080/api/v1/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+content-length: 0
+
+###
+

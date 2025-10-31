@@ -1,0 +1,41 @@
+[
+  {
+    "_id": {
+      "timestamp": 1697965888,
+      "date": "2023-10-22T09:11:28.000+00:00"
+    },
+    "title": "Books for Kids Donation Drive",
+    "description": "Collecting educational books for children in rural areas.",
+    "date": "2025-12-10T09:00:00Z",
+    "location": "District 1 Community Center, HCMC",
+    "status": "pending",
+    "createdBy": {
+      "timestamp": 1697965888,
+      "date": "2023-10-22T09:11:28.000+00:00"
+    },
+    "approvedBy": null,
+    "createdAt": "2025-10-20T12:00:00Z",
+    "updatedAt": "2025-10-20T12:00:00Z"
+  },
+  {
+    "_id": {
+      "timestamp": 1697965888,
+      "date": "2023-10-22T09:11:28.000+00:00"
+    },
+    "title": "Clean Up The City - Phase 3",
+    "description": "A community event to clean up Hoan Kiem lake area and promote recycling.",
+    "date": "2025-11-05T08:00:00Z",
+    "location": "Hoan Kiem Lake, Hanoi",
+    "status": "approved",
+    "createdBy": {
+      "timestamp": 1697965888,
+      "date": "2023-10-22T09:11:28.000+00:00"
+    },
+    "approvedBy": {
+      "timestamp": 1697965888,
+      "date": "2023-10-22T09:11:28.000+00:00"
+    },
+    "createdAt": "2025-09-01T10:00:00Z",
+    "updatedAt": "2025-09-05T15:00:00Z"
+  }
+]
