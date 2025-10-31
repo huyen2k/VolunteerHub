@@ -1,4 +1,23 @@
 POST http://localhost:8080/api/v1/events
+Authorization: Basic YWRtaW46MTIzNDU2
+Content-Type: application/json
+Content-Length: 215
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2024.2.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=FFFA8680D86D0AFF16077E3F364A9ED4
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng",
+  "approvedBy": null
+}
+
+###
+
+POST http://localhost:8080/api/v1/events
 Authorization: Basic YWRtaW46MTIzNDU2Nzg=
 Content-Type: application/json
 Content-Length: 215
