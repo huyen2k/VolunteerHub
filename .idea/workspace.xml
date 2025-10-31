@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29b4d80a-8a71-421c-bed0-176bdb240018" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Backend/docker-compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/controller/EventController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/entity/Event.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/repository/EventRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/service/EventService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/compose.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/service/UserService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" afterDir="false" />
-    </list>
+    <list default="true" id="29b4d80a-8a71-421c-bed0-176bdb240018" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -48,45 +38,45 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Database Script.console.js.executor": "Run",
-    "Database Script.console_1.js.executor": "Run",
-    "HTTP Request.generated-requests | #1.executor": "Run",
-    "HTTP Request.request | #1.executor": "Run",
-    "HTTP Request.request | #2.executor": "Run",
-    "HTTP Request.request | #3.executor": "Run",
-    "Maven.VolunteerHub [clean].executor": "Run",
-    "Maven.VolunteerHub [package].executor": "Run",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "Spring Boot.VolunteerHubApplication.executor": "Run",
-    "git-widget-placeholder": "Hieu",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/tai lieu hoc tap/Web/Volunteer/VolunteerHub/Backend/.env",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.6448276",
-    "settings.editor.selected.configurable": "reference.projectsettings.compiler.annotationProcessors",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Database Script.console.js.executor&quot;: &quot;Run&quot;,
+    &quot;Database Script.console_1.js.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | #1.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | #2.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | #3.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.VolunteerHub [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.VolunteerHub [package].executor&quot;: &quot;Run&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;Spring Boot.VolunteerHubApplication.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Hieu&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/tai lieu hoc tap/Web/Volunteer/VolunteerHub/Backend/.env&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.6448276&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mongo"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mongo&quot;
     ],
-    "RunConfigurationTargetLRU": [
-      "babe0271-e9dc-4a21-8155-b141fb3a237e"
+    &quot;RunConfigurationTargetLRU&quot;: [
+      &quot;babe0271-e9dc-4a21-8155-b141fb3a237e&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\tai lieu hoc tap\Web\Volunteer\VolunteerHub\Backend" />
@@ -232,7 +222,7 @@
       <updated>1761662522308</updated>
       <workItem from="1761662523479" duration="26187000" />
       <workItem from="1761795881385" duration="14669000" />
-      <workItem from="1761885591818" duration="3415000" />
+      <workItem from="1761885591818" duration="3718000" />
     </task>
     <servers />
   </component>
