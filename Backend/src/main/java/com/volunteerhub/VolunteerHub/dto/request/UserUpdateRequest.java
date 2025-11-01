@@ -25,12 +25,4 @@ public class UserUpdateRequest {
     private String address;
     private String bio;
     private Boolean is_active;
-
-    @CreatedDate
-    private Date created_at;
-
-    @LastModifiedDate
-    private Date updated_at;
-
-    private Date last_login;
 }

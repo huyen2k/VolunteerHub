@@ -1,15 +1,20 @@
 package com.volunteerhub.VolunteerHub.controller;
 
+import com.nimbusds.jose.proc.SecurityContext;
 import com.volunteerhub.VolunteerHub.dto.request.UserCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.UserUpdateRequest;
-import com.volunteerhub.VolunteerHub.entity.User;
+import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
+import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.service.UserService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,36 +22,60 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserController {
 
     @Autowired
-    private UserService userService;
-
-    PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+    UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers(){
-        return new ResponseEntity<List<User>>(userService.allUsers(), HttpStatus.OK);
+    @PreAuthorize("hasRole{'ADMIN'}")
+    ApiResponse<List<UserResponse>> getAllUsers(){
+        log.info("In the menthod All ussers");
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        log.info("Username: {}", authentication.getName());
+        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
+
+        return ApiResponse.<List<UserResponse>>builder()
+                .result(userService.getUsers())
+                .build();
     }
 
     @PostMapping
-    public User createUser(@RequestBody UserCreationRequest request){
-        return userService.createUser(request);
+    ApiResponse<UserResponse> createUser(@RequestBody @Validated UserCreationRequest request){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.createUser(request))
+                .build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Optional<User>> getUser(@PathVariable ObjectId id){
-        return new ResponseEntity<Optional<User>>(userService.getUser(id), HttpStatus.OK);
+    ApiResponse<UserResponse> getUser(@PathVariable ObjectId id){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getUser(id))
+                .build();
+    }
+
+    @GetMapping("/info")
+    ApiResponse<UserResponse> getInfo(){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getMyInfo())
+                .build();
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable ObjectId id, @RequestBody UserUpdateRequest request){
-        return userService.updateUser(id, request);
+    ApiResponse<UserResponse> updateUser(@PathVariable ObjectId id, @RequestBody UserUpdateRequest request){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.updateUser(id, request))
+                .build();
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable ObjectId id) {
+    @PreAuthorize("hasRole{'ADMIN'}")
+    ApiResponse<Void> deleteUser(@PathVariable ObjectId id) {
         userService.deleteUser(id);
+        return ApiResponse.<Void>builder().build();
     }
 }
