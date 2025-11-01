@@ -6,19 +6,26 @@ Accept: application/json
 
 ###
 GET http://localhost:8080/api/v1/events
-Authorization: Basic YWRtaW46MTIzNDU2
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjE5NzExOTQsImlhdCI6MTc2MTk2NzU5NH0.-vD0igVkIjnLLR9yAzQciqNVNPCCDoI4uNxNYACnkNYHW8k9yUtqG6FJSH1fh5YwgCSYPdZXmxgwAEVNuE4FFw
 Accept: application/json
 
-###
+### Đăng nhập (lấy JWT token)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin"
+}
+
 ### Send POST request with json body
 POST http://localhost:8080/api/v1/events
-Authorization: Basic YWRtaW46MTIzNDU2
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjE5NzAwNTEsImlhdCI6MTc2MTk2NjQ1MX0.YUkMzDvmMCY4yiE0FvP9hYa8OPt4qt1C3nPvu4bzcZGvnAKO5lobH7AoYUAiw5I4_GCPQmaFG_D10DKAEAnP1Q
 Content-Type: application/json
 
 {
   "title": "Dọn rác bãi biển",
   "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
   "date": "2025-11-05T08:00:00Z",
-  "location": "Đà Nẵng",
-  "approvedBy": null
+  "location": "Đà Nẵng"
 }

@@ -1,5 +1,6 @@
 package com.volunteerhub.VolunteerHub.controller;
 
+import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.entity.Event;
 import com.volunteerhub.VolunteerHub.entity.User;
 import com.volunteerhub.VolunteerHub.service.EventService;
@@ -25,8 +26,8 @@ public class EventController {
     }
 
     @PostMapping
-    public ResponseEntity<Event> addEvent(@RequestBody Event event) {
-        Event createdEvent = eventService.createEvent(event);
+    public ResponseEntity<Event> addEvent(@RequestBody EventCreationRequest eventCreationRequest) {
+        Event createdEvent = eventService.createEvent(eventCreationRequest);
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
     }
 }

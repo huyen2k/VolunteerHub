@@ -4,6 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,17 +19,24 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Event {
-    @Field("_id")
-    private ObjectId _id;
+    @Id
+    private String id;
     private String title;
     private String description;
-    private Instant date;
+    private Date date;
     private String location;
     private String status;
-    private ObjectId createdBy;
+
     private ObjectId approvedBy; // Ref -> users (role: admin)
-    private Instant createdAt;
-    private Instant updatedAt;
+
+    @CreatedBy
+    private ObjectId createdBy;
+
+    @CreatedDate
+    private Date createdAt;
+
+    @LastModifiedDate
+    private Date updatedAt;
 
 
 }

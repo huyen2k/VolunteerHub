@@ -4,7 +4,37 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29b4d80a-8a71-421c-bed0-176bdb240018" name="Changes" comment="" />
+    <list default="true" id="29b4d80a-8a71-421c-bed0-176bdb240018" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/dto/request/EventCreationRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/mapper/EventMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/babe0271-e9dc-4a21-8155-b141fb3a237e.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/babe0271-e9dc-4a21-8155-b141fb3a237e.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-30T105928.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T003524.500.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T003958.500.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T004214.500.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T093726.500.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T094726.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T094809.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114538.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114702.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114726.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114906.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114934.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T114958.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T115024.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T115414.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T115429.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T120039.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/2025-10-31T120042.200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/httpRequests/http-requests-log.http" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/httpRequests/http-requests-log.http" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/request.http" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/request.http" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/controller/EventController.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/controller/EventController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/entity/Event.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/entity/Event.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/service/EventService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/volunteerhub/VolunteerHub/service/EventService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -46,6 +76,9 @@
     &quot;HTTP Request.request | #1.executor&quot;: &quot;Run&quot;,
     &quot;HTTP Request.request | #2.executor&quot;: &quot;Run&quot;,
     &quot;HTTP Request.request | #3.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | Send POST request with json body#1.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | Send POST request with json body.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.request | Đăng nhập (lấy JWT token).executor&quot;: &quot;Run&quot;,
     &quot;Maven.VolunteerHub [clean].executor&quot;: &quot;Run&quot;,
     &quot;Maven.VolunteerHub [package].executor&quot;: &quot;Run&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
@@ -85,22 +118,13 @@
     </key>
   </component>
   <component name="RunManager" selected="Spring Boot.VolunteerHubApplication">
-    <configuration name="console.js" type="DatabaseScript" editBeforeRun="true" temporary="true" nameIsGenerated="true">
-      <script-file value="$APPLICATION_CONFIG_DIR$/consoles/db/babe0271-e9dc-4a21-8155-b141fb3a237e/console.js" />
-      <script-mode>FILE</script-mode>
-      <data-source id="babe0271-e9dc-4a21-8155-b141fb3a237e" />
-      <method v="2" />
-    </configuration>
-    <configuration name="generated-requests | #1" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$APPLICATION_CONFIG_DIR$/scratches/generated-requests.http" requestIdentifier="#1" runType="Run single request">
+    <configuration name="request | Send POST request with json body#1" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/Backend/request.http" index="3" requestIdentifier="Send POST request with json body#1" runType="Run single request">
       <method v="2" />
     </configuration>
     <configuration name="request | #1" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/Backend/request.http" requestIdentifier="#1" runType="Run single request">
       <method v="2" />
     </configuration>
-    <configuration name="request | #2" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/Backend/request.http" index="2" requestIdentifier="#2" runType="Run single request">
-      <method v="2" />
-    </configuration>
-    <configuration name="request | #3" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/Backend/request.http" index="3" requestIdentifier="#3" runType="Run single request">
+    <configuration name="request | Đăng nhập (lấy JWT token)" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$PROJECT_DIR$/Backend/request.http" index="3" requestIdentifier="Đăng nhập (lấy JWT token)" runType="Run single request">
       <method v="2" />
     </configuration>
     <configuration name=" " type="MavenRunConfiguration" factoryName="Maven">
@@ -166,9 +190,21 @@
       <method v="2" />
     </configuration>
     <configuration name="VolunteerHubApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="MONGO_USER" value="hieuhau2903_db_user" />
+        <env name="MONGO_PASSWOR" value="Hieu2903" />
+        <env name="MONGO_CLUSTER" value="cluster0.izdgthg.mongodb.net" />
+        <env name="MONGO_DATABASE" value="Hub" />
+      </envs>
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
       <module name="VolunteerHub" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.volunteerhub.VolunteerHub.VolunteerHubApplication" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.volunteerhub.VolunteerHub.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
       <extension name="net.ashald.envfile">
         <option name="IS_ENABLED" value="true" />
         <option name="IS_SUBST" value="true" />
@@ -177,7 +213,6 @@
         <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="true" />
         <ENTRIES>
           <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-          <ENTRY IS_ENABLED="true" PARSER="env" IS_EXECUTABLE="false" PATH="Backend/.env" />
         </ENTRIES>
       </extension>
       <method v="2">
@@ -185,22 +220,18 @@
       </method>
     </configuration>
     <list>
-      <item itemvalue="Database Script.console.js" />
-      <item itemvalue="HTTP Request.request | #3" />
-      <item itemvalue="HTTP Request.generated-requests | #1" />
       <item itemvalue="HTTP Request.request | #1" />
-      <item itemvalue="HTTP Request.request | #2" />
+      <item itemvalue="HTTP Request.request | Đăng nhập (lấy JWT token)" />
+      <item itemvalue="HTTP Request.request | Send POST request with json body#1" />
       <item itemvalue="Maven. " />
       <item itemvalue="Maven.VolunteerHub [package]" />
       <item itemvalue="Spring Boot.VolunteerHubApplication" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="HTTP Request.request | #3" />
-        <item itemvalue="HTTP Request.request | #2" />
+        <item itemvalue="HTTP Request.request | Đăng nhập (lấy JWT token)" />
         <item itemvalue="HTTP Request.request | #1" />
-        <item itemvalue="HTTP Request.generated-requests | #1" />
-        <item itemvalue="Database Script.console.js" />
+        <item itemvalue="HTTP Request.request | Send POST request with json body#1" />
       </list>
     </recent_temporary>
   </component>
@@ -222,7 +253,7 @@
       <updated>1761662522308</updated>
       <workItem from="1761662523479" duration="26187000" />
       <workItem from="1761795881385" duration="14669000" />
-      <workItem from="1761885591818" duration="4137000" />
+      <workItem from="1761885591818" duration="25423000" />
     </task>
     <servers />
   </component>
