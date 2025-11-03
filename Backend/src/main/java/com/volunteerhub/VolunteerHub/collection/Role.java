@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Set;
 
-@Document(collection = "role")
+@Document(collection = "roles")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,11 +17,8 @@ import java.util.Set;
 public class Role {
 
     @Id
-    String id;
-
     String name;
     String description;
 
-    @DBRef
-    Set<Permission> permissions;
+    Set<String> permissions;
 }

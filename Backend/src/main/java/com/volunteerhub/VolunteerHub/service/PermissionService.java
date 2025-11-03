@@ -3,8 +3,11 @@ package com.volunteerhub.VolunteerHub.service;
 import com.volunteerhub.VolunteerHub.collection.Permission;
 import com.volunteerhub.VolunteerHub.dto.request.PermissionRequest;
 import com.volunteerhub.VolunteerHub.dto.response.PermissionResponse;
+import com.volunteerhub.VolunteerHub.exception.AppException;
+import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.PermissionMapper;
 import com.volunteerhub.VolunteerHub.repository.PermissionRepository;
+import com.volunteerhub.VolunteerHub.repository.RoleRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -20,6 +23,7 @@ import java.util.List;
 public class PermissionService {
     PermissionRepository permissionRepository;
     PermissionMapper permissionMapper;
+    RoleRepository roleRepository;
 
     public PermissionResponse create(PermissionRequest request){
         Permission permission = permissionMapper.toPermission(request);
@@ -33,6 +37,10 @@ public class PermissionService {
     }
 
     public void delete(String permission){
+        boolean inUse = roleRepository.existsByPermissionsContaining(permission);
+        if (inUse) {
+            throw new AppException(ErrorCode.CONFLICT);
+        }
         permissionRepository.deleteByName(permission);
     }
 }

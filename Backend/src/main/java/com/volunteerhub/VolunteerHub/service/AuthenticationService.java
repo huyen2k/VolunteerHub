@@ -27,6 +27,8 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.StringJoiner;
 
@@ -84,7 +86,7 @@ public class AuthenticationService {
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("scope", buildScope(user))
+                .claim("roles", buildRoles(user))
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -99,12 +101,7 @@ public class AuthenticationService {
         }
     }
 
-    private String buildScope(User user){
-        StringJoiner stringJoiner = new StringJoiner("");
-        if(!CollectionUtils.isEmpty(user.getRoles())){
-            user.getRoles().forEach(stringJoiner::add);
-        }
-
-        return stringJoiner.toString();
+    private Collection<String> buildRoles(User user){
+        return new ArrayList<>(user.getRoles());
     }
 }
