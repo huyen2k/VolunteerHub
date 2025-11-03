@@ -4,6 +4,7 @@ import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
+import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.service.EventService;
 import lombok.AccessLevel;
@@ -32,23 +33,31 @@ public class EventController {
 
     @GetMapping
     @PreAuthorize("hasRole{'ADMIN'}")
-    public List<Event> getAllEvents() {
-        return eventService.getEvents();
+    public ApiResponse<List<EventResponse>> getAllEvents() {
+        return ApiResponse.<List<EventResponse>>builder()
+                        .result(eventService.getEvents())
+                                .build();
     }
 
     @PostMapping
     @PreAuthorize("hasRole{'ADMIN'}")
-    public Event createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
-        return eventService.createEvent(eventCreationRequest);
+    public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
+        return ApiResponse.<EventResponse>builder()
+                        .result(eventService.createEvent(eventCreationRequest))
+                .build();
     }
 
-    @GetMapping("{/id}")
-    public Event getEvent(@PathVariable String id) {
-        return eventService.getEventById(id);
+    @GetMapping("/{id}")
+    public ApiResponse<EventResponse> getEvent(@PathVariable String id) {
+        return ApiResponse.<EventResponse>builder()
+                .result(eventService.getEventById(id))
+                .build();
     }
 
-    @PostMapping("{/id}")
-    public Event updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
-        return eventService.updateEvent(id, eventUpdateRequest);
+    @PostMapping("/{id}")
+    public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
+        return ApiResponse.<EventResponse>builder()
+                .result(eventService.updateEvent(id, eventUpdateRequest))
+                .build();
     }
 }
