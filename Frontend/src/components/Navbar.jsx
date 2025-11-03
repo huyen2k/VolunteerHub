@@ -1,5 +1,3 @@
-// Là component điều hướng động, thay đổi items dựa trên role
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -34,9 +32,8 @@ export function Navbar({ role: propRole }) {
   const [unreadNotifications] = useState(3);
 
   // Xác định role từ prop hoặc user context
-  const role = propRole || user?.role || "guest"; // default là guest
+  const role = propRole || user?.role || "guest";
 
-  // Links cho guest
   const guestLinks = [
     { href: "/", label: "Trang chủ", icon: Home },
     { href: "/events", label: "Sự kiện", icon: Calendar },
@@ -44,7 +41,6 @@ export function Navbar({ role: propRole }) {
     { href: "/contact", label: "Liên hệ", icon: MessageSquare },
   ];
 
-  // Links cho volunteer
   const volunteerLinks = [
     { href: "/", label: "Trang chủ", icon: Home },
     { href: "/user/events", label: "Sự kiện", icon: Calendar },
@@ -53,7 +49,6 @@ export function Navbar({ role: propRole }) {
     { href: "/profile", label: "Hồ sơ", icon: User },
   ];
 
-  // Links cho manager
   const managerLinks = [
     { href: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/manager/events", label: "Quản lý sự kiện", icon: Calendar },
@@ -61,7 +56,6 @@ export function Navbar({ role: propRole }) {
     { href: "/manager/profile", label: "Hồ sơ", icon: User },
   ];
 
-  // Links cho admin
   const adminLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/users", label: "Người dùng", icon: Users },
@@ -70,7 +64,6 @@ export function Navbar({ role: propRole }) {
     { href: "/admin/profile", label: "Hồ sơ", icon: User },
   ];
 
-  // Hàm để lấy links dựa trên role
   const getLinks = () => {
     switch (role) {
       case "volunteer":

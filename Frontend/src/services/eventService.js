@@ -1,5 +1,3 @@
-// test
-
 // Event Service sử dụng Mock API
 import mockApi from "./mockApi";
 

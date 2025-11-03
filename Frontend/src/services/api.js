@@ -3,12 +3,11 @@ const API_BASE_URL =
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL; //Khởi tạo base URL
+    this.baseURL = API_BASE_URL;
   }
 
-  //Hàm gửi request đến API
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`; //Tạo URL đầy đủ
+    const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         "Content-Type": "application/json",
@@ -17,15 +16,15 @@ class ApiService {
       ...options,
     };
 
-    // thêm token auth nếu có
-    const token = localStorage.getItem("token"); // Đọc token từ local storage
+    // Add auth token if available
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     try {
       const response = await fetch(url, config);
-      // Nếu response không ok --> throw error
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -37,12 +36,12 @@ class ApiService {
     }
   }
 
-  // hàm get request
+  // GET request
   async get(endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: "GET" }); //gọi hàm req với method = GET
+    return this.request(endpoint, { ...options, method: "GET" });
   }
 
-  // hàm post request --> Tương tự nhưng thêm dữ liệu gửi đi
+  // POST request
   async post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,

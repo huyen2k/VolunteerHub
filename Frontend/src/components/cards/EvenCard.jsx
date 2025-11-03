@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Calendar, MapPin, Users, Clock } from "lucide-react";
 
+// Custom Image component thay thế Next.js Image
 const Image = ({ src, alt, fill, className, ...props }) => {
   return (
     <img

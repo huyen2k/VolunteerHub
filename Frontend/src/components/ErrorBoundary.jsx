@@ -1,5 +1,3 @@
-// Error Boundary là 1 class dùng để bắt và xử lý lỗi xảy ra trong cây component tree
-
 import React from "react";
 
 class ErrorBoundary extends React.Component {

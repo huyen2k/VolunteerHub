@@ -1,13 +1,14 @@
 import React, { createContext, useState, useEffect } from "react";
+import mockApi from "../services/mockApi";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = userState(null);
-  const [loading, setLoading] = useState(true); // Cho biết hệ thống đang check thông tin đăng nhập
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // check phiên đăng nhập
   useEffect(() => {
+    // Check for existing session
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -15,31 +16,31 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // Hàm đăng nhập
-  const login = async (email, pass) => {
+  const login = async (email, password) => {
     try {
-      const res = await mockApi.login(email, pass);
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
+      const response = await mockApi.login(email, password);
 
-      setUser(res.user);
-      return res.user;
+      // Store token and user data
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      setUser(response.user);
+      return response.user;
     } catch (error) {
-      throw new Error("Lỗi đăng nhập : " + error.message);
+      throw new Error("Login failed: " + error.message);
     }
   };
 
-  // Hàm đăng ký :V Ta sẽ mặc định là volunteer --> mana với admin tính sau
   const register = async (
     name,
     email,
-    pass,
+    password,
     role = "volunteer",
     phone = "",
     address = ""
   ) => {
     try {
-      const res = await mockApi.register({
+      const response = await mockApi.register({
         name,
         email,
         password,
@@ -49,44 +50,44 @@ export function AuthProvider({ children }) {
         avatar: "/avatars/default.jpg",
         bio: "",
       });
-      //Tam thoi luu vao local
+
+      // Store token and user data
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(response.user));
+
       setUser(response.user);
       return response.user;
     } catch (error) {
-      throw new Error("Lỗi đăng ký bruh: " + error.message);
+      throw new Error("Registration failed: " + error.message);
     }
   };
 
-  //update user
-  const updateUser = async (updateData) => {
+  const updateUser = async (updatedData) => {
     try {
       if (!user) {
-        throw new Error("No user logged");
+        throw new Error("No user logged in");
       }
-      const updatedUser = await mockApi.updateUser(user.id, updateData);
+
+      const updatedUser = await mockApi.updateUser(user.id, updatedData);
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       return updatedUser;
     } catch (error) {
-      throw new Error("Lỗi update: " + error.message);
+      throw new Error("Update failed: " + error.message);
     }
   };
 
-  // dang xuat
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-
+    // Redirect to homepage after logout
     window.location.href = "/";
   };
 
-  //check role
-  const hasPermission = (role) => {
+  const hasPermission = (permission) => {
     if (!user) return false;
-    return user.permissions?.includes(role) || false;
+    return user.permissions?.includes(permission) || false;
   };
 
   const hasRole = (role) => {
@@ -94,7 +95,6 @@ export function AuthProvider({ children }) {
     return user.role === role;
   };
 
-  // thông tin và hàm được share cho toàn bộ hệ thống
   const value = {
     user,
     login,

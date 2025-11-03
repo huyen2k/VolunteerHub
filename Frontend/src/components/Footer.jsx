@@ -1,6 +1,3 @@
-// Đây là component footer cho trang web --> Mình sẽ hardcode và tái sử dụng cho toàn bộ trang web
-// Update thêm links nếu cần thiết :VVV
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";

@@ -1,5 +1,3 @@
-// Demo --> update sau nếu còn thời gian
-
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Globe } from "lucide-react";

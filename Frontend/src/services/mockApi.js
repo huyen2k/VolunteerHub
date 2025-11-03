@@ -1,8 +1,10 @@
-// test
+// Mock API Service cho VolunteerHub Frontend
+// Simulate real API calls với delay và error handling
 
 const API_BASE_URL = "http://localhost:3001/api"; // Mock server sẽ chạy trên port 3001
-const MOCK_DELAY = 500;
+const MOCK_DELAY = 500; // Simulate network delay
 
+// Utility function để simulate API delay
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Mock data
@@ -220,11 +222,13 @@ export const mockApi = {
   async register(userData) {
     await delay(MOCK_DELAY);
 
+    // Check if email already exists
     const existingUser = mockUsers.find((u) => u.email === userData.email);
     if (existingUser) {
       throw new Error("Email already exists");
     }
 
+    // Create new user
     const newUser = {
       id: String(mockUsers.length + 1),
       ...userData,
@@ -240,6 +244,7 @@ export const mockApi = {
 
     mockUsers.push(newUser);
 
+    // Simulate JWT token
     const token = `mock-jwt-token-${newUser.id}-${Date.now()}`;
 
     return {
@@ -297,6 +302,7 @@ export const mockApi = {
     };
   },
 
+  // Event APIs
   async getEvents(filters = {}) {
     await delay(MOCK_DELAY);
 
@@ -370,6 +376,7 @@ export const mockApi = {
       throw new Error("Event is full");
     }
 
+    // Check if already registered
     const existingRegistration = mockEventRegistrations.find(
       (r) => r.user === userId && r.event === eventId
     );
@@ -392,6 +399,7 @@ export const mockApi = {
 
     mockEventRegistrations.push(newRegistration);
 
+    // Update event registered count
     event.registeredCount += 1;
     event.volunteers.push(userId);
 
@@ -409,8 +417,10 @@ export const mockApi = {
       throw new Error("Registration not found");
     }
 
+    // Remove registration
     mockEventRegistrations.splice(registrationIndex, 1);
 
+    // Update event
     const event = mockEvents.find((e) => e.id === eventId);
     if (event) {
       event.registeredCount -= 1;

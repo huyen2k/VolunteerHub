@@ -15,6 +15,7 @@ export function VolunteerLogo({ className = "", size = "md" }) {
         className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Heart outline */}
         <path
           d="M50 85 C50 85, 20 60, 20 40 C20 25, 30 15, 45 15 C50 15, 50 20, 50 20 C50 20, 50 15, 55 15 C70 15, 80 25, 80 40 C80 60, 50 85, 50 85 Z"
           fill="none"
@@ -24,6 +25,7 @@ export function VolunteerLogo({ className = "", size = "md" }) {
           strokeLinejoin="round"
         />
 
+        {/* Hands (cupped hands forming bottom of heart) */}
         <path
           d="M35 65 C35 70, 40 75, 50 75 C60 75, 65 70, 65 65"
           fill="none"
@@ -32,12 +34,16 @@ export function VolunteerLogo({ className = "", size = "md" }) {
           strokeLinecap="round"
         />
 
+        {/* Human figure inside heart */}
         <circle cx="50" cy="35" r="8" fill="#1e40af" />
 
+        {/* Body */}
         <path
           d="M50 43 C50 43, 45 55, 45 65 C45 65, 50 70, 50 70 C50 70, 55 65, 55 65 C55 55, 50 43, 50 43 Z"
           fill="#1e40af"
         />
+
+        {/* Arms raised */}
         <path
           d="M42 45 C38 40, 35 35, 35 30"
           fill="none"

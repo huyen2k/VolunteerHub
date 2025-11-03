@@ -1,8 +1,7 @@
-import React, { Children } from "react";
+import React from "react";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 
-// Layout for guest
 export function GuestLayout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -13,7 +12,6 @@ export function GuestLayout({ children }) {
   );
 }
 
-// Bản chất là bọn này giống nhau --> Khác navbar để phân quyền người dùng
 export function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -55,6 +53,3 @@ export function PublicLayout({ children }) {
 }
 
 export default AdminLayout;
-
-
-// Note: Đây là định hương layout tổng có phân quyền ae nhé

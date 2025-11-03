@@ -1,14 +1,10 @@
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// Định nghĩa 1 vài hàm tiện ích được tái sử dụng nhiều lần
-
-// gộp className cho tailwind --> tự xử lý xung đột nếu có
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// định dạng ngày tháng theo nhiều format
 export function formatDate(date, format = "DD/MM/YYYY") {
   if (!date) return "";
 
@@ -35,7 +31,6 @@ export function formatDate(date, format = "DD/MM/YYYY") {
   }
 }
 
-// tiền tệ
 export function formatCurrency(amount, currency = "VND") {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -43,19 +38,16 @@ export function formatCurrency(amount, currency = "VND") {
   }).format(amount);
 }
 
-// Kiểu số
 export function formatNumber(number) {
   return new Intl.NumberFormat("vi-VN").format(number);
 }
 
-// Cắt chuỗi dài và thêm "..."
 export function truncateText(text, maxLength = 100) {
   if (!text) return "";
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + "...";
 }
 
-// Tạo URL từ text tiếng việt
 export function generateSlug(text) {
   return text
     .toLowerCase()
@@ -67,7 +59,6 @@ export function generateSlug(text) {
     .trim();
 }
 
-// trì hoãn thực thi
 export function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -80,7 +71,6 @@ export function debounce(func, wait) {
   };
 }
 
-// Giới hạn tần suất gọi func
 export function throttle(func, limit) {
   let inThrottle;
   return function executedFunction(...args) {
@@ -92,7 +82,6 @@ export function throttle(func, limit) {
   };
 }
 
-// lấy kí tự --> cho avatar
 export function getInitials(name) {
   if (!name) return "";
   return name

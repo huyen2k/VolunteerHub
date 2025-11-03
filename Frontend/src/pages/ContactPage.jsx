@@ -15,15 +15,15 @@ import { Label } from "../components/ui/label";
 
 export default function ContactPage() {
   return (
-    // ta sẽ sắp xếp theo cột --> use flex-col
     <div className="flex min-h-screen flex-col">
       <Navbar role="guest" />
+
       <main className="flex-1">
         <section className="py-16 sm:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                Liên hệ với chúng tuiii :33
+                Liên hệ với chúng tôi
               </h1>
               <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
                 Có câu hỏi hoặc góp ý? Chúng tôi luôn sẵn sàng lắng nghe!
@@ -89,7 +89,7 @@ export default function ContactPage() {
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="font-semibold mb-2">Điện thoại</h3>
-                      <p className="text-muted-foreground">097 3391585</p>
+                      <p className="text-muted-foreground">+84 123 456 789</p>
                     </CardContent>
                   </Card>
 
@@ -97,9 +97,8 @@ export default function ContactPage() {
                     <CardContent className="p-6">
                       <h3 className="font-semibold mb-2">Địa chỉ</h3>
                       <p className="text-muted-foreground">
-                        123 Đường Phạm Văn Đồng, Mai Dịch, Cầu Giấy
-                        <br />
-                        TP. Hà Nội, Việt Nam
+                        123 Đường ABC, Quận 1<br />
+                        TP. Hồ Chí Minh, Việt Nam
                       </p>
                     </CardContent>
                   </Card>
@@ -109,6 +108,8 @@ export default function ContactPage() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

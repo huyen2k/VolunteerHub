@@ -1,9 +1,9 @@
 import apiService from "./api";
 
 export const authService = {
-  // Đăng nhập cho người dùng --> Đẩy email + password lên
-  async login(email, pass) {
-    return apiService.post("/auth/login", { email, pass });
+  // Login user
+  async login(email, password) {
+    return apiService.post("/auth/login", { email, password });
   },
 
   // Register user
@@ -16,29 +16,30 @@ export const authService = {
     return apiService.post("/auth/logout");
   },
 
-  // Lấy thông tin người dùng
+  // Get current user profile
   async getProfile() {
     return apiService.get("/auth/profile");
   },
 
-  // Cập nhật
+  // Update user profile
   async updateProfile(userData) {
     return apiService.put("/auth/profile", userData);
   },
 
-  // Thay đổi mật khẩu
-  async changePassword(currentPass, newPass) {
+  // Change password
+  async changePassword(currentPassword, newPassword) {
     return apiService.post("/auth/change-password", {
-      currentPass,
-      newPass,
+      currentPassword,
+      newPassword,
     });
   },
 
-  //demo
+  // Forgot password
   async forgotPassword(email) {
     return apiService.post("/auth/forgot-password", { email });
   },
 
+  // Reset password
   async resetPassword(token, newPassword) {
     return apiService.post("/auth/reset-password", { token, newPassword });
   },

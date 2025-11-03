@@ -1,15 +1,14 @@
 import React, { createContext, useEffect, useState } from "react";
 
-const ThemeContext = createContext(); // Context để quản lý theme --> share cho toàn bộ hệ thống
+const ThemeContext = createContext();
 
 export function ThemeProvider({
-  // Component để wrap toàn bộ hệ thống và cung cấp theme cho toàn bộ hệ thống
   children,
   defaultTheme = "system",
   enableSystem = true,
 }) {
   const [theme, setTheme] = useState(() => {
-    // Lấy từ LocalS hoặc default
+    // Get theme from localStorage or use default
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || defaultTheme;
     }
