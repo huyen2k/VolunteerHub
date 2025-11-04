@@ -1,8 +1,10 @@
 package com.volunteerhub.VolunteerHub.controller;
 
 import com.nimbusds.jose.JOSEException;
-import com.volunteerhub.VolunteerHub.dto.request.AuthenticationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.IntrospectRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Authentication.AuthenticationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Authentication.IntrospectRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Authentication.LogoutRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Authentication.RefreshRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.AuthenticationResponse;
 import com.volunteerhub.VolunteerHub.dto.response.IntrospectResponse;
@@ -38,6 +40,22 @@ public class AuthenticationController {
             throws ParseException, JOSEException {
         var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request) throws ParseException, JOSEException {
+        var result = authenticationService.refreshToken(request);
+        return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();
     }

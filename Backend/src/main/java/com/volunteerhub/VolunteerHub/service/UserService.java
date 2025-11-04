@@ -1,8 +1,9 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.constant.Roles;
-import com.volunteerhub.VolunteerHub.dto.request.UserCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.UserUpdateRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserStatusRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.collection.User;
 import com.volunteerhub.VolunteerHub.exception.AppException;
@@ -73,7 +74,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    public UserResponse updateUser(ObjectId id, UserUpdateRequest request) {
+    public UserResponse updateUser(String id, UserUpdateRequest request) {
         User user = userRepository.findUserById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         userMapper.updateUser(user, request);
@@ -82,13 +83,15 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    public UserResponse getUser(ObjectId id){
-        return userMapper.toUserResponse(
-                userRepository.findUserById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
-        );
+    public UserResponse updateUserStatus(String id, UserStatusRequest request){
+        User user = userRepository.findUserById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        userMapper.updateStatus(user, request);
+
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    public void deleteUser(ObjectId id){
+    public void deleteUser(String id){
         userRepository.deleteById(id);
     }
 }

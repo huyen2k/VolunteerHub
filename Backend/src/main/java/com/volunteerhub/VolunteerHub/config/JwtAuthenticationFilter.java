@@ -4,6 +4,7 @@ import com.volunteerhub.VolunteerHub.repository.RoleRepository;
 import com.volunteerhub.VolunteerHub.service.AuthenticationService;
 import com.volunteerhub.VolunteerHub.service.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -47,11 +49,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = jwtService.extractUsername(token);
         Set<String> roleNames = jwtService.extractRoles(token);
 
+        log.warn("Role" + roleNames.toString());
+
         // Nếu user chưa xác thực
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             Set<GrantedAuthority> authorities = new HashSet<>();
 
-            // Từ mỗi role, lấy ra toàn bộ permission
             if (roleNames != null) {
                 for (String roleName : roleNames) {
                     roleRepository.findById(roleName).ifPresent(role ->
@@ -62,9 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             )
                     );
                 }
+
             }
 
-            // Gắn Authentication
+            log.warn("author" + authorities.toString());
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(email, null, authorities);
 
@@ -72,7 +77,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
-        // Cho phép request đi tiếp
         filterChain.doFilter(request, response);
     }
 }

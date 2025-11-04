@@ -1,14 +1,15 @@
-package com.volunteerhub.VolunteerHub.dto.request;
+package com.volunteerhub.VolunteerHub.dto.request.Role;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PermissionRequest {
-    String name;
-    String description;
+public class RoleUpdateRequest {
+    Set<String> permissions;
 }
