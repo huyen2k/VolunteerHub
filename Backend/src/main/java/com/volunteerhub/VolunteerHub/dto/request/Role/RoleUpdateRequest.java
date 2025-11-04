@@ -3,6 +3,7 @@ package com.volunteerhub.VolunteerHub.dto.request.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -11,5 +12,5 @@ import java.util.Set;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RoleUpdateRequest {
-    Set<String> permissions;
+    List<String> permissions;
 }

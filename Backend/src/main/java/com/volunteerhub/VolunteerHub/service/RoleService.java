@@ -44,7 +44,8 @@ public class RoleService {
     public RoleResponse updatePermission(String role, RoleUpdateRequest request){
         Role roleName = roleRepository.findByName(role)
                         .orElseThrow(()-> new AppException(ErrorCode.USER_EXISTED));
-        roleMapper.updateRole(roleName, request);
+        var permissions = request.getPermissions();
+        roleName.getPermissions().addAll(permissions);
         return roleMapper.toRoleResponse(roleRepository.save(roleName));
     }
 
