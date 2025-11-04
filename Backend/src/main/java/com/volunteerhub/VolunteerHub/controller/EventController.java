@@ -1,6 +1,7 @@
 package com.volunteerhub.VolunteerHub.controller;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
+import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
@@ -32,19 +33,17 @@ public class EventController {
     private EventService eventService;
 
     @GetMapping
-    @PreAuthorize("hasRole{'ADMIN'}")
     public ApiResponse<List<EventResponse>> getAllEvents() {
         return ApiResponse.<List<EventResponse>>builder()
-                        .result(eventService.getEvents())
-                                .build();
+                            .result(eventService.getEvents())
+                            .build();
     }
 
     @PostMapping
-    @PreAuthorize("hasRole{'ADMIN'}")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
         return ApiResponse.<EventResponse>builder()
                         .result(eventService.createEvent(eventCreationRequest))
-                .build();
+                        .build();
     }
 
     @GetMapping("/{id}")
@@ -53,11 +52,29 @@ public class EventController {
                 .result(eventService.getEventById(id))
                 .build();
     }
-
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
         return ApiResponse.<EventResponse>builder()
                 .result(eventService.updateEvent(id, eventUpdateRequest))
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole{'ADMIN'}")
+    public ApiResponse<Void> deleteEvent(@PathVariable String id) {
+        eventService.deleteEvent(id);
+        return ApiResponse.<Void>builder().build();
+    }
+
+    /*Approve Controller, will be upgraded to add approvedBy more specific when Role entity is completed
+    *Add reject API, set life time for rejected event and filter for single role to display event
+     */
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole{'ADMIN'}")
+    public ApiResponse<EventResponse> approveEvent(@PathVariable String id,
+                                                   @RequestBody EventApprovalRequest eventApprovalRequest) {
+        return ApiResponse.<EventResponse>builder()
+                .result(eventService.approveEvent(id, eventApprovalRequest))
                 .build();
     }
 }

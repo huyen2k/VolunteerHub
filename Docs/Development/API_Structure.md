@@ -84,7 +84,7 @@
 - **Mô tả**: Lấy danh sách sự kiện do một quản lý cụ thể tạo.
 - **Xác thực**: Bắt buộc.
 - **Vai trò**: Quản lý sự kiện hoặc Quản trị viên.
-
+  (missing)
 ---
 
 ## 4. API Đăng ký sự kiện (`/api/v1/registrations`)

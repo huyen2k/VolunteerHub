@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-01T17:41:33+0700",
+    date = "2025-11-04T21:59:38+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -20,9 +20,9 @@ public class PermissionMapperImpl implements PermissionMapper {
             return null;
         }
 
-        Permission permission = new Permission();
+        Permission.PermissionBuilder permission = Permission.builder();
 
-        return permission;
+        return permission.build();
     }
 
     @Override
