@@ -1,7 +1,6 @@
-package com.volunteerhub.VolunteerHub.dto.request;
+package com.volunteerhub.VolunteerHub.dto.request.Event;
 
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
 import java.util.Date;
 

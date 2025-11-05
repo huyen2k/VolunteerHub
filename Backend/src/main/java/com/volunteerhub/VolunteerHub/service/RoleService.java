@@ -27,6 +27,10 @@ public class RoleService {
     RoleMapper roleMapper;
 
     public RoleResponse create(RoleCreationRequest request){
+        if (roleRepository.existsById(request.getName())){
+            throw new AppException(ErrorCode.ROLE_EXISTED);
+        }
+
         var role = roleMapper.toRole(request);
         var permissions = request.getPermissions();
         role.setPermissions(new HashSet<>(permissions));
@@ -43,7 +47,7 @@ public class RoleService {
 
     public RoleResponse updatePermission(String role, RoleUpdateRequest request){
         Role roleName = roleRepository.findByName(role)
-                        .orElseThrow(()-> new AppException(ErrorCode.USER_EXISTED));
+                        .orElseThrow(()-> new AppException(ErrorCode.ROLE_NOT_EXISTED));
         var permissions = request.getPermissions();
         roleName.getPermissions().addAll(permissions);
         return roleMapper.toRoleResponse(roleRepository.save(roleName));
