@@ -1,13 +1,17 @@
-package com.volunteerhub.VolunteerHub.entity;
+package com.volunteerhub.VolunteerHub.dto.request.User;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class Profile {
+@AllArgsConstructor
+@Builder
+public class UserCreationRequest {
+    private String email;
+    private String password;
     private String full_name;
     private String avatar_url;
     private String phone;

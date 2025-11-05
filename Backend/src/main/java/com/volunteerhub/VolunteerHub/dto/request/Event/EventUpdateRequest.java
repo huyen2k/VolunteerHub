@@ -1,0 +1,10 @@
+package com.volunteerhub.VolunteerHub.dto.request.Event;
+
+import java.util.Date;
+
+public class EventUpdateRequest {
+    String title;
+    String  description;
+    Date date;
+    String location;
+}
