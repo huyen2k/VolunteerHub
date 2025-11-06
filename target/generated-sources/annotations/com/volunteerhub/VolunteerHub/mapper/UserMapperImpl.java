@@ -1,8 +1,9 @@
 package com.volunteerhub.VolunteerHub.mapper;
 
 import com.volunteerhub.VolunteerHub.collection.User;
-import com.volunteerhub.VolunteerHub.dto.request.UserCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.UserUpdateRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserStatusRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-04T21:59:38+0700",
+    date = "2025-11-06T11:16:52+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -49,6 +50,32 @@ public class UserMapperImpl implements UserMapper {
         user.setPhone( request.getPhone() );
         user.setAddress( request.getAddress() );
         user.setBio( request.getBio() );
+        user.setIs_active( request.getIs_active() );
+    }
+
+    @Override
+    public void updateStatus(User user, UserStatusRequest request) {
+        if ( request == null ) {
+            return;
+        }
+
+        user.setEmail( request.getEmail() );
+        if ( user.getRoles() != null ) {
+            Set<String> set = request.getRoles();
+            if ( set != null ) {
+                user.getRoles().clear();
+                user.getRoles().addAll( set );
+            }
+            else {
+                user.setRoles( null );
+            }
+        }
+        else {
+            Set<String> set = request.getRoles();
+            if ( set != null ) {
+                user.setRoles( new LinkedHashSet<String>( set ) );
+            }
+        }
         user.setIs_active( request.getIs_active() );
     }
 

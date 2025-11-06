@@ -1,15 +1,15 @@
 package com.volunteerhub.VolunteerHub.mapper;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
-import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-04T21:59:38+0700",
+    date = "2025-11-06T11:16:52+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -26,6 +26,7 @@ public class EventMapperImpl implements EventMapper {
         event.title( request.getTitle() );
         event.description( request.getDescription() );
         event.date( request.getDate() );
+        event.location( request.getLocation() );
 
         return event.build();
     }

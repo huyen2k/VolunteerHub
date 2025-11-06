@@ -4,8 +4,6 @@ import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;

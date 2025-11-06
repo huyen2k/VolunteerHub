@@ -2,10 +2,7 @@ package com.volunteerhub.VolunteerHub.controller;
 
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.service.EventService;
@@ -37,7 +34,6 @@ public class EventController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole{'ADMIN'}")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
         return ApiResponse.<EventResponse>builder()
                         .result(eventService.createEvent(eventCreationRequest))
@@ -51,6 +47,7 @@ public class EventController {
                 .build();
     }
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('UPDATE_EVENT')")
     public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
         return ApiResponse.<EventResponse>builder()
                 .result(eventService.updateEvent(id, eventUpdateRequest))
@@ -58,7 +55,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole{'ADMIN'}")
+    @PreAuthorize("hasAuthority('DELETE_EVENT')")
     public ApiResponse<Void> deleteEvent(@PathVariable String id) {
         eventService.deleteEvent(id);
         return ApiResponse.<Void>builder().build();
@@ -68,7 +65,7 @@ public class EventController {
     *Add reject API, set life time for rejected event and filter for single role to display event
      */
     @PutMapping("/{id}/approve")
-    @PreAuthorize("hasRole{'ADMIN'}")
+    @PreAuthorize("hasAuthority('APPROVE_EVENT')")
     public ApiResponse<EventResponse> approveEvent(@PathVariable String id,
                                                    @RequestBody EventApprovalRequest eventApprovalRequest) {
         return ApiResponse.<EventResponse>builder()
