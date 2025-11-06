@@ -1,11 +1,12 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
-import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.EventMapper;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -30,6 +30,7 @@ public class EventService {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
     private EventMapper eventMapper;
 
     //Get all events, anyone can use this service

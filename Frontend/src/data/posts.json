@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "title": "Kinh nghiệm tham gia hoạt động tình nguyện lần đầu",
+    "content": "Mình vừa tham gia sự kiện dọn dẹp bãi biển lần đầu tiên và có rất nhiều trải nghiệm thú vị muốn chia sẻ...",
+    "author": "Nguyễn Văn An",
+    "author_id": 1,
+    "author_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=An",
+    "category": "Chia sẻ kinh nghiệm",
+    "likes": 45,
+    "comments": 12,
+    "views": 230,
+    "created_at": "2025-10-20T10:30:00",
+    "tags": ["kinh nghiệm", "môi trường", "bãi biển"]
+  },
+  {
+    "id": 2,
+    "title": "Tìm bạn đồng hành cho chuyến tình nguyện Sapa",
+    "content": "Mình đang tìm thêm 2-3 bạn cùng đi dạy học ở Sapa vào tháng 12. Ai quan tâm inbox mình nhé!",
+    "author": "Trần Thị Bình",
+    "author_id": 2,
+    "author_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Binh",
+    "category": "Tìm đồng đội",
+    "likes": 28,
+    "comments": 8,
+    "views": 156,
+    "created_at": "2025-10-22T14:15:00",
+    "tags": ["tìm bạn", "giáo dục", "sapa"]
+  },
+  {
+    "id": 3,
+    "title": "Cách chuẩn bị cho một chuyến tình nguyện dài ngày",
+    "content": "Sau nhiều lần đi tình nguyện, mình đã tổng hợp được một số tips hữu ích cho các bạn mới...",
+    "author": "Lê Minh Cường",
+    "author_id": 3,
+    "author_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Cuong",
+    "category": "Hướng dẫn",
+    "likes": 67,
+    "comments": 15,
+    "views": 342,
+    "created_at": "2025-10-18T09:00:00",
+    "tags": ["hướng dẫn", "tips", "chuẩn bị"]
+  },
+  {
+    "id": 4,
+    "title": "Những khoảnh khắc đáng nhớ tại viện dưỡng lão",
+    "content": "Hôm nay mình đã có buổi chiều thật ý nghĩa khi được trò chuyện với các cụ...",
+    "author": "Phạm Thu Dung",
+    "author_id": 4,
+    "author_avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Dung",
+    "category": "Chia sẻ kinh nghiệm",
+    "likes": 52,
+    "comments": 10,
+    "views": 198,
+    "created_at": "2025-10-25T16:45:00",
+    "tags": ["người già", "cộng đồng", "chia sẻ"]
+  }
+]

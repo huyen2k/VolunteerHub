@@ -1,0 +1,112 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@example.com",
+      "password": "admin123",
+      "name": "Nguyễn Văn Admin",
+      "role": "admin",
+      "avatar": "/avatars/admin.jpg",
+      "phone": "0123456789",
+      "address": "Hà Nội, Việt Nam",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "lastLogin": "2024-12-15T10:30:00Z",
+      "isActive": true,
+      "permissions": [
+        "read",
+        "write",
+        "delete",
+        "manage_users",
+        "manage_events",
+        "view_reports"
+      ]
+    },
+    {
+      "id": 2,
+      "email": "manager1@example.com",
+      "password": "manager123",
+      "name": "Trần Thị Manager",
+      "role": "manager",
+      "avatar": "/avatars/manager.jpg",
+      "phone": "0987654321",
+      "address": "TP.HCM, Việt Nam",
+      "createdAt": "2024-01-15T00:00:00Z",
+      "lastLogin": "2024-12-15T09:15:00Z",
+      "isActive": true,
+      "permissions": ["read", "write", "manage_events", "manage_volunteers"]
+    },
+    {
+      "id": 3,
+      "email": "volunteer1@example.com",
+      "password": "volunteer123",
+      "name": "Lê Văn Tình Nguyện",
+      "role": "volunteer",
+      "avatar": "/avatars/volunteer1.jpg",
+      "phone": "0369852147",
+      "address": "Đà Nẵng, Việt Nam",
+      "createdAt": "2024-02-01T00:00:00Z",
+      "lastLogin": "2024-12-15T08:45:00Z",
+      "isActive": true,
+      "permissions": ["read", "join_events"]
+    },
+    {
+      "id": 4,
+      "email": "volunteer2@example.com",
+      "password": "volunteer123",
+      "name": "Phạm Thị Hoa",
+      "role": "volunteer",
+      "avatar": "/avatars/volunteer2.jpg",
+      "phone": "0741258963",
+      "address": "Cần Thơ, Việt Nam",
+      "createdAt": "2024-02-15T00:00:00Z",
+      "lastLogin": "2024-12-14T16:20:00Z",
+      "isActive": true,
+      "permissions": ["read", "join_events"]
+    },
+    {
+      "id": 5,
+      "email": "manager2@volunteerhub.vn",
+      "password": "manager123",
+      "name": "Hoàng Văn Quản Lý",
+      "role": "manager",
+      "avatar": "/avatars/manager2.jpg",
+      "phone": "0521478963",
+      "address": "Hải Phòng, Việt Nam",
+      "createdAt": "2024-03-01T00:00:00Z",
+      "lastLogin": "2024-12-14T14:30:00Z",
+      "isActive": true,
+      "permissions": ["read", "write", "manage_events", "manage_volunteers"]
+    }
+  ],
+  "roles": {
+    "admin": {
+      "name": "Administrator",
+      "description": "Quản trị viên hệ thống",
+      "permissions": [
+        "read",
+        "write",
+        "delete",
+        "manage_users",
+        "manage_events",
+        "view_reports",
+        "system_settings"
+      ]
+    },
+    "manager": {
+      "name": "Event Manager",
+      "description": "Quản lý sự kiện",
+      "permissions": [
+        "read",
+        "write",
+        "manage_events",
+        "manage_volunteers",
+        "view_analytics"
+      ]
+    },
+    "volunteer": {
+      "name": "Volunteer",
+      "description": "Tình nguyện viên",
+      "permissions": ["read", "join_events", "view_profile"]
+    }
+  }
+}

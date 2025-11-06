@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "type": "event_approved",
+    "title": "Đăng ký sự kiện được chấp nhận",
+    "message": "Đăng ký của bạn cho sự kiện 'Dọn dẹp bãi biển Nha Trang' đã được chấp nhận",
+    "event_id": 1,
+    "read": false,
+    "created_at": "2025-10-26T10:30:00"
+  },
+  {
+    "id": 2,
+    "type": "event_reminder",
+    "title": "Nhắc nhở sự kiện sắp diễn ra",
+    "message": "Sự kiện 'Trồng cây xanh tại Đà Lạt' sẽ diễn ra vào ngày mai lúc 08:00",
+    "event_id": 2,
+    "read": false,
+    "created_at": "2025-10-25T18:00:00"
+  },
+  {
+    "id": 3,
+    "type": "comment",
+    "title": "Bình luận mới",
+    "message": "Trần Thị Bình đã bình luận vào bài viết của bạn",
+    "post_id": 1,
+    "read": true,
+    "created_at": "2025-10-24T14:20:00"
+  },
+  {
+    "id": 4,
+    "type": "achievement",
+    "title": "Thành tựu mới",
+    "message": "Chúc mừng! Bạn đã hoàn thành 10 sự kiện tình nguyện",
+    "read": true,
+    "created_at": "2025-10-23T09:15:00"
+  },
+  {
+    "id": 5,
+    "type": "event_update",
+    "title": "Cập nhật sự kiện",
+    "message": "Sự kiện 'Dạy học cho trẻ em vùng cao' đã có thay đổi về thời gian",
+    "event_id": 3,
+    "read": false,
+    "created_at": "2025-10-22T11:00:00"
+  }
+]

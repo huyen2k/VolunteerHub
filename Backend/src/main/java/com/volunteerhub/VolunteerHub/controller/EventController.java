@@ -1,23 +1,20 @@
 package com.volunteerhub.VolunteerHub.controller;
 
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
-import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.service.EventService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,6 +37,7 @@ public class EventController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole{'ADMIN'}")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
         return ApiResponse.<EventResponse>builder()
                         .result(eventService.createEvent(eventCreationRequest))

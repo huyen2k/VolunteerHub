@@ -1,9 +1,12 @@
 package com.volunteerhub.VolunteerHub.repository;
 
 import com.volunteerhub.VolunteerHub.collection.Role;
-import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface RoleRepository extends MongoRepository<Role, ObjectId> {
+import java.util.Optional;
 
+public interface RoleRepository extends MongoRepository<Role, String> {
+    Optional<Role> findByName(String s);
+
+    boolean existsByPermissionsContaining(String permission);
 }

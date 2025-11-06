@@ -1,8 +1,8 @@
 package com.volunteerhub.VolunteerHub.controller;
 
-import com.nimbusds.jose.proc.SecurityContext;
-import com.volunteerhub.VolunteerHub.dto.request.UserCreationRequest;
-import com.volunteerhub.VolunteerHub.dto.request.UserUpdateRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserCreationRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserStatusRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.UserUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.service.UserService;
@@ -18,7 +18,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
@@ -31,12 +30,9 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole{'ADMIN'}")
+    @PreAuthorize("hasAuthority('USER_LIST')")
     ApiResponse<List<UserResponse>> getAllUsers(){
-        log.info("In the menthod All ussers");
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        log.info("Username: {}", authentication.getName());
         authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
 
         return ApiResponse.<List<UserResponse>>builder()
@@ -52,9 +48,9 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    ApiResponse<UserResponse> getUser(@PathVariable ObjectId id){
+    ApiResponse<UserResponse> updateUserStatus(@PathVariable String id, @RequestBody UserStatusRequest request){
         return ApiResponse.<UserResponse>builder()
-                .result(userService.getUser(id))
+                .result(userService.updateUserStatus(id, request))
                 .build();
     }
 
@@ -66,15 +62,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    ApiResponse<UserResponse> updateUser(@PathVariable ObjectId id, @RequestBody UserUpdateRequest request){
+    ApiResponse<UserResponse> updateUser(@PathVariable String id, @RequestBody UserUpdateRequest request){
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(id, request))
                 .build();
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole{'ADMIN'}")
-    ApiResponse<Void> deleteUser(@PathVariable ObjectId id) {
+    @PreAuthorize("hasAuthority('DELETE_USER')")
+    ApiResponse<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return ApiResponse.<Void>builder().build();
     }
