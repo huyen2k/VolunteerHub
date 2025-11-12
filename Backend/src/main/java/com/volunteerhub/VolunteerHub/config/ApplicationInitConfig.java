@@ -31,9 +31,16 @@ public class ApplicationInitConfig {
     @NonFinal
     static final String ADMIN_USER_PASSWORD = "admin";
 
+    @NonFinal
+    static final String MANAGER_USER_EMAIL = "manager@example.com";
+
+    @NonFinal
+    static final String MANAGER_USER_PASSWORD = "manager";
+
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository){
         return args -> {
+            // Create admin user if not exists
             if(userRepository.findUserByEmail(ADMIN_USER_EMAIL).isEmpty()){
                 var roles = new HashSet<String>();
                 roles.add(Roles.ADMIN.name());
@@ -42,10 +49,29 @@ public class ApplicationInitConfig {
                         .email(ADMIN_USER_EMAIL)
                         .password(passwordEncoder.encode(ADMIN_USER_PASSWORD))
                         .roles(roles)
+                        .full_name("Admin User")
+                        .is_active(true)
                         .build();
 
                 userRepository.save(user);
-                log.warn("admin user has been created with default.");
+                log.warn("Admin user has been created with default credentials: {} / {}", ADMIN_USER_EMAIL, ADMIN_USER_PASSWORD);
+            }
+
+            // Create manager user if not exists
+            if(userRepository.findUserByEmail(MANAGER_USER_EMAIL).isEmpty()){
+                var roles = new HashSet<String>();
+                roles.add(Roles.EVEN_MANAGER.name());
+
+                User user = User.builder()
+                        .email(MANAGER_USER_EMAIL)
+                        .password(passwordEncoder.encode(MANAGER_USER_PASSWORD))
+                        .roles(roles)
+                        .full_name("Event Manager")
+                        .is_active(true)
+                        .build();
+
+                userRepository.save(user);
+                log.warn("Manager user has been created with default credentials: {} / {}", MANAGER_USER_EMAIL, MANAGER_USER_PASSWORD);
             }
         };
     }

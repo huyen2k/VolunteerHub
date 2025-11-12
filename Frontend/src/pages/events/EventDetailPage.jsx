@@ -41,7 +41,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +56,9 @@ export default function EventDetailPage() {
           title: data.title || "Không có tiêu đề",
           description: data.description || "",
           location: data.location || "Chưa có địa điểm",
-          date: data.date ? new Date(data.date).toLocaleDateString("vi-VN") : "",
+          date: data.date
+            ? new Date(data.date).toLocaleDateString("vi-VN")
+            : "",
           status: data.status || "pending",
           category: "Sự kiện",
           image: "/placeholder.svg",
@@ -227,8 +229,16 @@ export default function EventDetailPage() {
                 <Badge className="bg-primary text-primary-foreground">
                   {displayEvent.category}
                 </Badge>
-                <Badge variant={displayEvent.status === "approved" ? "default" : "secondary"}>
-                  {displayEvent.status === "approved" ? "Đã duyệt" : displayEvent.status === "pending" ? "Chờ duyệt" : displayEvent.status}
+                <Badge
+                  variant={
+                    displayEvent.status === "approved" ? "default" : "secondary"
+                  }
+                >
+                  {displayEvent.status === "approved"
+                    ? "Đã duyệt"
+                    : displayEvent.status === "pending"
+                    ? "Chờ duyệt"
+                    : displayEvent.status}
                 </Badge>
               </div>
             </div>
@@ -287,7 +297,9 @@ export default function EventDetailPage() {
                     <p className="text-sm text-muted-foreground">
                       Ngày diễn ra
                     </p>
-                    <p className="mt-1 text-lg font-semibold">{displayEvent.date || "Chưa có"}</p>
+                    <p className="mt-1 text-lg font-semibold">
+                      {displayEvent.date || "Chưa có"}
+                    </p>
                   </div>
                   <Calendar className="h-8 w-8 text-primary" />
                 </div>
@@ -312,11 +324,13 @@ export default function EventDetailPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">
-                      Trạng thái
-                    </p>
+                    <p className="text-sm text-muted-foreground">Trạng thái</p>
                     <p className="mt-1 text-lg font-semibold">
-                      {displayEvent.status === "approved" ? "Đã duyệt" : displayEvent.status === "pending" ? "Chờ duyệt" : displayEvent.status}
+                      {displayEvent.status === "approved"
+                        ? "Đã duyệt"
+                        : displayEvent.status === "pending"
+                        ? "Chờ duyệt"
+                        : displayEvent.status}
                     </p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
@@ -330,10 +344,13 @@ export default function EventDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Tương tác</p>
                     <p className="mt-1 text-lg font-semibold">
-                      {displayEvent.likes + displayEvent.comments + displayEvent.shares}
+                      {displayEvent.likes +
+                        displayEvent.comments +
+                        displayEvent.shares}
                     </p>
                     <p className="text-xs text-blue-600">
-                      {displayEvent.likes} thích, {displayEvent.comments} bình luận
+                      {displayEvent.likes} thích, {displayEvent.comments} bình
+                      luận
                     </p>
                   </div>
                   <MessageSquare className="h-8 w-8 text-primary" />
@@ -370,42 +387,50 @@ export default function EventDetailPage() {
                   </Card>
 
                   {/* Requirements */}
-                  {displayEvent.requirements && displayEvent.requirements.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Yêu cầu tham gia</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2">
-                          {displayEvent.requirements.map((req, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm">{req}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {displayEvent.requirements &&
+                    displayEvent.requirements.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Yêu cầu tham gia</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-2">
+                            {displayEvent.requirements.map((req, index) => (
+                              <li
+                                key={index}
+                                className="flex items-start gap-2"
+                              >
+                                <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm">{req}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    )}
 
                   {/* Benefits */}
-                  {displayEvent.benefits && displayEvent.benefits.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Lợi ích khi tham gia</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2">
-                          {displayEvent.benefits.map((benefit, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm">{benefit}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {displayEvent.benefits &&
+                    displayEvent.benefits.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Lợi ích khi tham gia</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-2">
+                            {displayEvent.benefits.map((benefit, index) => (
+                              <li
+                                key={index}
+                                className="flex items-start gap-2"
+                              >
+                                <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm">{benefit}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-6 space-y-6">
@@ -429,11 +454,16 @@ export default function EventDetailPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           <Mail className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm">{displayEvent.contact?.email || "contact@volunteerhub.com"}</span>
+                          <span className="text-sm">
+                            {displayEvent.contact?.email ||
+                              "contact@volunteerhub.com"}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3">
                           <Phone className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm">{displayEvent.contact?.phone || "0123456789"}</span>
+                          <span className="text-sm">
+                            {displayEvent.contact?.phone || "0123456789"}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -529,10 +559,7 @@ export default function EventDetailPage() {
                 <CardContent className="space-y-4">
                   {isAuthenticated ? (
                     <div className="space-y-2">
-                      <Button
-                        className="w-full"
-                        onClick={handleRegisterClick}
-                      >
+                      <Button className="w-full" onClick={handleRegisterClick}>
                         <CheckCircle2 className="mr-2 h-4 w-4" />
                         Đăng ký tham gia
                       </Button>
@@ -566,7 +593,9 @@ export default function EventDetailPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Bình luận</span>
-                    <span className="font-semibold">{displayEvent.comments}</span>
+                    <span className="font-semibold">
+                      {displayEvent.comments}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Chia sẻ</span>
@@ -574,8 +603,18 @@ export default function EventDetailPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Trạng thái</span>
-                    <Badge variant={displayEvent.status === "approved" ? "default" : "secondary"}>
-                      {displayEvent.status === "approved" ? "Đã duyệt" : displayEvent.status === "pending" ? "Chờ duyệt" : displayEvent.status}
+                    <Badge
+                      variant={
+                        displayEvent.status === "approved"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {displayEvent.status === "approved"
+                        ? "Đã duyệt"
+                        : displayEvent.status === "pending"
+                        ? "Chờ duyệt"
+                        : displayEvent.status}
                     </Badge>
                   </div>
                 </CardContent>

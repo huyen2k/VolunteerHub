@@ -25,11 +25,15 @@ import { Badge } from "./ui/badge";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../hooks/useAuth";
+import { SettingsModal } from "./modals/SettingsModal";
+import { NotificationsModal } from "./modals/NotificationsModal";
 
 export function Navbar({ role: propRole }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [unreadNotifications] = useState(3);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Xác định role từ prop hoặc user context
   const role = propRole || user?.role || "guest";
@@ -46,14 +50,12 @@ export function Navbar({ role: propRole }) {
     { href: "/user/events", label: "Sự kiện", icon: Calendar },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/community", label: "Cộng đồng", icon: MessageSquare },
-    { href: "/profile", label: "Hồ sơ", icon: User },
   ];
 
   const managerLinks = [
     { href: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/manager/events", label: "Quản lý sự kiện", icon: Calendar },
     { href: "/manager/community", label: "Cộng đồng", icon: MessageSquare },
-    { href: "/manager/profile", label: "Hồ sơ", icon: User },
   ];
 
   const adminLinks = [
@@ -61,7 +63,6 @@ export function Navbar({ role: propRole }) {
     { href: "/admin/users", label: "Người dùng", icon: Users },
     { href: "/admin/events", label: "Sự kiện", icon: Calendar },
     { href: "/admin/reports", label: "Báo cáo", icon: Settings },
-    { href: "/admin/profile", label: "Hồ sơ", icon: User },
   ];
 
   const getLinks = () => {
@@ -125,47 +126,35 @@ export function Navbar({ role: propRole }) {
           {role !== "guest" && (
             <>
               {/* Notifications */}
-              <Link to="/notifications">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {unreadNotifications > 0 && (
-                    <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
-                      {unreadNotifications}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => setNotificationsOpen(true)}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotifications > 0 && (
+                  <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
+                    {unreadNotifications}
+                  </Badge>
+                )}
+              </Button>
 
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      Hồ sơ
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Cài đặt
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer text-destructive"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Đăng xuất
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* User Menu - Settings Modal */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+
+              {/* Modals */}
+              <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+              <NotificationsModal
+                open={notificationsOpen}
+                onOpenChange={setNotificationsOpen}
+              />
             </>
           )}
 

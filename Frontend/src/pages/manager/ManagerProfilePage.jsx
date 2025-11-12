@@ -91,12 +91,11 @@ export default function ManagerProfilePage() {
   return (
     <ManagerLayout>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Hồ sơ Manager</h1>
             <p className="text-muted-foreground">
-              Quản lý thông tin cá nhân và cài đặt tài khoản Manager
+              Quản lý thông tin cá nhân của bạn
             </p>
           </div>
           <Button
@@ -130,58 +129,18 @@ export default function ManagerProfilePage() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <CardTitle className="mt-4">{user?.name}</CardTitle>
+                <CardTitle className="mt-4">{user?.name || "Manager"}</CardTitle>
                 <CardDescription>
                   <Badge variant="default" className="mt-2 bg-blue-600">
                     Event Manager
                   </Badge>
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tham gia từ:</span>
-                    <span>
-                      {user?.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString("vi-VN")
-                        : "Không có thông tin"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Trạng thái:</span>
-                    <Badge variant={user?.isActive ? "default" : "secondary"}>
-                      {user?.isActive ? "Hoạt động" : "Tạm khóa"}
-                    </Badge>
-                  </div>
-                </div>
-                <Separator />
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">8</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sự kiện đang quản lý
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">156</div>
-                  <div className="text-sm text-muted-foreground">
-                    Tình nguyện viên
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">4.8</div>
-                  <div className="text-sm text-muted-foreground">
-                    Đánh giá trung bình
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
 
           {/* Profile Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
+          <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -250,30 +209,6 @@ export default function ManagerProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Tổ chức</Label>
-                    <Input
-                      id="organization"
-                      name="organization"
-                      value={formData.organization}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder="Tên tổ chức"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="position">Chức vụ</Label>
-                    <Input
-                      id="position"
-                      name="position"
-                      value={formData.position}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder="Chức vụ hiện tại"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Giới thiệu bản thân</Label>
                   <Textarea
@@ -298,156 +233,6 @@ export default function ManagerProfilePage() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Manager Statistics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Thống kê hoạt động
-                </CardTitle>
-                <CardDescription>
-                  Tổng quan về hoạt động quản lý của bạn
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">24</div>
-                    <div className="text-sm text-muted-foreground">
-                      Sự kiện đã tổ chức
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      1,240
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Tình nguyện viên đã quản lý
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      98%
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Tỷ lệ hoàn thành
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      4.8
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Đánh giá trung bình
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Cài đặt tài khoản
-                </CardTitle>
-                <CardDescription>
-                  Quản lý bảo mật và cài đặt tài khoản Manager
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Mật khẩu</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      disabled
-                      className="flex-1"
-                    />
-                    <Button variant="outline" size="sm">
-                      Đổi mật khẩu
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Email xác thực</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">Đã xác thực</Badge>
-                    <Button variant="outline" size="sm">
-                      Gửi lại email xác thực
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Quyền Manager</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">Đã được cấp</Badge>
-                    <Button variant="outline" size="sm">
-                      Xem chi tiết quyền
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Manager Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cài đặt Manager</CardTitle>
-                <CardDescription>
-                  Tùy chọn quản lý và thông báo cho Manager
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo đăng ký</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo khi có tình nguyện viên đăng ký
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo hủy đăng ký</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo khi có tình nguyện viên hủy đăng ký
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo Admin</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo từ Admin về hệ thống
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Chế độ tự động duyệt</div>
-                    <div className="text-sm text-muted-foreground">
-                      Tự động duyệt đăng ký của tình nguyện viên
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Tắt
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>

@@ -10,7 +10,6 @@ export function AuthProvider({ children }) {
   const loadUserProfile = async () => {
     try {
       const userData = await authService.getProfile();
-      // Map backend user data to frontend format
       const mappedUser = mapBackendUserToFrontend(userData);
       setUser(mappedUser);
       localStorage.setItem("user", JSON.stringify(mappedUser));
@@ -29,22 +28,18 @@ export function AuthProvider({ children }) {
     const savedUser = localStorage.getItem("user");
 
     if (token && savedUser) {
-      // Validate token with backend
       authService
         .introspect(token)
         .then((result) => {
           if (result.valid) {
-            // Token is valid, load user info
             loadUserProfile();
           } else {
-            // Token invalid, clear storage
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setLoading(false);
           }
         })
         .catch(() => {
-          // Error validating token, clear storage
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setLoading(false);
@@ -52,11 +47,9 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const mapBackendUserToFrontend = (backendUser) => {
-    // Map backend user format to frontend expected format
     return {
       id: backendUser.id,
       email: backendUser.email,
@@ -143,7 +136,6 @@ export function AuthProvider({ children }) {
       setUser(null);
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      // Redirect to homepage after logout
       window.location.href = "/";
     }
   };

@@ -1,4 +1,3 @@
-// Post Service sử dụng Mock API
 import mockApi from "./mockApi";
 
 export const postService = {

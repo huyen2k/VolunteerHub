@@ -95,12 +95,11 @@ export default function AdminProfilePage() {
   return (
     <AdminLayout>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Hồ sơ Admin</h1>
             <p className="text-muted-foreground">
-              Quản lý thông tin cá nhân và cài đặt tài khoản Administrator
+              Quản lý thông tin cá nhân của bạn
             </p>
           </div>
           <Button
@@ -134,64 +133,19 @@ export default function AdminProfilePage() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <CardTitle className="mt-4">{user?.name}</CardTitle>
+                <CardTitle className="mt-4">{user?.name || "Admin"}</CardTitle>
                 <CardDescription>
                   <Badge variant="default" className="mt-2 bg-red-600">
                     <Crown className="mr-1 h-3 w-3" />
-                    Super Administrator
+                    Administrator
                   </Badge>
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tham gia từ:</span>
-                    <span>
-                      {user?.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString("vi-VN")
-                        : "Không có thông tin"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Trạng thái:</span>
-                    <Badge variant={user?.isActive ? "default" : "secondary"}>
-                      {user?.isActive ? "Hoạt động" : "Tạm khóa"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Crown className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Cấp độ:</span>
-                    <Badge variant="outline">{formData.adminLevel}</Badge>
-                  </div>
-                </div>
-                <Separator />
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">156</div>
-                  <div className="text-sm text-muted-foreground">
-                    Người dùng đã quản lý
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">89</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sự kiện đã duyệt
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">12</div>
-                  <div className="text-sm text-muted-foreground">
-                    Manager đã tạo
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
 
           {/* Profile Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
+          <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -199,7 +153,7 @@ export default function AdminProfilePage() {
                   Thông tin cá nhân
                 </CardTitle>
                 <CardDescription>
-                  Cập nhật thông tin cá nhân của Administrator
+                  Cập nhật thông tin cá nhân của bạn
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -260,30 +214,6 @@ export default function AdminProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Tổ chức</Label>
-                    <Input
-                      id="organization"
-                      name="organization"
-                      value={formData.organization}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder="Tên tổ chức"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="position">Chức vụ</Label>
-                    <Input
-                      id="position"
-                      name="position"
-                      value={formData.position}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      placeholder="Chức vụ hiện tại"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Giới thiệu bản thân</Label>
                   <Textarea
@@ -308,192 +238,6 @@ export default function AdminProfilePage() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Admin Statistics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Thống kê hệ thống
-                </CardTitle>
-                <CardDescription>
-                  Tổng quan về hoạt động quản trị hệ thống
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">1,256</div>
-                    <div className="text-sm text-muted-foreground">
-                      Tổng người dùng
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">24</div>
-                    <div className="text-sm text-muted-foreground">
-                      Manager đang hoạt động
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">89</div>
-                    <div className="text-sm text-muted-foreground">
-                      Sự kiện đã duyệt
-                    </div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      99.9%
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Uptime hệ thống
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Admin Permissions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Quyền Administrator
-                </CardTitle>
-                <CardDescription>
-                  Danh sách quyền hạn của tài khoản Admin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {user?.permissions?.map((permission, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 p-3 bg-muted rounded-lg"
-                    >
-                      <Shield className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium capitalize">
-                        {permission.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Cài đặt tài khoản
-                </CardTitle>
-                <CardDescription>
-                  Quản lý bảo mật và cài đặt tài khoản Administrator
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Mật khẩu</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      disabled
-                      className="flex-1"
-                    />
-                    <Button variant="outline" size="sm">
-                      Đổi mật khẩu
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Email xác thực</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">Đã xác thực</Badge>
-                    <Button variant="outline" size="sm">
-                      Gửi lại email xác thực
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Quyền Admin</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">Super Admin</Badge>
-                    <Button variant="outline" size="sm">
-                      Xem chi tiết quyền
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>2FA Authentication</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Chưa bật</Badge>
-                    <Button variant="outline" size="sm">
-                      Bật 2FA
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* System Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Cài đặt hệ thống
-                </CardTitle>
-                <CardDescription>
-                  Tùy chọn quản trị và thông báo hệ thống
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo hệ thống</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo về các vấn đề hệ thống
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo Manager</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo từ Manager về sự kiện
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo bảo mật</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo về các hoạt động bảo mật
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Chế độ bảo trì</div>
-                    <div className="text-sm text-muted-foreground">
-                      Đặt hệ thống vào chế độ bảo trì
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Tắt
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>

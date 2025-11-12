@@ -11,21 +11,19 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Badge } from "../components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Separator } from "../components/ui/separator";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../components/ui/avatar";
 import {
   User,
   Mail,
   Phone,
   MapPin,
-  Calendar,
-  Shield,
   Edit,
   Save,
   X,
-  Camera,
-  Lock,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
@@ -81,12 +79,11 @@ export default function UserProfilePage() {
   return (
     <UserLayout>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Hồ sơ cá nhân</h1>
             <p className="text-muted-foreground">
-              Quản lý thông tin cá nhân và cài đặt tài khoản
+              Quản lý thông tin cá nhân của bạn
             </p>
           </div>
           <Button
@@ -120,52 +117,14 @@ export default function UserProfilePage() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <CardTitle className="mt-4">{user?.name}</CardTitle>
-                <CardDescription>
-                  <Badge variant="secondary" className="mt-2">
-                    Tình nguyện viên
-                  </Badge>
-                </CardDescription>
+                <CardTitle className="mt-4">{user?.name || "Người dùng"}</CardTitle>
+                <CardDescription>{user?.email}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tham gia từ:</span>
-                    <span>
-                      {user?.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString("vi-VN")
-                        : "Không có thông tin"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Trạng thái:</span>
-                    <Badge variant={user?.isActive ? "default" : "secondary"}>
-                      {user?.isActive ? "Hoạt động" : "Tạm khóa"}
-                    </Badge>
-                  </div>
-                </div>
-                <Separator />
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">12</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sự kiện đã tham gia
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">48</div>
-                  <div className="text-sm text-muted-foreground">
-                    Giờ tình nguyện
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
 
           {/* Profile Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
+          <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -242,7 +201,7 @@ export default function UserProfilePage() {
                     value={formData.bio}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    placeholder="Hãy chia sẻ một chút về bản thân..."
+                    placeholder="Hãy chia sẻ về bản thân bạn..."
                     rows={4}
                   />
                 </div>
@@ -258,98 +217,6 @@ export default function UserProfilePage() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Account Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Cài đặt tài khoản
-                </CardTitle>
-                <CardDescription>
-                  Quản lý bảo mật và cài đặt tài khoản
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Mật khẩu</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      disabled
-                      className="flex-1"
-                    />
-                    <Button variant="outline" size="sm">
-                      Đổi mật khẩu
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Email xác thực</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default">Đã xác thực</Badge>
-                    <Button variant="outline" size="sm">
-                      Gửi lại email xác thực
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Số điện thoại</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Chưa xác thực</Badge>
-                    <Button variant="outline" size="sm">
-                      Xác thực số điện thoại
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tùy chọn</CardTitle>
-                <CardDescription>
-                  Cài đặt thông báo và tùy chọn cá nhân
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo email</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo về sự kiện mới qua email
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Thông báo đẩy</div>
-                    <div className="text-sm text-muted-foreground">
-                      Nhận thông báo trên trình duyệt
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Bật
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Chế độ riêng tư</div>
-                    <div className="text-sm text-muted-foreground">
-                      Ẩn hồ sơ khỏi tìm kiếm công khai
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Tắt
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>

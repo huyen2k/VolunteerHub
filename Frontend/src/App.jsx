@@ -13,13 +13,14 @@ import RegisterPage from "./pages/RegisterPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import ThemeTestPage from "./pages/ThemeTestPage";
 import UserHistoryPage from "./pages/UserHistoryPage";
 import LoginTestPage from "./pages/LoginTestPage";
-import UserProfilePage from "./pages/UserProfilePage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 
@@ -104,7 +105,15 @@ function App() {
                   path="/profile"
                   element={
                     <ProtectedRoute>
-                      <ProfilePage />
+                      <UserProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -113,14 +122,6 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <UserProfilePage />
                     </ProtectedRoute>
                   }
                 />

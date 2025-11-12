@@ -51,7 +51,6 @@ class ApiService {
     return this.request(endpoint, { ...options, method: "GET" });
   }
 
-  // POST request
   async post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
@@ -60,7 +59,6 @@ class ApiService {
     });
   }
 
-  // PUT request
   async put(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
@@ -69,7 +67,6 @@ class ApiService {
     });
   }
 
-  // DELETE request
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: "DELETE" });
   }
