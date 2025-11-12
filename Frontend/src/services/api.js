@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
 class ApiService {
   constructor() {
@@ -16,7 +16,6 @@ class ApiService {
       ...options,
     };
 
-    // Add auth token if available
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -24,19 +23,30 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorMessage =
+          data.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
+        error.code = data.code;
+        error.status = response.status;
+        throw error;
       }
 
-      return await response.json();
+      if (data.code === 1000) {
+        return data.result;
+      } else {
+        const error = new Error(data.message || "Request failed");
+        error.code = data.code;
+        throw error;
+      }
     } catch (error) {
       console.error("API request failed:", error);
       throw error;
     }
   }
 
-  // GET request
   async get(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: "GET" });
   }

@@ -1,11 +1,13 @@
-// Event Service sử dụng Mock API
-import mockApi from "./mockApi";
+// Event Service - Kết nối với Backend API
+import apiService from "./api";
 
 export const eventService = {
   // Lấy danh sách tất cả sự kiện
   async getEvents(filters = {}) {
     try {
-      return await mockApi.getEvents(filters);
+      // Backend endpoint: GET /events
+      const events = await apiService.get("/events");
+      return events || [];
     } catch (error) {
       console.error("Error fetching events:", error);
       throw error;
@@ -15,27 +17,57 @@ export const eventService = {
   // Lấy chi tiết sự kiện theo ID
   async getEventById(id) {
     try {
-      return await mockApi.getEventById(id);
+      return await apiService.get(`/events/${id}`);
     } catch (error) {
       console.error("Error fetching event:", error);
       throw error;
     }
   },
 
-  // Lấy sự kiện của user đã đăng ký
-  async getUserEvents(userId) {
+  // Tạo sự kiện mới
+  async createEvent(eventData) {
     try {
-      return await mockApi.getUserEvents(userId);
+      return await apiService.post("/events", eventData);
     } catch (error) {
-      console.error("Error fetching user events:", error);
+      console.error("Error creating event:", error);
+      throw error;
+    }
+  },
+
+  // Cập nhật sự kiện
+  async updateEvent(id, eventData) {
+    try {
+      return await apiService.put(`/events/${id}`, eventData);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  },
+
+  // Xóa sự kiện
+  async deleteEvent(id) {
+    try {
+      return await apiService.delete(`/events/${id}`);
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  },
+
+  // Duyệt sự kiện (Admin)
+  async approveEvent(id, status, reason) {
+    try {
+      return await apiService.put(`/events/${id}/approve`, { status, reason });
+    } catch (error) {
+      console.error("Error approving event:", error);
       throw error;
     }
   },
 
   // Đăng ký tham gia sự kiện
-  async registerForEvent(userId, eventId) {
+  async registerForEvent(eventId) {
     try {
-      return await mockApi.registerForEvent(userId, eventId);
+      return await apiService.post("/registrations", { eventId });
     } catch (error) {
       console.error("Error registering for event:", error);
       throw error;
@@ -43,51 +75,32 @@ export const eventService = {
   },
 
   // Hủy đăng ký sự kiện
-  async cancelEventRegistration(userId, eventId) {
+  async cancelEventRegistration(registrationId) {
     try {
-      return await mockApi.cancelEventRegistration(userId, eventId);
+      return await apiService.delete(`/registrations/${registrationId}`);
     } catch (error) {
       console.error("Error canceling event registration:", error);
       throw error;
     }
   },
 
-  // Kiểm tra user đã đăng ký sự kiện chưa
-  async isUserRegistered(userId, eventId) {
+  // Lấy danh sách sự kiện của user
+  async getUserEvents(userId) {
     try {
-      const userEvents = await this.getUserEvents(userId);
-      return userEvents.some((event) => event.id === eventId);
+      return await apiService.get(`/registrations/user/${userId}`);
     } catch (error) {
-      console.error("Error checking registration status:", error);
-      return false;
+      console.error("Error fetching user events:", error);
+      throw error;
     }
   },
 
-  // Lấy thống kê sự kiện cho user
-  async getUserEventStats(userId) {
+  // Lấy danh sách tình nguyện viên đã đăng ký sự kiện
+  async getEventRegistrations(eventId) {
     try {
-      const userEvents = await this.getUserEvents(userId);
-
-      const stats = {
-        totalRegistered: userEvents.length,
-        completed: userEvents.filter((e) => e.status === "completed").length,
-        upcoming: userEvents.filter(
-          (e) => e.status === "confirmed" && new Date(e.date) > new Date()
-        ).length,
-        totalHours: userEvents.reduce((sum, e) => sum + (e.totalHours || 0), 0),
-        totalPoints: userEvents.reduce((sum, e) => sum + (e.points || 0), 0),
-      };
-
-      return stats;
+      return await apiService.get(`/registrations/event/${eventId}`);
     } catch (error) {
-      console.error("Error fetching user stats:", error);
-      return {
-        totalRegistered: 0,
-        completed: 0,
-        upcoming: 0,
-        totalHours: 0,
-        totalPoints: 0,
-      };
+      console.error("Error fetching event registrations:", error);
+      throw error;
     }
   },
 };

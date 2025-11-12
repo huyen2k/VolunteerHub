@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import mockApi from "../services/mockApi";
+import { authService } from "../services/authService";
 
 const AuthContext = createContext();
 
@@ -8,24 +8,80 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session and validate token
+    const token = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+
+    if (token && savedUser) {
+      // Validate token with backend
+      authService
+        .introspect(token)
+        .then((result) => {
+          if (result.valid) {
+            // Token is valid, load user info
+            loadUserProfile();
+          } else {
+            // Token invalid, clear storage
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          // Error validating token, clear storage
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const userData = await authService.getProfile();
+      // Map backend user data to frontend format
+      const mappedUser = mapBackendUserToFrontend(userData);
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapBackendUserToFrontend = (backendUser) => {
+    // Map backend user format to frontend expected format
+    return {
+      id: backendUser.id,
+      email: backendUser.email,
+      name: backendUser.full_name || backendUser.email,
+      role: backendUser.roles?.[0]?.toLowerCase() || "volunteer",
+      avatar: backendUser.avatar_url || "/avatars/default.jpg",
+      phone: backendUser.phone || "",
+      address: backendUser.address || "",
+      bio: backendUser.bio || "",
+      isActive: backendUser.is_active !== false,
+      createdAt: backendUser.created_at,
+      updatedAt: backendUser.updated_at,
+      roles: backendUser.roles || [],
+    };
+  };
 
   const login = async (email, password) => {
     try {
-      const response = await mockApi.login(email, password);
+      const response = await authService.login(email, password);
+      const userData = await authService.getProfile();
+      const mappedUser = mapBackendUserToFrontend(userData);
 
-      // Store token and user data
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
 
-      setUser(response.user);
-      return response.user;
+      return mappedUser;
     } catch (error) {
       throw new Error("Login failed: " + error.message);
     }
@@ -40,23 +96,23 @@ export function AuthProvider({ children }) {
     address = ""
   ) => {
     try {
-      const response = await mockApi.register({
-        name,
+      const userData = await authService.register({
         email,
         password,
-        role,
+        full_name: name,
         phone,
         address,
-        avatar: "/avatars/default.jpg",
+        avatar_url: "/avatars/default.jpg",
         bio: "",
       });
 
-      // Store token and user data
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      const loginResponse = await authService.login(email, password);
+      const mappedUser = mapBackendUserToFrontend(userData);
 
-      setUser(response.user);
-      return response.user;
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
+
+      return mappedUser;
     } catch (error) {
       throw new Error("Registration failed: " + error.message);
     }
@@ -68,21 +124,29 @@ export function AuthProvider({ children }) {
         throw new Error("No user logged in");
       }
 
-      const updatedUser = await mockApi.updateUser(user.id, updatedData);
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      return updatedUser;
+      const updatedUser = await authService.updateProfile(user.id, updatedData);
+      const mappedUser = mapBackendUserToFrontend(updatedUser);
+
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
+      return mappedUser;
     } catch (error) {
       throw new Error("Update failed: " + error.message);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    // Redirect to homepage after logout
-    window.location.href = "/";
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      // Redirect to homepage after logout
+      window.location.href = "/";
+    }
   };
 
   const hasPermission = (permission) => {

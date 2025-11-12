@@ -3,54 +3,44 @@ import apiService from "./api";
 export const authService = {
   // Login user
   async login(email, password) {
-    return apiService.post("/auth/login", { email, password });
+    const response = await apiService.post("/auth/login", { email, password });
+    if (response.token) {
+      localStorage.setItem("token", response.token);
+    }
+    return response;
   },
 
-  // Register user
+  //dang ky
   async register(userData) {
-    return apiService.post("/auth/register", userData);
+    return apiService.post("/users", userData);
   },
 
-  // Logout user
   async logout() {
-    return apiService.post("/auth/logout");
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        await apiService.post("/auth/logout", { token });
+      } catch (error) {
+        console.error("Logout error:", error);
+      }
+    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   },
 
-  // Get current user profile
   async getProfile() {
-    return apiService.get("/auth/profile");
+    return apiService.get("/users/info");
   },
 
-  // Update user profile
-  async updateProfile(userData) {
-    return apiService.put("/auth/profile", userData);
+  async updateProfile(userId, userData) {
+    return apiService.put(`/users/${userId}`, userData);
   },
 
-  // Change password
-  async changePassword(currentPassword, newPassword) {
-    return apiService.post("/auth/change-password", {
-      currentPassword,
-      newPassword,
-    });
+  async introspect(token) {
+    return apiService.post("/auth/introspect", { token });
   },
 
-  // Forgot password
-  async forgotPassword(email) {
-    return apiService.post("/auth/forgot-password", { email });
-  },
-
-  // Reset password
-  async resetPassword(token, newPassword) {
-    return apiService.post("/auth/reset-password", { token, newPassword });
-  },
-
-  // Verify email
-  async verifyEmail(token) {
-    return apiService.post("/auth/verify-email", { token });
-  },
-
-  // Resend verification email
-  async resendVerificationEmail() {
-    return apiService.post("/auth/resend-verification");
+  async refreshToken(token) {
+    return apiService.post("/auth/refresh", { token });
   },
 };
