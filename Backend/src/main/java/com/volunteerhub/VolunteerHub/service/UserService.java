@@ -53,6 +53,13 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    public UserResponse getUserById(String id){
+        User user = userRepository.findUserById(id).orElseThrow(
+                ()-> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+        return userMapper.toUserResponse(user);
+    }
+
     public UserResponse createUser(UserCreationRequest request){
         if(userRepository.existsByEmail(request.getEmail()))
             throw new AppException(ErrorCode.USER_EXISTED);
