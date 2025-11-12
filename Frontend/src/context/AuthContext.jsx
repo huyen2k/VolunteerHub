@@ -7,6 +7,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const loadUserProfile = async () => {
+    try {
+      const userData = await authService.getProfile();
+      // Map backend user data to frontend format
+      const mappedUser = mapBackendUserToFrontend(userData);
+      setUser(mappedUser);
+      localStorage.setItem("user", JSON.stringify(mappedUser));
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Check for existing session and validate token
     const token = localStorage.getItem("token");
@@ -36,23 +52,8 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const loadUserProfile = async () => {
-    try {
-      const userData = await authService.getProfile();
-      // Map backend user data to frontend format
-      const mappedUser = mapBackendUserToFrontend(userData);
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const mapBackendUserToFrontend = (backendUser) => {
     // Map backend user format to frontend expected format
@@ -74,7 +75,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await authService.login(email, password);
+      await authService.login(email, password);
       const userData = await authService.getProfile();
       const mappedUser = mapBackendUserToFrontend(userData);
 
@@ -87,16 +88,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (
-    name,
-    email,
-    password,
-    role = "volunteer",
-    phone = "",
-    address = ""
-  ) => {
+  const register = async (name, email, password, phone = "", address = "") => {
     try {
-      const userData = await authService.register({
+      // Register user
+      await authService.register({
         email,
         password,
         full_name: name,
@@ -106,8 +101,12 @@ export function AuthProvider({ children }) {
         bio: "",
       });
 
-      const loginResponse = await authService.login(email, password);
-      const mappedUser = mapBackendUserToFrontend(userData);
+      // After successful registration, login to get token
+      await authService.login(email, password);
+
+      // Get user profile with token
+      const profileData = await authService.getProfile();
+      const mappedUser = mapBackendUserToFrontend(profileData);
 
       setUser(mappedUser);
       localStorage.setItem("user", JSON.stringify(mappedUser));

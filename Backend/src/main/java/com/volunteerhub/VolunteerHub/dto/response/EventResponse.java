@@ -11,8 +11,14 @@ import java.util.Date;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventResponse {
+    String id;
     String title;
     String description;
     Date date;
     String location;
+    String status;
+    String createdBy;
+    String approvedBy;
+    Date createdAt;
+    Date updatedAt;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
@@ -11,6 +11,8 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { GuestLayout } from "../../components/Layout";
 import { useAuth } from "../../hooks/useAuth";
+import eventService from "../../services/eventService";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   Calendar,
   MapPin,
@@ -22,125 +24,68 @@ import {
   MessageSquare,
   Eye,
   LogIn,
+  AlertCircle,
 } from "lucide-react";
 
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDate, setFilterDate] = useState("all");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  const events = [
-    {
-      id: 1,
-      title: "Dọn dẹp bãi biển Vũng Tàu",
-      description:
-        "Hoạt động dọn dẹp rác thải tại bãi biển Vũng Tàu để bảo vệ môi trường biển",
-      organization: "Green Earth Vietnam",
-      location: "Vũng Tàu, Bà Rịa",
-      date: "15/02/2025",
-      time: "08:00 - 17:00",
-      volunteers: 25,
-      maxVolunteers: 30,
-      category: "Môi trường",
-      status: "published",
-      image: "/beach-cleanup-volunteers.png",
-      likes: 12,
-      comments: 8,
-      isRegistered: false,
-      registrationStatus: null,
-    },
-    {
-      id: 2,
-      title: "Trồng cây xanh tại công viên",
-      description:
-        "Trồng cây xanh để tạo môi trường xanh sạch đẹp cho thành phố",
-      organization: "Eco Warriors",
-      location: "Công viên Thống Nhất, Hà Nội",
-      date: "20/02/2025",
-      time: "07:00 - 12:00",
-      volunteers: 15,
-      maxVolunteers: 20,
-      category: "Môi trường",
-      status: "published",
-      image: "/tree-planting-volunteers.jpg",
-      likes: 8,
-      comments: 5,
-      isRegistered: false,
-      registrationStatus: null,
-    },
-    {
-      id: 3,
-      title: "Dạy học cho trẻ em nghèo",
-      description: "Dạy học miễn phí cho trẻ em có hoàn cảnh khó khăn",
-      organization: "Education For All",
-      location: "Trung tâm Hà Nội",
-      date: "25/02/2025",
-      time: "14:00 - 18:00",
-      volunteers: 8,
-      maxVolunteers: 15,
-      category: "Giáo dục",
-      status: "published",
-      image: "/teaching-children.jpg",
-      likes: 15,
-      comments: 12,
-      isRegistered: false,
-      registrationStatus: null,
-    },
-    {
-      id: 4,
-      title: "Phân phát thức ăn cho người vô gia cư",
-      description: "Phân phát thức ăn và đồ dùng cần thiết cho người vô gia cư",
-      organization: "Care & Share Foundation",
-      location: "Quận 1, TP.HCM",
-      date: "28/02/2025",
-      time: "18:00 - 21:00",
-      volunteers: 12,
-      maxVolunteers: 25,
-      category: "Cộng đồng",
-      status: "published",
-      image: "/food-distribution.jpg",
-      likes: 20,
-      comments: 15,
-      isRegistered: false,
-      registrationStatus: null,
-    },
-    {
-      id: 5,
-      title: "Hỗ trợ người già tại viện dưỡng lão",
-      description: "Thăm hỏi và hỗ trợ người già tại các viện dưỡng lão",
-      organization: "Golden Age Care",
-      location: "Quận 3, TP.HCM",
-      date: "05/03/2025",
-      time: "09:00 - 16:00",
-      volunteers: 6,
-      maxVolunteers: 12,
-      category: "Cộng đồng",
-      status: "published",
-      image: "/elderly-care.jpg",
-      likes: 18,
-      comments: 10,
-      isRegistered: false,
-      registrationStatus: null,
-    },
-  ];
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await eventService.getEvents();
+        // Map backend event format to frontend format
+        const mappedEvents = (data || []).map((event) => ({
+          id: event.id || event._id,
+          title: event.title || "Không có tiêu đề",
+          description: event.description || "",
+          location: event.location || "",
+          date: event.date ? new Date(event.date).toLocaleDateString("vi-VN") : "",
+          status: event.status || "pending",
+          category: "Sự kiện", // Backend doesn't have category yet
+          image: "/placeholder.svg",
+          volunteers: 0,
+          maxVolunteers: 100,
+          likes: 0,
+          comments: 0,
+          isRegistered: false,
+          registrationStatus: null,
+        }));
+        setEvents(mappedEvents);
+      } catch (err) {
+        setError(err.message || "Không thể tải danh sách sự kiện");
+        console.error("Error loading events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, []);
 
   const categories = ["Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa"];
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.organization.toLowerCase().includes(searchTerm.toLowerCase());
+      event.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory =
       filterCategory === "all" || event.category === filterCategory;
 
     const matchesDate =
       filterDate === "all" ||
-      (filterDate === "upcoming" && new Date(event.date) > new Date()) ||
-      (filterDate === "this-week" && isThisWeek(new Date(event.date)));
+      (filterDate === "upcoming" && event.date && new Date(event.date) > new Date()) ||
+      (filterDate === "this-week" && event.date && isThisWeek(new Date(event.date)));
 
     return matchesSearch && matchesCategory && matchesDate;
   });
@@ -259,9 +204,34 @@ export default function EventsPage() {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner />
+            </div>
+          )}
+
+          {/* Error State */}
+          {!loading && error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Lỗi tải dữ liệu</h3>
+                <p className="text-muted-foreground text-center">{error}</p>
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="mt-4"
+                >
+                  Thử lại
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Events Grid */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredEvents.map((event) => (
+          {!loading && !error && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredEvents.map((event) => (
               <Card
                 key={event.id}
                 className="overflow-hidden transition-shadow hover:shadow-lg"
@@ -281,9 +251,6 @@ export default function EventsPage() {
 
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-2">{event.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {event.organization}
-                  </p>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {event.description}
                   </p>
@@ -291,22 +258,18 @@ export default function EventsPage() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      <span>{event.location}</span>
+                      <span>{event.location || "Chưa có địa điểm"}</span>
                     </div>
+                    {event.date && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>{event.date}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>{event.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>{event.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>
-                        {event.volunteers}/{event.maxVolunteers} tình nguyện
-                        viên
-                      </span>
+                      <Badge variant={event.status === "approved" ? "default" : "secondary"}>
+                        {event.status === "approved" ? "Đã duyệt" : event.status === "pending" ? "Chờ duyệt" : event.status}
+                      </Badge>
                     </div>
                   </div>
 
@@ -356,10 +319,11 @@ export default function EventsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {filteredEvents.length === 0 && (
+          {!loading && !error && filteredEvents.length === 0 && (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
