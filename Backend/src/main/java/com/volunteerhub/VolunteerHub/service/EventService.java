@@ -14,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -46,8 +47,8 @@ public class EventService {
         log.info(request.toString());
         Event event = eventMapper.toEvent(request);
         log.info(event.toString());
-        event.setCreatedAt(new Date());
-        event.setUpdatedAt(new Date());
+//        event.setCreatedAt(new Date());
+//        event.setUpdatedAt(new Date());
         event.setStatus(EventStatus.PENDING);
         event.setApprovedBy(null);
         event.setApprovedAt(null);
@@ -61,7 +62,8 @@ public class EventService {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         eventMapper.updateEvent(event, request);
         event.setStatus(EventStatus.PENDING);
-        event.setUpdatedAt(new Date());
+        event.setApprovedBy(null);
+//        event.setUpdatedAt(new Date());
 
         eventRepository.save(event);
         return eventMapper.toEventResponse(event);
@@ -84,7 +86,7 @@ public class EventService {
         event.setStatus(EventStatus.APPROVED);
 
         //Will be updated to has specific username who approved the event when role is completed
-        event.setApprovedBy("admin");
+        event.setApprovedBy(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (event.getStatus().equals(EventStatus.APPROVED)) {
             event.setApprovedAt(new Date());

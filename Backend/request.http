@@ -11,36 +11,36 @@ Content-Type: application/json
 }
 
 ###
-PUT http://localhost:8080/api/v1/events/690a185274efe5d9b0e0b29a
+PUT http://localhost:8080/api/v1/events/691bd8588b390cbbefd5f8a1
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjI0MDYyOTUsImlhdCI6MTc2MjQwMjY5NSwianRpIjoiZmJmZDhhZDMtNTcxNi00MjhlLTlhNGEtNGMwZGYyNjQ1ZWJhIiwicm9sZXMiOlsiQURNSU4iXX0.Bp_nMnsnSVlDlYiUjyV7KfbF0vVA4RtgpYHKOQR77_BQDPNsn6sCNe0Pe7o-tg83ArR7IWPVNiE5g3Xw5_Gnog
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjM0Mzk4MzksImlhdCI6MTc2MzQzNjIzOSwianRpIjoiMzQ4ZjQ3NzAtYmFkNC00ZWJhLWIzM2YtMTM0MDgzMzIwMjQ2Iiwicm9sZXMiOlsiQURNSU4iXX0.6jU0uADR8vo05wdIbU6Jq539S0ggGONqmU5k1HdiJ9nhyX8g1a0MMIq_Sz5PkEYY0Jga45CdZQ2Y_OUrENl0uA
 
 {
-  "title": "test2",
+  "title": "test update event 2",
   "description": "updated",
-  "date": "2025-11-03",
-  "location": "DaNang"
+  "date": "2025-06-03",
+  "location": ""
 }
 
 ###Post Event
 POST http://localhost:8080/api/v1/events
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjMwMDQxNzIsImlhdCI6MTc2MzAwMDU3MiwianRpIjoiNTdhMDUwOTUtMzhkNy00MDljLWFkNTctZTM0MTA0ZWZhM2RjIiwicm9sZXMiOlsiQURNSU4iXX0.AEA-8IlcwgrmfkHBKR0GioHxNhhz1snbM4aVdjG444kmdKqKu2W-T7eTd-zD1BGmrsnBC8tTMEvhCQYmRK4WzQ
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjM0MzYwODUsImlhdCI6MTc2MzQzMjQ4NSwianRpIjoiNmVlZGQxNzQtMjJlNS00MDVjLTkyMTItNDEyNjJkNmY1ZGVlIiwicm9sZXMiOlsiQURNSU4iXX0.8p7fw8R9AqBAbFBWInLhTUH15K1XWvtOvtEZf7AP0thDWs0vBwi4-ncQNT9mJOwhFgGKpIms8T9RRj9KyQjczQ
 
 {
-  "title": "test4",
-  "description": "namoadidaphat",
-  "date": "2025-06-05",
-  "location": "HaNoi"
+  "title": "test6",
+  "description": "Amen",
+  "date": "2025-03-02",
+  "location": "HaiPhong"
 }
 
 ###
-PUT http://localhost:8080/api/v1/events/690a185274efe5d9b0e0b29a/approve
+PUT http://localhost:8080/api/v1/events/69087d445ba3cbfeb17ab5c9/approve
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjI0MDYyOTUsImlhdCI6MTc2MjQwMjY5NSwianRpIjoiZmJmZDhhZDMtNTcxNi00MjhlLTlhNGEtNGMwZGYyNjQ1ZWJhIiwicm9sZXMiOlsiQURNSU4iXX0.Bp_nMnsnSVlDlYiUjyV7KfbF0vVA4RtgpYHKOQR77_BQDPNsn6sCNe0Pe7o-tg83ArR7IWPVNiE5g3Xw5_Gnog
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjM0Mzk4MzksImlhdCI6MTc2MzQzNjIzOSwianRpIjoiMzQ4ZjQ3NzAtYmFkNC00ZWJhLWIzM2YtMTM0MDgzMzIwMjQ2Iiwicm9sZXMiOlsiQURNSU4iXX0.6jU0uADR8vo05wdIbU6Jq539S0ggGONqmU5k1HdiJ9nhyX8g1a0MMIq_Sz5PkEYY0Jga45CdZQ2Y_OUrENl0uA
 
 {
-  "status": "approved",
+  "status": "APPROVED",
   "reason": "good content"
 }
 
