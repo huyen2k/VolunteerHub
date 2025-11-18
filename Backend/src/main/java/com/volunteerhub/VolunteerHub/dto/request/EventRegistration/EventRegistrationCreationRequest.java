@@ -13,5 +13,5 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class EventRegistrationCreationRequest {
 
     String eventId;
-    String  userId;
+    String userId;
 }

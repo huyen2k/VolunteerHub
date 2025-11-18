@@ -1,6 +1,8 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
+import com.volunteerhub.VolunteerHub.collection.EventRegistration;
+import com.volunteerhub.VolunteerHub.collection.User;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
@@ -9,14 +11,21 @@ import com.volunteerhub.VolunteerHub.enums.EventStatus;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.EventMapper;
+import com.volunteerhub.VolunteerHub.mapper.UserMapper;
 import com.volunteerhub.VolunteerHub.repository.EventRepository;
+import com.volunteerhub.VolunteerHub.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -27,8 +36,11 @@ import java.util.List;
 public class EventService {
 
     private EventRepository eventRepository;
+    private UserRepository userRepository;
 
     private EventMapper eventMapper;
+
+    MongoTemplate mongoTemplate;
 
 
     //Get all events, anyone can use this service
@@ -40,6 +52,29 @@ public class EventService {
     public EventResponse getEventById(String id) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         return eventMapper.toEventResponse(event);
+    }
+
+    //Get an event by userId or creator of the event. But has not completed yet. Can search with createdBy at present.
+    public List<EventResponse> searchEvents(String userId, String createdBy) {
+        List<Criteria> criteria = new ArrayList<>();
+
+        if (userId != null && !userId.isEmpty()) {
+            criteria.add(Criteria.where("userId").is(userId));
+        }
+
+        if (createdBy != null && !createdBy.isEmpty()) {
+            criteria.add(Criteria.where("createdBy").is(createdBy));
+        }
+
+        Query query = new Query();
+
+        if (!criteria.isEmpty()) {
+            query.addCriteria(new Criteria().orOperator(criteria));
+        }
+
+        List<Event> events = mongoTemplate.find(query, Event.class);
+
+        return events.stream().map(eventMapper::toEventResponse).toList();
     }
 
     //Creat new event, user can create but need to be approved by admin or manager

@@ -44,6 +44,17 @@ public class EventController {
                 .result(eventService.getEventById(id))
                 .build();
     }
+
+    @GetMapping("/manager")
+    public ApiResponse<List<EventResponse>> getEventByManager(
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String createdBy
+    ) {
+        return ApiResponse.<List<EventResponse>>builder()
+                .result(eventService.searchEvents(userId, createdBy))
+                .build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('UPDATE_EVENT')")
     public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
