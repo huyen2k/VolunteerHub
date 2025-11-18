@@ -2,7 +2,7 @@ package com.volunteerhub.VolunteerHub.controller;
 
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.service.EventService;
@@ -10,7 +10,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,8 +22,7 @@ import java.util.List;
 @Slf4j
 public class EventController {
 
-    @Autowired
-    private EventService eventService;
+    EventService eventService;
 
     @GetMapping
     public ApiResponse<List<EventResponse>> getAllEvents() {
@@ -46,6 +44,17 @@ public class EventController {
                 .result(eventService.getEventById(id))
                 .build();
     }
+
+    @GetMapping("/manager")
+    public ApiResponse<List<EventResponse>> getEventByManager(
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String createdBy
+    ) {
+        return ApiResponse.<List<EventResponse>>builder()
+                .result(eventService.searchEvents(userId, createdBy))
+                .build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('UPDATE_EVENT')")
     public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
@@ -67,6 +76,18 @@ public class EventController {
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasAuthority('APPROVE_EVENT')")
     public ApiResponse<EventResponse> approveEvent(@PathVariable String id,
+                                                   @RequestBody EventApprovalRequest eventApprovalRequest) {
+        return ApiResponse.<EventResponse>builder()
+                .result(eventService.approveEvent(id, eventApprovalRequest))
+                .build();
+    }
+
+    /*
+    *Event reject
+     */
+    @PutMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('APPROVE_EVENT')")
+    public ApiResponse<EventResponse> rejectEvent(@PathVariable String id,
                                                    @RequestBody EventApprovalRequest eventApprovalRequest) {
         return ApiResponse.<EventResponse>builder()
                 .result(eventService.approveEvent(id, eventApprovalRequest))

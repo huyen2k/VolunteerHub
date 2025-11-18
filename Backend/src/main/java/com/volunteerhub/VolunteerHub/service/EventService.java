@@ -1,21 +1,31 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
+import com.volunteerhub.VolunteerHub.collection.EventRegistration;
+import com.volunteerhub.VolunteerHub.collection.User;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
+import com.volunteerhub.VolunteerHub.enums.EventStatus;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.EventMapper;
+import com.volunteerhub.VolunteerHub.mapper.UserMapper;
 import com.volunteerhub.VolunteerHub.repository.EventRepository;
+import com.volunteerhub.VolunteerHub.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -25,11 +35,13 @@ import java.util.List;
 @Slf4j
 public class EventService {
 
-    @Autowired
     private EventRepository eventRepository;
+    private UserRepository userRepository;
 
-    @Autowired
     private EventMapper eventMapper;
+
+    MongoTemplate mongoTemplate;
+
 
     //Get all events, anyone can use this service
     public List<EventResponse> getEvents() {
@@ -42,14 +54,37 @@ public class EventService {
         return eventMapper.toEventResponse(event);
     }
 
+    //Get an event by userId or creator of the event. But has not completed yet. Can search with createdBy at present.
+    public List<EventResponse> searchEvents(String userId, String createdBy) {
+        List<Criteria> criteria = new ArrayList<>();
+
+        if (userId != null && !userId.isEmpty()) {
+            criteria.add(Criteria.where("userId").is(userId));
+        }
+
+        if (createdBy != null && !createdBy.isEmpty()) {
+            criteria.add(Criteria.where("createdBy").is(createdBy));
+        }
+
+        Query query = new Query();
+
+        if (!criteria.isEmpty()) {
+            query.addCriteria(new Criteria().orOperator(criteria));
+        }
+
+        List<Event> events = mongoTemplate.find(query, Event.class);
+
+        return events.stream().map(eventMapper::toEventResponse).toList();
+    }
+
     //Creat new event, user can create but need to be approved by admin or manager
     public EventResponse createEvent(EventCreationRequest request) {
         log.info(request.toString());
         Event event = eventMapper.toEvent(request);
         log.info(event.toString());
-        event.setCreatedAt(new Date());
-        event.setUpdatedAt(new Date());
-        event.setStatus("pending");
+//        event.setCreatedAt(new Date());
+//        event.setUpdatedAt(new Date());
+        event.setStatus(EventStatus.PENDING);
         event.setApprovedBy(null);
         event.setApprovedAt(null);
 
@@ -61,12 +96,14 @@ public class EventService {
     public EventResponse updateEvent(String id, EventUpdateRequest request) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         eventMapper.updateEvent(event, request);
-        event.setStatus("pending");
-        event.setUpdatedAt(new Date());
+        event.setStatus(EventStatus.PENDING);
+        event.setApprovedBy(null);
+//        event.setUpdatedAt(new Date());
 
         eventRepository.save(event);
         return eventMapper.toEventResponse(event);
     }
+
 
     //Delete an event, only admin can use this service
     public void deleteEvent(String id) {
@@ -77,18 +114,32 @@ public class EventService {
     public EventResponse approveEvent(String id, EventApprovalRequest request) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if (!event.getStatus().equals("pending")) {
+        if (!event.getStatus().equals(EventStatus.PENDING)) {
             throw new RuntimeException("Event is not pending");
         }
 
-        event.setStatus(request.getStatus());
+        event.setStatus(EventStatus.APPROVED);
 
         //Will be updated to has specific username who approved the event when role is completed
-        event.setApprovedBy("admin");
+        event.setApprovedBy(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        if ("approved".equals(request.getStatus())) {
+        if (event.getStatus().equals(EventStatus.APPROVED)) {
             event.setApprovedAt(new Date());
         }
+
+        eventRepository.save(event);
+        return eventMapper.toEventResponse(event);
+    }
+
+    //Reject event
+    public EventResponse rejectEvent(String id, EventApprovalRequest request) {
+        Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!event.getStatus().equals(EventStatus.PENDING)) {
+            throw new RuntimeException("Event is not pending");
+        }
+
+        event.setStatus(EventStatus.REJECTED);
 
         eventRepository.save(event);
         return eventMapper.toEventResponse(event);
