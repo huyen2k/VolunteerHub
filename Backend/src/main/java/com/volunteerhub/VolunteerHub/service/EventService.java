@@ -36,8 +36,6 @@ import java.util.List;
 public class EventService {
 
     private EventRepository eventRepository;
-    private UserRepository userRepository;
-
     private EventMapper eventMapper;
 
     MongoTemplate mongoTemplate;
