@@ -9,6 +9,10 @@ import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.LikeMapper;
 import com.volunteerhub.VolunteerHub.repository.LikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.volunteerhub.VolunteerHub.repository.PostRepository;
+import com.volunteerhub.VolunteerHub.repository.ChannelRepository;
+import com.volunteerhub.VolunteerHub.repository.EventRepository;
+import com.volunteerhub.VolunteerHub.collection.Post;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +24,18 @@ public class LikeService {
 
     @Autowired
     LikeMapper likeMapper;
+
+    @Autowired
+    NotificationService notificationService;
+
+    @Autowired
+    PostRepository postRepository;
+
+    @Autowired
+    ChannelRepository channelRepository;
+
+    @Autowired
+    EventRepository eventRepository;
 
     public LikeResponse createLike(LikeCreationRequest request){
         // Check if user already liked this target
@@ -35,6 +51,32 @@ public class LikeService {
 
         Like like = likeMapper.toLike(request);
         likeRepository.save(like);
+
+        if ("post".equals(request.getTargetType())) {
+            Post post = postRepository.findById(request.getTargetId()).orElse(null);
+            if (post != null) {
+                if (post.getAuthorId() != null) {
+                    notificationService.createNotificationForUser(
+                            post.getAuthorId(),
+                            "post_like",
+                            "Bài viết của bạn nhận được một lượt thích"
+                    );
+                }
+                if (post.getChannelId() != null) {
+                    var channel = channelRepository.findById(post.getChannelId()).orElse(null);
+                    if (channel != null && channel.getEventId() != null && !"GLOBAL_FEED".equals(channel.getEventId())) {
+                        var event = eventRepository.findById(channel.getEventId()).orElse(null);
+                        if (event != null && event.getCreatedBy() != null) {
+                            notificationService.createNotificationForUser(
+                                    event.getCreatedBy(),
+                                    "event_post_like",
+                                    "Có lượt thích mới trong bài viết thuộc sự kiện của bạn"
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         return likeMapper.toLikeResponse(like);
     }

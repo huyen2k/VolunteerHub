@@ -1,7 +1,9 @@
 # 🗂️ Data Model Design (MongoDB)
 
 ## 1. Tổng quan
+
 Hệ thống sử dụng **MongoDB** để lưu trữ dữ liệu phi quan hệ (NoSQL), tập trung vào:
+
 - Linh hoạt trong quản lý sự kiện và người dùng.
 - Hỗ trợ dữ liệu có cấu trúc động như bài viết, bình luận, lượt thích.
 - Tối ưu cho các chức năng đọc/ghi song song cao (Dashboard, Kênh trao đổi).
@@ -25,6 +27,7 @@ Event ─────┬────> Channel (auto-create after approval)
 ## 3️. Thiết kế chi tiết các collection
 
 ### 3.1. `users`
+
 Lưu thông tin người dùng gồm 3 vai trò: **volunteer**, **event_manager**, **admin**
 
 ```js
@@ -43,9 +46,11 @@ Lưu thông tin người dùng gồm 3 vai trò: **volunteer**, **event_manager*
   updated_at: Date
 }
 ```
+
 ---
 
 ### 3.2. `events`
+
 Quản lý thông tin sự kiện và trạng thái duyệt.
 
 ```js
@@ -66,6 +71,7 @@ Quản lý thông tin sự kiện và trạng thái duyệt.
 ---
 
 ### 3.3. `event_registrations`
+
 Quản lý việc đăng ký, thoái đăng ký và hoàn thành sự kiện của tình nguyện viên.
 
 ```js
@@ -80,11 +86,13 @@ Quản lý việc đăng ký, thoái đăng ký và hoàn thành sự kiện c�
 ```
 
 **Ràng buộc logic**
+
 - Một `userId` chỉ có thể đăng ký 1 lần duy nhất cho cùng `eventId`.
 
 ---
 
 ### 3.4. `channels`
+
 Mỗi sự kiện sau khi được duyệt sẽ có một kênh trao đổi riêng (tương tự “tường Facebook”).
 
 ```js
@@ -99,6 +107,7 @@ Mỗi sự kiện sau khi được duyệt sẽ có một kênh trao đổi riê
 ---
 
 ### 3.5. `posts`
+
 Bài viết trên kênh sự kiện, được đăng bởi quản lý hoặc tình nguyện viên đã được duyệt.
 
 ```js
@@ -120,6 +129,7 @@ Bài viết trên kênh sự kiện, được đăng bởi quản lý hoặc tì
 ---
 
 ### 3.6. `comments`
+
 Bình luận thuộc về một bài viết trong kênh.
 
 ```js
@@ -136,6 +146,7 @@ Bình luận thuộc về một bài viết trong kênh.
 ---
 
 ### 3.7. `likes`
+
 Lượt thích cho bài viết hoặc bình luận.
 
 ```js
@@ -151,6 +162,7 @@ Lượt thích cho bài viết hoặc bình luận.
 ---
 
 ### 3.8. `notifications`
+
 Thông báo cho người dùng (khi được duyệt, hủy, hoàn thành sự kiện, hoặc có tương tác mới).
 
 ```js
@@ -167,6 +179,7 @@ Thông báo cho người dùng (khi được duyệt, hủy, hoàn thành sự k
 ---
 
 ### 3.9. `reports`
+
 Dữ liệu cho trang Dashboard hoặc xuất báo cáo cho quản lý và admin.
 
 ```js
@@ -185,6 +198,7 @@ Dữ liệu cho trang Dashboard hoặc xuất báo cáo cho quản lý và admin
 ---
 
 ## 4. Ghi chú triển khai
+
 - Tất cả `createdAt` / `updatedAt` sử dụng `timestamps` tự động.
 - Khi **Admin duyệt sự kiện**, backend trigger:
   - Cập nhật `status = "approved"`

@@ -1,6 +1,9 @@
 package com.volunteerhub.VolunteerHub.config;
 
 import com.volunteerhub.VolunteerHub.repository.RoleRepository;
+import com.volunteerhub.VolunteerHub.config.JwtAuthenticationConverter;
+import com.volunteerhub.VolunteerHub.config.CustomJwtDecoder;
+import com.volunteerhub.VolunteerHub.config.JwtAuthenticationEntryPoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +23,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,14 +47,19 @@ public class SecurityConfig {
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
 
-    private final String[] PUBLIC_ENDPOINTS = {
+    private final String[] PUBLIC_POST_ENDPOINTS = {
             "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/refresh"
+    };
+    
+    private final String[] PUBLIC_GET_ENDPOINTS = {
+            "/events", "/events/**"
     };
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity, CorsConfigurationSource corsConfigurationSource) throws Exception {
         httpSecurity.authorizeHttpRequests(request->
-                request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .anyRequest().authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
@@ -57,6 +69,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
                 );
 
+        httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource));
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
@@ -65,6 +78,20 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:5174"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
 }

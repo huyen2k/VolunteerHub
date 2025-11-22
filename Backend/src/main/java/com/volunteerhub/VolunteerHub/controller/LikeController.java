@@ -24,6 +24,9 @@ public class LikeController {
     @Autowired
     LikeService likeService;
 
+    @Autowired
+    com.volunteerhub.VolunteerHub.service.UserService userService;
+
     @PostMapping
     @PreAuthorize("hasAuthority('CREATE_LIKE')")
     ApiResponse<LikeResponse> createLike(@RequestBody LikeCreationRequest request){
@@ -49,11 +52,20 @@ public class LikeController {
     }
 
     @DeleteMapping("/{likeId}")
-    @PreAuthorize("hasAuthority('DELETE_LIKE')")
+    @PreAuthorize("hasAnyAuthority('DELETE_LIKE','READ_LIKE')")
     ApiResponse<Void> deleteLike(@PathVariable String likeId){
-        likeService.deleteLike(likeId);
-        return ApiResponse.<Void>builder()
-                .build();
+        String currentUserId = userService.getMyInfo().getId();
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean hasAdminDelete = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("DELETE_LIKE") || a.getAuthority().equals("ROLE_ADMIN"));
+        try {
+            var like = likeService.getLike(likeId);
+            boolean isOwner = like != null && currentUserId.equals(like.getUserId());
+            if (isOwner || hasAdminDelete) {
+                likeService.deleteLike(likeId);
+                return ApiResponse.<Void>builder().build();
+            }
+        } catch (Exception ignored) {}
+        throw new com.volunteerhub.VolunteerHub.exception.AppException(com.volunteerhub.VolunteerHub.exception.ErrorCode.UNAUTHORIZED);
     }
 
     @GetMapping("/user/{userId}")

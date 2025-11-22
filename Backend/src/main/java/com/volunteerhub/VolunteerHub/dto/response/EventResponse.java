@@ -1,9 +1,7 @@
 package com.volunteerhub.VolunteerHub.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.util.Date;
 
@@ -11,9 +9,26 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventResponse {
+    String id;
     String title;
-    String  description;
+    String description;
     Date date;
     String location;
+    String category;
+    String image;
+    String status;
+    String createdBy;
+    String approvedBy;
+    Date createdAt;
+    Date updatedAt;
+    Integer volunteersNeeded;
+    Integer volunteersRegistered;
+    Long likes;
+    Long comments;
+    Long shares;
+    String contactName;
+    String contactEmail;
+    String contactPhone;
 }

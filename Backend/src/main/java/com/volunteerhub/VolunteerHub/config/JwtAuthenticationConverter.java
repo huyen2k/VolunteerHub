@@ -40,6 +40,7 @@ public class JwtAuthenticationConverter implements Converter<Jwt, AbstractAuthen
                                 .collect(Collectors.toSet())
                 );
             });
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
         }
 
         log.info("Authorities loaded: {}", authorities);
