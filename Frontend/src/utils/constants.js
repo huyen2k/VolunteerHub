@@ -2,7 +2,7 @@
 export const APP_CONFIG = {
   APP_NAME: "VolunteerHub",
   APP_VERSION: "1.0.0",
-  API_BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  API_BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1",
   UPLOAD_MAX_SIZE: 5 * 1024 * 1024, // 5MB
   SUPPORTED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   SUPPORTED_FILE_TYPES: [
@@ -24,14 +24,12 @@ export const ROUTES = {
   ABOUT: "/about",
   CONTACT: "/contact",
   ADMIN: {
-    LOGIN: "/admin/login",
     DASHBOARD: "/admin/dashboard",
     USERS: "/admin/users",
     EVENTS: "/admin/events",
     REPORTS: "/admin/reports",
   },
   MANAGER: {
-    LOGIN: "/manager/login",
     DASHBOARD: "/manager/dashboard",
     EVENTS: "/manager/events",
     VOLUNTEERS: "/manager/volunteers",

@@ -10,6 +10,11 @@ import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.UserMapper;
 import com.volunteerhub.VolunteerHub.repository.UserRepository;
+import com.volunteerhub.VolunteerHub.repository.EventRegistrationRepository;
+import com.volunteerhub.VolunteerHub.repository.PostRepository;
+import com.volunteerhub.VolunteerHub.repository.CommentRepository;
+import com.volunteerhub.VolunteerHub.repository.LikeRepository;
+import com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +37,18 @@ import java.util.List;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
+    private LikeRepository likeRepository;
 
     private UserMapper userMapper;
 
@@ -72,7 +89,12 @@ public class UserService {
         user.setUpdated_at(new Date());
 
         HashSet<String> roles = new HashSet<>();
-        roles.add(Roles.VOLUNTEER.name());
+        // Set role based on request, default to VOLUNTEER if not provided or invalid
+        if (request.getRole() != null && "manager".equalsIgnoreCase(request.getRole())) {
+            roles.add(Roles.EVEN_MANAGER.name());
+        } else {
+            roles.add(Roles.VOLUNTEER.name());
+        }
 
         user.setRoles(roles);
 
@@ -85,7 +107,10 @@ public class UserService {
         User user = userRepository.findUserById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         userMapper.updateUser(user, request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            org.springframework.security.crypto.password.PasswordEncoder enc = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(10);
+            user.setPassword(enc.encode(request.getPassword()));
+        }
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
@@ -100,5 +125,39 @@ public class UserService {
 
     public void deleteUser(String id){
         userRepository.deleteById(id);
+    }
+
+    public UserStatsResponse getUserStats(String userId) {
+        // Get event registration stats
+        var registrations = eventRegistrationRepository.findByUserId(userId);
+        long totalEventsRegistered = registrations.size();
+        long completedEvents = registrations.stream()
+                .filter(r -> "completed".equals(r.getStatus()))
+                .count();
+        long pendingEvents = registrations.stream()
+                .filter(r -> "pending".equals(r.getStatus()))
+                .count();
+        long approvedEvents = registrations.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .count();
+
+        // Get post stats
+        long totalPosts = postRepository.findByAuthorId(userId).size();
+
+        // Get comment stats
+        long totalComments = commentRepository.findByAuthorId(userId).size();
+
+        // Get like stats
+        long totalLikes = likeRepository.findByUserId(userId).size();
+
+        return UserStatsResponse.builder()
+                .totalEventsRegistered(totalEventsRegistered)
+                .completedEvents(completedEvents)
+                .pendingEvents(pendingEvents)
+                .approvedEvents(approvedEvents)
+                .totalPosts(totalPosts)
+                .totalComments(totalComments)
+                .totalLikes(totalLikes)
+                .build();
     }
 }

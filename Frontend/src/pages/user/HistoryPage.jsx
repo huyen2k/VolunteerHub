@@ -1,170 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button";
+import { Button } from "../../components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { UserLayout } from "../components/Layout";
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { UserLayout } from "../../components/Layout";
 import {
   Calendar,
   MapPin,
   Users,
   Clock,
   Search,
-  Filter,
   CheckCircle2,
   Star,
   Award,
   TrendingUp,
   Eye,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import eventService from "../../services/eventService";
 
 export default function UserHistoryPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [historyEvents, setHistoryEvents] = useState([]);
 
-  const historyEvents = [
-    {
-      id: 1,
-      title: "Phân phát thức ăn cho người vô gia cư",
-      organization: "Care & Share Foundation",
-      date: "10/01/2025",
-      location: "Quận 1, TP.HCM",
-      status: "completed",
-      rating: 5,
-      hours: 8,
-      feedback:
-        "Sự kiện rất ý nghĩa, tôi đã học hỏi được nhiều điều từ việc giúp đỡ người khác.",
-      certificate: true,
-      skills: ["Giao tiếp", "Tổ chức", "Làm việc nhóm"],
-    },
-    {
-      id: 2,
-      title: "Trồng cây tại công viên",
-      organization: "Eco Warriors",
-      date: "05/01/2025",
-      location: "Công viên Lê Văn Tám",
-      status: "completed",
-      rating: 4,
-      hours: 6,
-      feedback:
-        "Hoạt động bảo vệ môi trường rất tích cực, cảm thấy tự hào khi đóng góp cho cộng đồng.",
-      certificate: true,
-      skills: ["Lãnh đạo", "Bảo vệ môi trường"],
-    },
-    {
-      id: 3,
-      title: "Dạy học cho trẻ em nghèo",
-      organization: "Education For All",
-      date: "28/12/2024",
-      location: "Trung tâm Hà Nội",
-      status: "completed",
-      rating: 5,
-      hours: 10,
-      feedback:
-        "Trải nghiệm tuyệt vời khi được dạy học cho các em nhỏ, thấy được sự tiến bộ của các em.",
-      certificate: true,
-      skills: ["Giảng dạy", "Kiên nhẫn", "Giao tiếp"],
-    },
-    {
-      id: 4,
-      title: "Dọn dẹp bãi biển Vũng Tàu",
-      organization: "Green Earth Vietnam",
-      date: "15/12/2024",
-      location: "Vũng Tàu",
-      status: "completed",
-      rating: 4,
-      hours: 7,
-      feedback:
-        "Hoạt động bảo vệ môi trường biển rất quan trọng, hy vọng có thể tham gia nhiều hơn.",
-      certificate: true,
-      skills: ["Bảo vệ môi trường", "Làm việc nhóm"],
-    },
-    {
-      id: 5,
-      title: "Hỗ trợ người già tại viện dưỡng lão",
-      organization: "Golden Age Care",
-      date: "08/12/2024",
-      location: "Quận 3, TP.HCM",
-      status: "completed",
-      rating: 5,
-      hours: 6,
-      feedback:
-        "Cảm động khi được lắng nghe những câu chuyện của các cụ, học được nhiều bài học quý giá.",
-      certificate: true,
-      skills: ["Lắng nghe", "Đồng cảm", "Chăm sóc"],
-    },
-    {
-      id: 6,
-      title: "Xây dựng nhà tình thương",
-      organization: "Build Hope Foundation",
-      date: "01/12/2024",
-      location: "Huyện Củ Chi",
-      status: "completed",
-      rating: 4,
-      hours: 12,
-      feedback:
-        "Hoạt động xây dựng rất ý nghĩa, giúp đỡ những gia đình có hoàn cảnh khó khăn.",
-      certificate: true,
-      skills: ["Xây dựng", "Làm việc nhóm", "Kiên trì"],
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      try {
+        const regs = await eventService.getUserEvents(user.id).catch(() => []);
+        const mapped = (regs || []).map((r) => ({
+          id: r.eventId,
+          title: r.event?.title || r.title || "Sự kiện",
+          organization: r.event?.organization || "",
+          date: r.registeredAt
+            ? new Date(r.registeredAt).toLocaleDateString("vi-VN")
+            : "",
+          location: r.event?.location || "",
+          status: r.status || "completed",
+          rating: 0,
+          hours: 0,
+          feedback: "",
+          skills: [],
+          certificate: false,
+        }));
+        setHistoryEvents(mapped);
+      } catch (err) {
+        console.error("Error loading history:", err);
+        setHistoryEvents([]);
+      }
+    };
+    load();
+  }, [user]);
 
-  const achievements = [
-    {
-      id: 1,
-      title: "Tình nguyện viên tích cực",
-      description: "Tham gia 6 sự kiện trong tháng",
-      icon: "🏆",
-      earned: true,
-      date: "01/01/2025",
-    },
-    {
-      id: 2,
-      title: "Bảo vệ môi trường",
-      description: "Hoàn thành 3 sự kiện về môi trường",
-      icon: "🌱",
-      earned: true,
-      date: "15/12/2024",
-    },
-    {
-      id: 3,
-      title: "Giáo viên tình nguyện",
-      description: "Tham gia 2 sự kiện giáo dục",
-      icon: "📚",
-      earned: true,
-      date: "28/12/2024",
-    },
-    {
-      id: 4,
-      title: "Người bạn của người già",
-      description: "Tham gia 1 sự kiện chăm sóc người già",
-      icon: "👴",
-      earned: true,
-      date: "08/12/2024",
-    },
-    {
-      id: 5,
-      title: "Thợ xây tình nguyện",
-      description: "Tham gia 1 sự kiện xây dựng",
-      icon: "🔨",
-      earned: true,
-      date: "01/12/2024",
-    },
-    {
-      id: 6,
-      title: "Tình nguyện viên xuất sắc",
-      description: "Đạt điểm đánh giá trung bình 4.5/5",
-      icon: "⭐",
-      earned: true,
-      date: "10/01/2025",
-    },
-  ];
+  const achievements = [];
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -190,10 +86,14 @@ export default function UserHistoryPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalHours = historyEvents.reduce((sum, event) => sum + event.hours, 0);
-  const averageRating =
-    historyEvents.reduce((sum, event) => sum + event.rating, 0) /
-    historyEvents.length;
+  const totalHours = historyEvents.reduce(
+    (sum, event) => sum + (event.hours || 0),
+    0
+  );
+  const averageRating = historyEvents.length
+    ? historyEvents.reduce((sum, event) => sum + (event.rating || 0), 0) /
+      historyEvents.length
+    : 0;
   const totalEvents = historyEvents.length;
 
   return (
@@ -372,10 +272,7 @@ export default function UserHistoryPage() {
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild>
-                          <Link to={`/events/${event.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Xem lại
-                          </Link>
+                          <Link to={`/events/${event.id}`}>Xem lại</Link>
                         </Button>
                       </div>
                     </div>
@@ -386,45 +283,6 @@ export default function UserHistoryPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Achievements */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
-                    Thành tích
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {achievements.map((achievement) => (
-                    <div
-                      key={achievement.id}
-                      className={`p-3 border rounded-lg ${
-                        achievement.earned
-                          ? "bg-green-50 border-green-200"
-                          : "bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{achievement.icon}</span>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">
-                            {achievement.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {achievement.description}
-                          </p>
-                          {achievement.earned && (
-                            <p className="text-xs text-green-600 mt-1">
-                              Đạt được: {achievement.date}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
               {/* Progress Summary */}
               <Card>
                 <CardHeader>
@@ -454,13 +312,7 @@ export default function UserHistoryPage() {
                       {averageRating.toFixed(1)}⭐
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Thành tích</span>
-                    <span className="font-semibold">
-                      {achievements.filter((a) => a.earned).length}/
-                      {achievements.length}
-                    </span>
-                  </div>
+
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Cấp độ</span>
                     <span className="font-semibold">
@@ -480,30 +332,21 @@ export default function UserHistoryPage() {
                     className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
                     asChild
                   >
-                    <Link to="/user/events">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Xem sự kiện mới
-                    </Link>
+                    <Link to="/user/events">Xem sự kiện mới</Link>
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-transparent"
                     asChild
                   >
-                    <Link to="/dashboard">
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
+                    <Link to="/dashboard">Dashboard</Link>
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-transparent"
                     asChild
                   >
-                    <Link to="/profile">
-                      <Users className="mr-2 h-4 w-4" />
-                      Hồ sơ cá nhân
-                    </Link>
+                    <Link to="/profile">Hồ sơ cá nhân</Link>
                   </Button>
                 </CardContent>
               </Card>

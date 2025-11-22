@@ -17,10 +17,17 @@ public class PostResponse {
     String id;
     String channelId;
     String authorId;
+    String authorName;
+    String authorAvatar;
+    String title;
+    String category;
+    java.util.List<String> tags;
     String content;
     List<String> images;
-    Number likesCount;
-    Number commentsCount;
+    Long likesCount;
+    Long commentsCount;
+    Long views;
+    Boolean isLiked;
 
     @CreatedDate
     Date createdAt;

@@ -34,6 +34,7 @@ public class EventController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('EVEN_MANAGER') or hasAuthority('CREATE_EVENT')")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
         return ApiResponse.<EventResponse>builder()
                         .result(eventService.createEvent(eventCreationRequest))
@@ -70,6 +71,25 @@ public class EventController {
                                                    @RequestBody EventApprovalRequest eventApprovalRequest) {
         return ApiResponse.<EventResponse>builder()
                 .result(eventService.approveEvent(id, eventApprovalRequest))
+                .build();
+    }
+
+    @PutMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('APPROVE_EVENT')")
+    public ApiResponse<EventResponse> rejectEvent(@PathVariable String id,
+                                                    @RequestBody EventApprovalRequest eventApprovalRequest) {
+        // Set status to rejected
+        eventApprovalRequest.setStatus("rejected");
+        return ApiResponse.<EventResponse>builder()
+                .result(eventService.approveEvent(id, eventApprovalRequest))
+                .build();
+    }
+
+    @GetMapping("/manager/{managerId}")
+    @PreAuthorize("hasAnyAuthority('UPDATE_EVENT', 'APPROVE_EVENT', 'USER_LIST') or hasRole('EVEN_MANAGER') or hasRole('ADMIN')")
+    public ApiResponse<List<EventResponse>> getEventsByManager(@PathVariable String managerId) {
+        return ApiResponse.<List<EventResponse>>builder()
+                .result(eventService.getEventsByManager(managerId))
                 .build();
     }
 }

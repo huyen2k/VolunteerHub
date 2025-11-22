@@ -13,6 +13,7 @@ export function PostCard({ post }) {
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage
+              // Người đăng bài - thông tin cần: ảnh + tên
                 src={post.author_avatar || "/placeholder.svg"}
                 alt={post.author}
               />

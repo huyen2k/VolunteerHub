@@ -103,6 +103,26 @@ export const eventService = {
       throw error;
     }
   },
+
+  // Lấy danh sách sự kiện của manager
+  async getEventsByManager(managerId) {
+    try {
+      return await apiService.get(`/events/manager/${managerId}`);
+    } catch (error) {
+      console.error("Error fetching events by manager:", error);
+      throw error;
+    }
+  },
+
+  // Reject event (admin)
+  async rejectEvent(id, reason) {
+    try {
+      return await apiService.put(`/events/${id}/reject`, { status: "rejected", reason });
+    } catch (error) {
+      console.error("Error rejecting event:", error);
+      throw error;
+    }
+  },
 };
 
 export default eventService;

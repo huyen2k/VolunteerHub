@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button";
+import { Button } from "../../components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { UserLayout } from "../components/Layout";
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { UserLayout } from "../../components/Layout";
 import {
   Calendar,
   Users,
@@ -20,9 +20,13 @@ import {
   Eye,
   Heart,
 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
-import eventService from "../services/eventService";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../../hooks/useAuth";
+import eventService from "../../services/eventService";
+import userService from "../../services/userService";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import notificationService from "../../services/notificationService";
+import channelService from "../../services/channelService";
+import postService from "../../services/postService";
 
 export default function UserDashboardPage() {
   const { user } = useAuth();
@@ -37,33 +41,7 @@ export default function UserDashboardPage() {
     totalPoints: 0,
   });
 
-  // Temporary mocked notifications until real service is available
-  const [notifications] = useState([
-    {
-      id: 1,
-      title: "Đăng ký sự kiện thành công",
-      message: "Bạn đã đăng ký sự kiện gần đây",
-      type: "success",
-      time: "2 giờ trước",
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: "Sự kiện sắp diễn ra",
-      message: "Một sự kiện sắp diễn ra trong vài ngày tới",
-      type: "info",
-      time: "1 ngày trước",
-      isRead: false,
-    },
-    {
-      id: 3,
-      title: "Hoàn thành sự kiện",
-      message: "Bạn vừa hoàn thành một sự kiện",
-      type: "success",
-      time: "3 ngày trước",
-      isRead: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,12 +49,29 @@ export default function UserDashboardPage() {
       try {
         setLoading(true);
         setError("");
-        const [events, userStats] = await Promise.all([
+        const [events, userStatsData, unreadNoti, allNoti] = await Promise.all([
           eventService.getUserEvents(user.id),
-          eventService.getUserEventStats(user.id),
+          userService.getUserStats(user.id).catch(() => null),
+          notificationService.getUnreadNotifications().catch(() => []),
+          notificationService.getNotifications().catch(() => []),
         ]);
-        setUserEvents(events);
-        setStats(userStats);
+        setUserEvents(events || []);
+        if (userStatsData) {
+          setStats({
+            totalRegistered: userStatsData.totalEventsRegistered || 0,
+            completed: userStatsData.completedEvents || 0,
+            upcoming: userStatsData.upcomingEvents || 0,
+            totalHours: userStatsData.totalHours || 0,
+            totalPoints: userStatsData.totalPoints || 0,
+          });
+        }
+        const merged = [
+          ...(unreadNoti || []).map((n) => ({ ...n, isRead: false })),
+          ...(allNoti || [])
+            .filter((n) => !(unreadNoti || []).some((u) => u.id === n.id))
+            .map((n) => ({ ...n, isRead: true })),
+        ];
+        setNotifications(merged);
       } catch (e) {
         setError(e?.message || "Không thể tải dữ liệu dashboard");
       } finally {
@@ -100,7 +95,6 @@ export default function UserDashboardPage() {
         date: new Date(e.date).toLocaleDateString("vi-VN"),
         location: e.location,
         status: "registered",
-        // Map từ mockApi: dùng comments như newPosts, registeredCount/volunteers
         newPosts: e.comments ?? 0,
         likes: e.likes ?? 0,
         volunteers:
@@ -155,7 +149,60 @@ export default function UserDashboardPage() {
       .sort(
         (a, b) => b.likes + (b.newPosts || 0) - (a.likes + (a.newPosts || 0))
       )
-      .slice(0, 3);
+      .slice(0, 5);
+  };
+
+  const [interactiveEvents, setInteractiveEvents] = useState([]);
+
+  useEffect(() => {
+    const computeInteractions = async () => {
+      try {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const results = [];
+        for (const e of upcomingEvents) {
+          try {
+            const channel = await channelService
+              .getChannelByEventId(e.id)
+              .catch(() => null);
+            if (!channel) continue;
+            const posts = await postService
+              .getPostsByChannel(channel.id)
+              .catch(() => []);
+            const recentPosts = (posts || []).filter((p) => {
+              const d = p.createdAt ? new Date(p.createdAt) : null;
+              return d && d >= sevenDaysAgo;
+            });
+            let likes = 0;
+            let comments = 0;
+            for (const p of recentPosts) {
+              likes += p.likesCount || p.likeCount || 0;
+              comments += p.commentsCount || 0;
+            }
+            const score = likes + comments;
+            results.push({
+              id: e.id,
+              title: e.title,
+              volunteers: e.volunteers,
+              newPosts: recentPosts.length,
+              likes,
+              comments,
+              score,
+            });
+          } catch {}
+        }
+        results.sort((a, b) => b.score - a.score);
+        setInteractiveEvents(results.slice(0, 5));
+      } catch {}
+    };
+    computeInteractions();
+  }, [upcomingEvents]);
+
+  const markNotificationAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch {}
   };
 
   return (
@@ -172,7 +219,7 @@ export default function UserDashboardPage() {
               {error}
             </div>
           )}
-          {/* Welcome Section */}
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Dashboard Tình nguyện viên</h1>
             <p className="mt-2 text-muted-foreground">
@@ -181,7 +228,6 @@ export default function UserDashboardPage() {
             </p>
           </div>
 
-          {/* Stats Cards */}
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="p-6">
@@ -274,7 +320,6 @@ export default function UserDashboardPage() {
           {/* Main Content */}
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              {/* Upcoming Events */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -354,6 +399,10 @@ export default function UserDashboardPage() {
                           ? "bg-blue-50 border border-blue-200"
                           : "bg-muted/50"
                       }`}
+                      onClick={() =>
+                        !notification.isRead &&
+                        markNotificationAsRead(notification.id)
+                      }
                     >
                       <div className="flex-shrink-0">
                         {getNotificationIcon(notification.type)}
@@ -393,54 +442,45 @@ export default function UserDashboardPage() {
                     className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
                     asChild
                   >
-                    <Link to="/user/events">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Xem sự kiện mới
-                    </Link>
+                    <Link to="/user/events">Xem sự kiện mới</Link>
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-transparent"
                     asChild
                   >
-                    <Link to="/profile/history">
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Lịch sử tham gia
-                    </Link>
+                    <Link to="/profile/history">Lịch sử tham gia</Link>
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-transparent"
                     asChild
                   >
-                    <Link to="/community">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Kênh trao đổi
-                    </Link>
+                    <Link to="/community">Kênh trao đổi</Link>
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-transparent"
                     asChild
                   >
-                    <Link to="/profile">
-                      <Users className="mr-2 h-4 w-4" />
-                      Hồ sơ cá nhân
-                    </Link>
+                    <Link to="/profile">Hồ sơ cá nhân</Link>
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Trending Events */}
+              {/* Top 5 sự kiện tương tác cao */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
-                    Sự kiện thu hút
+                    Top 5 sự kiện tương tác cao
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {getTrendingEvents().map((event) => (
+                  {(interactiveEvents.length > 0
+                    ? interactiveEvents
+                    : getTrendingEvents()
+                  ).map((event) => (
                     <div key={event.id} className="p-3 border rounded-lg">
                       <h4 className="font-semibold text-sm">{event.title}</h4>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
@@ -26,65 +26,79 @@ import {
   Shield,
   Settings,
 } from "lucide-react";
+import statisticsService from "../../services/statisticsService";
+import eventService from "../../services/eventService";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function AdminDashboardPage() {
-  const pendingApprovals = [
-    {
-      id: 1,
-      type: "event",
-      title: "Dọn dẹp bãi biển Vũng Tàu",
-      organization: "Green Earth Vietnam",
-      date: "15 Tháng 2, 2025",
-      status: "pending",
-    },
-    {
-      id: 2,
-      type: "organization",
-      title: "Education For All",
-      description: "Tổ chức giáo dục phi lợi nhuận",
-      date: "12 Tháng 2, 2025",
-      status: "pending",
-    },
-    {
-      id: 3,
-      type: "event",
-      title: "Trồng cây xanh tại công viên",
-      organization: "Eco Warriors",
-      date: "10 Tháng 2, 2025",
-      status: "pending",
-    },
-  ];
+  const [userStats, setUserStats] = useState(null);
+  const [overviewStats, setOverviewStats] = useState(null);
+  const [pendingEvents, setPendingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: "Phê duyệt sự kiện",
-      detail: "Trồng cây xanh tại công viên",
-      user: "Admin",
-      time: "2 giờ trước",
-    },
-    {
-      id: 2,
-      action: "Phê duyệt tổ chức",
-      detail: "Care & Share Foundation",
-      user: "Admin",
-      time: "5 giờ trước",
-    },
-    {
-      id: 3,
-      action: "Xử lý báo cáo",
-      detail: "Báo cáo vi phạm từ người dùng",
-      user: "Admin",
-      time: "1 ngày trước",
-    },
-    {
-      id: 4,
-      action: "Cập nhật hệ thống",
-      detail: "Nâng cấp tính năng bảo mật",
-      user: "Admin",
-      time: "2 ngày trước",
-    },
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      // Fetch user statistics
+      const userStatsData = await statisticsService.getUserStatistics();
+      setUserStats(userStatsData);
+
+      // Fetch overview statistics
+      const overviewData = await statisticsService.getOverviewStatistics();
+      setOverviewStats(overviewData);
+
+      // Fetch pending events
+      const allEvents = await eventService.getEvents();
+      const pending = (allEvents || []).filter(e => e.status === "pending").slice(0, 5);
+      setPendingEvents(pending.map(e => ({
+        id: e.id,
+        type: "event",
+        title: e.title || "Không có tiêu đề",
+        date: e.createdAt ? new Date(e.createdAt).toLocaleDateString("vi-VN") : "",
+        status: "pending",
+      })));
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+      setError(err.message || "Không thể tải dữ liệu dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto p-6">
+          <LoadingSpinner />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-destructive">{error}</p>
+              <Button onClick={loadDashboardData} className="mt-4">
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -98,15 +112,7 @@ export default function AdminDashboardPage() {
                 Tổng quan và quản lý VolunteerHub
               </p>
             </div>
-            <Button
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              asChild
-            >
-              <Link to="/admin/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                Cài đặt
-              </Link>
-            </Button>
+            {/* Bỏ nút cài đặt theo yêu cầu */}
           </div>
 
           {/* Stats Cards */}
@@ -119,10 +125,10 @@ export default function AdminDashboardPage() {
                       Tổng người dùng
                     </p>
                     <p className="mt-1 text-3xl font-bold text-primary">
-                      5,234
+                      {userStats?.totalUsers || 0}
                     </p>
                     <p className="mt-1 text-xs text-green-600">
-                      +12% so với tháng trước
+                      {userStats?.totalVolunteers || 0} tình nguyện viên
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -140,10 +146,10 @@ export default function AdminDashboardPage() {
                       Tổng sự kiện
                     </p>
                     <p className="mt-1 text-3xl font-bold text-primary">
-                      1,456
+                      {overviewStats?.totalEvents || overviewStats?.recentEventSummaries?.length || 0}
                     </p>
                     <p className="mt-1 text-xs text-green-600">
-                      +8% so với tháng trước
+                      {overviewStats?.upcomingEvents || 0} sự kiện sắp tới
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -158,9 +164,11 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Tổ chức</p>
-                    <p className="mt-1 text-3xl font-bold text-primary">89</p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {userStats?.totalManagers || 0}
+                    </p>
                     <p className="mt-1 text-xs text-green-600">
-                      +5% so với tháng trước
+                      Quản lý sự kiện
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -177,7 +185,9 @@ export default function AdminDashboardPage() {
                     <p className="text-sm text-muted-foreground">
                       Chờ phê duyệt
                     </p>
-                    <p className="mt-1 text-3xl font-bold text-primary">23</p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {pendingEvents.length}
+                    </p>
                     <p className="mt-1 text-xs text-yellow-600">Cần xử lý</p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -200,7 +210,7 @@ export default function AdminDashboardPage() {
                 </TabsList>
 
                 <TabsContent value="pending" className="mt-6 space-y-4">
-                  {pendingApprovals.map((item) => (
+                  {pendingEvents.map((item) => (
                     <Card key={item.id}>
                       <CardContent className="p-6">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -217,9 +227,7 @@ export default function AdminDashboardPage() {
                               </h3>
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
-                              {item.type === "event"
-                                ? `Tổ chức: ${item.organization}`
-                                : item.description}
+                              Sự kiện cần phê duyệt
                             </p>
                             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                               <Clock className="h-4 w-4" />
@@ -231,12 +239,28 @@ export default function AdminDashboardPage() {
                               variant="outline"
                               size="sm"
                               className="text-destructive hover:text-destructive bg-transparent"
+                              onClick={async () => {
+                                try {
+                                  await eventService.rejectEvent(item.id, "");
+                                  await loadDashboardData();
+                                } catch (err) {
+                                  alert("Không thể từ chối: " + err.message);
+                                }
+                              }}
                             >
                               Từ chối
                             </Button>
                             <Button
                               size="sm"
                               className="bg-primary text-primary-foreground hover:bg-primary/90"
+                              onClick={async () => {
+                                try {
+                                  await eventService.approveEvent(item.id, "approved", "");
+                                  await loadDashboardData();
+                                } catch (err) {
+                                  alert("Không thể phê duyệt: " + err.message);
+                                }
+                              }}
                             >
                               <CheckCircle2 className="mr-2 h-4 w-4" />
                               Phê duyệt
@@ -247,7 +271,7 @@ export default function AdminDashboardPage() {
                     </Card>
                   ))}
 
-                  {pendingApprovals.length === 0 && (
+                  {pendingEvents.length === 0 && (
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center py-12">
                         <CheckCircle2 className="h-12 w-12 text-green-500" />
@@ -260,92 +284,41 @@ export default function AdminDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="activities" className="mt-6 space-y-4">
-                  {recentActivities.map((activity) => (
-                    <Card key={activity.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                            <Shield className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold">{activity.action}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {activity.detail}
-                            </p>
-                            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>Bởi: {activity.user}</span>
-                              <span>{activity.time}</span>
+                  {overviewStats?.recentEventSummaries && overviewStats.recentEventSummaries.length > 0 ? (
+                    overviewStats.recentEventSummaries.map((event, index) => (
+                      <Card key={event.id || index}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                              <Calendar className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold">{event.title}</p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {event.registrationCount || 0} đăng ký | Trạng thái: {event.status}
+                              </p>
                             </div>
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Shield className="h-12 w-12 text-muted-foreground" />
+                        <p className="mt-4 text-muted-foreground">
+                          Không có hoạt động gần đây
+                        </p>
                       </CardContent>
                     </Card>
-                  ))}
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
 
-            {/* Sidebar */}
+            {/* Sidebar: chỉ giữ trạng thái hệ thống và thống kê nền tảng */}
             <div className="space-y-6">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hành động nhanh</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
-                    asChild
-                  >
-                    <Link to="/admin/users">
-                      <Users className="mr-2 h-4 w-4" />
-                      Quản lý người dùng
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/admin/events">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Quản lý sự kiện
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/admin/organizations">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      Quản lý tổ chức
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/admin/reports">
-                      <AlertCircle className="mr-2 h-4 w-4" />
-                      Báo cáo & Khiếu nại
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/admin/analytics">
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      Thống kê & Báo cáo
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
 
-              {/* System Status */}
               <Card>
                 <CardHeader>
                   <CardTitle>Trạng thái hệ thống</CardTitle>
@@ -384,7 +357,6 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* Platform Stats */}
               <Card>
                 <CardHeader>
                   <CardTitle>Thống kê nền tảng</CardTitle>
@@ -394,25 +366,25 @@ export default function AdminDashboardPage() {
                     <span className="text-muted-foreground">
                       Người dùng hoạt động
                     </span>
-                    <span className="font-semibold">3,456</span>
+                    <span className="font-semibold">{overviewStats?.activeVolunteers || 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Sự kiện đang diễn ra
+                      Sự kiện sắp tới
                     </span>
-                    <span className="font-semibold">234</span>
+                    <span className="font-semibold">{overviewStats?.upcomingEvents || 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Giờ tình nguyện tháng này
+                      Sự kiện gần đây
                     </span>
-                    <span className="font-semibold">12,456</span>
+                    <span className="font-semibold">{overviewStats?.recentEvents || 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Tỷ lệ hài lòng
+                      Tổng đăng ký
                     </span>
-                    <span className="font-semibold">94%</span>
+                    <span className="font-semibold">{overviewStats?.recentEventSummaries?.reduce((sum, e) => sum + (e.registrationCount || 0), 0) || 0}</span>
                   </div>
                 </CardContent>
               </Card>

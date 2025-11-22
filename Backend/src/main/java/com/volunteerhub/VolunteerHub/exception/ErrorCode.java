@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
-    INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
+    INVALID_KEY(1001, "Invalid key", HttpStatus.BAD_REQUEST),
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
@@ -18,13 +18,14 @@ public enum ErrorCode {
     ROLE_NOT_EXISTED(1011, "Role not existed", HttpStatus.NOT_FOUND),
     REGISTRATION_EXISTED(1012, "Registration existed", HttpStatus.BAD_REQUEST),
     REGISTRATION_NOT_EXISTED(1013, "Registration not existed", HttpStatus.NOT_FOUND),
-    CHANNEL_EXISTED(1014, "Registration existed", HttpStatus.BAD_REQUEST),
-    CHANNEL_NOT_EXISTED(1015, "Registration not existed", HttpStatus.NOT_FOUND),
-    POST_NOT_EXISTED(1016, "Registration not existed", HttpStatus.NOT_FOUND),
-    COMMENT_NOT_EXISTED(1017, "Registration not existed", HttpStatus.NOT_FOUND),
-    LIKE_NOT_EXISTED(1018, "Registration not existed", HttpStatus.NOT_FOUND),
-    LIKE_EXISTS(1019, "Registration existed", HttpStatus.BAD_REQUEST),
-    INVALID_TARGET_TYPE(1020, "Registration existed", HttpStatus.BAD_REQUEST)
+    CHANNEL_EXISTED(1014, "Channel existed", HttpStatus.BAD_REQUEST),
+    CHANNEL_NOT_EXISTED(1015, "Channel not existed", HttpStatus.NOT_FOUND),
+    POST_NOT_EXISTED(1016, "Post not existed", HttpStatus.NOT_FOUND),
+    COMMENT_NOT_EXISTED(1017, "Comment not existed", HttpStatus.NOT_FOUND),
+    LIKE_NOT_EXISTED(1018, "Like not existed", HttpStatus.NOT_FOUND),
+    LIKE_EXISTS(1019, "Like existed", HttpStatus.BAD_REQUEST),
+    INVALID_TARGET_TYPE(1020, "Invalid target type", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_EXISTED(1021, "Notification not existed", HttpStatus.NOT_FOUND)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

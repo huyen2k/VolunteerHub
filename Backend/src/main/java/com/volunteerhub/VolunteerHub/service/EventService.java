@@ -9,6 +9,8 @@ import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.EventMapper;
 import com.volunteerhub.VolunteerHub.repository.EventRepository;
+import com.volunteerhub.VolunteerHub.repository.ChannelRepository;
+import com.volunteerhub.VolunteerHub.repository.PostRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -31,15 +33,35 @@ public class EventService {
     @Autowired
     private EventMapper eventMapper;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private com.volunteerhub.VolunteerHub.service.UserService userService;
+
+    @Autowired
+    private ChannelRepository channelRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+
     //Get all events, anyone can use this service
     public List<EventResponse> getEvents() {
-        return eventRepository.findAll().stream().map(eventMapper::toEventResponse).toList();
+        return eventRepository.findAll().stream().map(this::toEnrichedResponse).toList();
+    }
+
+    //Get events by manager
+    public List<EventResponse> getEventsByManager(String managerId) {
+        return eventRepository.findAll().stream()
+                .filter(event -> managerId.equals(event.getCreatedBy()))
+                .map(this::toEnrichedResponse)
+                .toList();
     }
 
     //Get a specific event by id
     public EventResponse getEventById(String id) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        return eventMapper.toEventResponse(event);
+        return toEnrichedResponse(event);
     }
 
     //Creat new event, user can create but need to be approved by admin or manager
@@ -52,9 +74,13 @@ public class EventService {
         event.setStatus("pending");
         event.setApprovedBy(null);
         event.setApprovedAt(null);
+        try {
+            var currentUser = userService.getMyInfo();
+            event.setCreatedBy(currentUser.getId());
+        } catch (Exception ignored) {}
 
         eventRepository.save(event);
-        return eventMapper.toEventResponse(event);
+        return toEnrichedResponse(event);
     }
 
     //Update an event, still need to wait for approval
@@ -65,7 +91,7 @@ public class EventService {
         event.setUpdatedAt(new Date());
 
         eventRepository.save(event);
-        return eventMapper.toEventResponse(event);
+        return toEnrichedResponse(event);
     }
 
     //Delete an event, only admin can use this service
@@ -83,14 +109,89 @@ public class EventService {
 
         event.setStatus(request.getStatus());
 
-        //Will be updated to has specific username who approved the event when role is completed
-        event.setApprovedBy("admin");
+        try {
+            var currentUser = userService.getMyInfo();
+            event.setApprovedBy(currentUser.getId());
+        } catch (Exception e) {
+            event.setApprovedBy("admin");
+        }
 
         if ("approved".equals(request.getStatus())) {
             event.setApprovedAt(new Date());
         }
 
         eventRepository.save(event);
-        return eventMapper.toEventResponse(event);
+
+        // Create notification for event creator
+        String message = "approved".equals(request.getStatus()) 
+            ? String.format("Sự kiện '%s' của bạn đã được duyệt", event.getTitle())
+            : String.format("Sự kiện '%s' của bạn đã bị từ chối", event.getTitle());
+        
+        notificationService.createNotificationForUser(
+            event.getCreatedBy(),
+            "event_status",
+            message
+        );
+
+        return toEnrichedResponse(event);
+    }
+
+    private EventResponse toEnrichedResponse(Event event) {
+        Long likes = 0L;
+        Long comments = 0L;
+        try {
+            var channel = channelRepository.findByEventId(event.getId());
+            if (channel != null) {
+                var posts = postRepository.findByChannelId(channel.getId());
+                for (var p : posts) {
+                    if (p.getLikesCount() != null) likes += p.getLikesCount();
+                    if (p.getCommentsCount() != null) comments += p.getCommentsCount();
+                }
+            }
+        } catch (Exception ignored) {}
+
+        String contactName = null;
+        String contactEmail = null;
+        String contactPhone = null;
+        try {
+            if (event.getCreatedBy() != null) {
+                var creator = userService.getUserById(event.getCreatedBy());
+                contactName = creator.getFull_name();
+                contactEmail = creator.getEmail();
+                contactPhone = creator.getPhone();
+            }
+        } catch (Exception ignored) {}
+
+        Integer registered = null;
+        try {
+            if (event.getRegisteredUsers() != null) {
+                registered = event.getRegisteredUsers().size();
+            } else {
+                registered = event.getVolunteersRegistered();
+            }
+        } catch (Exception ignored) {}
+
+        return EventResponse.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .description(event.getDescription())
+                .date(event.getDate())
+                .location(event.getLocation())
+                .category(event.getCategory())
+                .image(event.getImage())
+                .status(event.getStatus())
+                .createdBy(event.getCreatedBy())
+                .approvedBy(event.getApprovedBy())
+                .createdAt(event.getCreatedAt())
+                .updatedAt(event.getUpdatedAt())
+                .volunteersNeeded(event.getVolunteersNeeded())
+                .volunteersRegistered(registered)
+                .likes(likes)
+                .comments(comments)
+                .shares(0L)
+                .contactName(contactName)
+                .contactEmail(contactEmail)
+                .contactPhone(contactPhone)
+                .build();
     }
 }

@@ -50,11 +50,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   const mapBackendUserToFrontend = (backendUser) => {
+    const roles = backendUser.roles || [];
+    const role = roles.includes("ADMIN")
+      ? "admin"
+      : roles.includes("EVEN_MANAGER")
+      ? "manager"
+      : "volunteer";
     return {
       id: backendUser.id,
       email: backendUser.email,
       name: backendUser.full_name || backendUser.email,
-      role: backendUser.roles?.[0]?.toLowerCase() || "volunteer",
+      role,
       avatar: backendUser.avatar_url || "/avatars/default.jpg",
       phone: backendUser.phone || "",
       address: backendUser.address || "",
@@ -62,7 +68,7 @@ export function AuthProvider({ children }) {
       isActive: backendUser.is_active !== false,
       createdAt: backendUser.created_at,
       updatedAt: backendUser.updated_at,
-      roles: backendUser.roles || [],
+      roles,
     };
   };
 
@@ -81,7 +87,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (name, email, password, phone = "", address = "") => {
+  const register = async (name, email, password, phone = "", address = "", role = "volunteer") => {
     try {
       // Register user
       await authService.register({
@@ -92,6 +98,7 @@ export function AuthProvider({ children }) {
         address,
         avatar_url: "/avatars/default.jpg",
         bio: "",
+        role: role, // Send role to backend
       });
 
       // After successful registration, login to get token

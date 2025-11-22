@@ -61,6 +61,16 @@ export const userService = {
       throw error;
     }
   },
+
+  // Lấy thống kê user
+  async getUserStats(id) {
+    try {
+      return await apiService.get(`/users/${id}/stats`);
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      throw error;
+    }
+  },
 };
 
 export default userService;
