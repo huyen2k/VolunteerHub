@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -23,65 +23,59 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import eventService from "../../services/eventService";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import { ManagerEventVolunteersModal } from "./ManagerEventVolunteersModal";
 
 export default function ManagerEventsPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [volEventId, setVolEventId] = useState(null);
+  const [volOpen, setVolOpen] = useState(false);
 
-  const events = [
-    {
-      id: 1,
-      title: "Dọn dẹp bãi biển Vũng Tàu",
-      description: "Hoạt động dọn dẹp rác thải tại bãi biển Vũng Tàu",
-      organization: "Green Earth Vietnam",
-      date: "15/02/2025",
-      time: "08:00 - 17:00",
-      location: "Bãi biển Vũng Tàu",
-      volunteers: 25,
-      maxVolunteers: 30,
-      status: "approved",
-      createdAt: "10/01/2025",
-    },
-    {
-      id: 2,
-      title: "Trồng cây xanh tại công viên",
-      description: "Trồng cây xanh để tạo môi trường xanh sạch đẹp",
-      organization: "Eco Warriors",
-      date: "20/02/2025",
-      time: "07:00 - 12:00",
-      location: "Công viên Thống Nhất",
-      volunteers: 15,
-      maxVolunteers: 20,
-      status: "pending",
-      createdAt: "12/01/2025",
-    },
-    {
-      id: 3,
-      title: "Dạy học cho trẻ em nghèo",
-      description: "Dạy học miễn phí cho trẻ em có hoàn cảnh khó khăn",
-      organization: "Education For All",
-      date: "25/02/2025",
-      time: "14:00 - 18:00",
-      location: "Trung tâm Hà Nội",
-      volunteers: 8,
-      maxVolunteers: 15,
-      status: "approved",
-      createdAt: "15/01/2025",
-    },
-    {
-      id: 4,
-      title: "Phân phát thức ăn cho người vô gia cư",
-      description: "Phân phát thức ăn và đồ dùng cần thiết",
-      organization: "Care & Share Foundation",
-      date: "28/02/2025",
-      time: "18:00 - 21:00",
-      location: "Quận 1, TP.HCM",
-      volunteers: 12,
-      maxVolunteers: 25,
-      status: "rejected",
-      createdAt: "18/01/2025",
-    },
-  ];
+  useEffect(() => {
+    if (user?.id) {
+      loadEvents();
+    }
+  }, [user]);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await eventService.getEventsByManager(user.id);
+
+      // Transform backend data to frontend format
+      const transformedEvents = (data || []).map((event) => ({
+        id: event.id,
+        title: event.title || "Không có tiêu đề",
+        description: event.description || "",
+        date: event.date
+          ? new Date(event.date).toLocaleDateString("vi-VN")
+          : "Chưa có",
+        location: event.location || "Chưa có",
+        status: event.status || "pending",
+        createdAt: event.createdAt
+          ? new Date(event.createdAt).toLocaleDateString("vi-VN")
+          : "",
+        volunteers: 0, // Will be fetched separately if needed
+        maxVolunteers: 0,
+      }));
+
+      setEvents(transformedEvents);
+    } catch (err) {
+      console.error("Error loading events:", err);
+      setError(err.message || "Không thể tải danh sách sự kiện");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -105,20 +99,72 @@ export default function ManagerEventsPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleApprove = (eventId) => {
-    console.log("Approve event:", eventId);
-    // TODO: Implement approve logic
+  const handleApprove = async (eventId) => {
+    try {
+      await eventService.approveEvent(eventId, "approved", "");
+      await loadEvents();
+    } catch (err) {
+      console.error("Error approving event:", err);
+      alert(
+        "Không thể duyệt sự kiện: " + (err.message || "Lỗi không xác định")
+      );
+    }
   };
 
-  const handleReject = (eventId) => {
-    console.log("Reject event:", eventId);
-    // TODO: Implement reject logic
+  const handleReject = async (eventId) => {
+    if (!confirm("Bạn có chắc chắn muốn từ chối sự kiện này?")) {
+      return;
+    }
+    try {
+      await eventService.rejectEvent(eventId, "");
+      await loadEvents();
+    } catch (err) {
+      console.error("Error rejecting event:", err);
+      alert(
+        "Không thể từ chối sự kiện: " + (err.message || "Lỗi không xác định")
+      );
+    }
   };
 
-  const handleDelete = (eventId) => {
-    console.log("Delete event:", eventId);
-    // TODO: Implement delete logic
+  const handleDelete = async (eventId) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
+      return;
+    }
+    try {
+      await eventService.deleteEvent(eventId);
+      await loadEvents();
+    } catch (err) {
+      console.error("Error deleting event:", err);
+      alert("Không thể xóa sự kiện: " + (err.message || "Lỗi không xác định"));
+    }
   };
+
+  if (loading) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <LoadingSpinner />
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-destructive">{error}</p>
+              <Button onClick={loadEvents} className="mt-4">
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ManagerLayout>
+    );
+  }
 
   return (
     <ManagerLayout>
@@ -191,24 +237,12 @@ export default function ManagerEventsPage() {
                           <span>{event.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{event.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span>{event.location}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {event.volunteers}/{event.maxVolunteers} tình nguyện
-                            viên
-                          </span>
-                        </div>
                       </div>
                       <div className="mt-3 text-xs text-muted-foreground">
-                        Tạo lúc: {event.createdAt} | Tổ chức:{" "}
-                        {event.organization}
+                        Tạo lúc: {event.createdAt}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 lg:flex-row">
@@ -218,12 +252,19 @@ export default function ManagerEventsPage() {
                           Xem chi tiết
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/manager/events/${event.id}/edit`}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Chỉnh sửa
-                        </Link>
+                      <Button variant="outline" size="sm" onClick={() => { setVolEventId(event.id); setVolOpen(true); }}>
+                        <Users className="mr-2 h-4 w-4" />
+                        Tình nguyện viên
                       </Button>
+                      {(event.status === "pending" ||
+                        event.status === "rejected") && (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/manager/events/${event.id}/edit`}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Chỉnh sửa
+                          </Link>
+                        </Button>
+                      )}
                       {event.status === "pending" && (
                         <>
                           <Button
@@ -283,6 +324,7 @@ export default function ManagerEventsPage() {
           )}
         </div>
       </div>
+      <ManagerEventVolunteersModal eventId={volEventId} open={volOpen} onOpenChange={setVolOpen} />
     </ManagerLayout>
   );
 }

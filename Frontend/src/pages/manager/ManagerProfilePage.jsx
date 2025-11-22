@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ManagerLayout } from "../../components/Layout";
 import { Button } from "../../components/ui/button";
 import {
@@ -34,19 +34,50 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import userService from "../../services/userService";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function ManagerProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    address: user?.address || "",
-    bio: user?.bio || "",
-    organization: user?.organization || "",
-    position: user?.position || "",
+    full_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    bio: "",
+    organization: "",
+    position: "",
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getUserById(user.id);
+      setUserData(data);
+      setFormData({
+        full_name: data.full_name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        bio: data.bio || "",
+        organization: data.organization || "",
+        position: data.position || "",
+      });
+    } catch (err) {
+      console.error("Error loading user data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,23 +89,27 @@ export default function ManagerProfilePage() {
 
   const handleSave = async () => {
     try {
-      await updateUser(formData);
+      await userService.updateUser(user.id, formData);
+      await loadUserData();
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert("Không thể cập nhật thông tin: " + (error.message || "Lỗi không xác định"));
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      address: user?.address || "",
-      bio: user?.bio || "",
-      organization: user?.organization || "",
-      position: user?.position || "",
-    });
+    if (userData) {
+      setFormData({
+        full_name: userData.full_name || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+        address: userData.address || "",
+        bio: userData.bio || "",
+        organization: userData.organization || "",
+        position: userData.position || "",
+      });
+    }
     setIsEditing(false);
   };
 
@@ -87,6 +122,33 @@ export default function ManagerProfilePage() {
         .toUpperCase() || "M"
     );
   };
+
+  if (loading) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <LoadingSpinner />
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-destructive">Không thể tải thông tin người dùng</p>
+              <Button onClick={loadUserData} className="mt-4">
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ManagerLayout>
+    );
+  }
 
   return (
     <ManagerLayout>
@@ -125,11 +187,11 @@ export default function ManagerProfilePage() {
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={user?.avatar} />
                     <AvatarFallback className="text-2xl bg-blue-100 text-blue-600">
-                      {getInitials(user?.name)}
+                      {getInitials(userData?.full_name)}
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <CardTitle className="mt-4">{user?.name || "Manager"}</CardTitle>
+                <CardTitle className="mt-4">{userData?.full_name || "Manager"}</CardTitle>
                 <CardDescription>
                   <Badge variant="default" className="mt-2 bg-blue-600">
                     Event Manager
@@ -154,11 +216,11 @@ export default function ManagerProfilePage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Họ và tên</Label>
+                    <Label htmlFor="full_name">Họ và tên</Label>
                     <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
+                      id="full_name"
+                      name="full_name"
+                      value={formData.full_name}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />

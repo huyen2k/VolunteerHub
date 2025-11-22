@@ -13,6 +13,7 @@ import java.util.Date;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventRegistrationResponse {
+    String id;
     String eventId;
     String  userId;
     String status; // 'pending', 'approved', 'canceled', 'completed'

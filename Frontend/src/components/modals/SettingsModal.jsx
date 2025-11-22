@@ -22,7 +22,6 @@ export function SettingsModal({ open, onOpenChange }) {
 
   const handleProfileClick = () => {
     onOpenChange(false);
-    // Navigate to profile based on role
     if (user?.role === "admin") {
       navigate("/admin/profile");
     } else if (user?.role === "manager") {

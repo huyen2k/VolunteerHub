@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
@@ -19,41 +19,209 @@ import {
   Plus,
   Eye,
   Settings,
+  Sparkles,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import statisticsService from "../../services/statisticsService";
+import eventService from "../../services/eventService";
+import channelService from "../../services/channelService";
+import postService from "../../services/postService";
+import registrationService from "../../services/registrationService";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function ManagerDashboardPage() {
-  const recentEvents = [
-    {
-      id: 1,
-      title: "Dọn dẹp bãi biển Vũng Tàu",
-      date: "15/02/2025",
-      location: "Vũng Tàu",
-      volunteers: 25,
-      status: "approved",
-      newPosts: 3,
-      likes: 12,
-    },
-    {
-      id: 2,
-      title: "Trồng cây xanh tại công viên",
-      date: "20/02/2025",
-      location: "Công viên Thống Nhất",
-      volunteers: 15,
-      status: "pending",
-      newPosts: 0,
-      likes: 5,
-    },
-    {
-      id: 3,
-      title: "Dạy học cho trẻ em nghèo",
-      date: "25/02/2025",
-      location: "Trung tâm Hà Nội",
-      volunteers: 8,
-      status: "approved",
-      newPosts: 1,
-      likes: 8,
-    },
-  ];
+  const { user } = useAuth();
+  const [statistics, setStatistics] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [newlyPublishedEvents, setNewlyPublishedEvents] = useState([]);
+  const [eventsWithNewPosts, setEventsWithNewPosts] = useState([]);
+  const [attractiveEvents, setAttractiveEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user?.id) {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Fetch statistics
+      const stats = await statisticsService.getEventStatistics(user.id);
+      setStatistics(stats);
+
+      // Fetch all events of manager
+      const managerEvents = await eventService.getEventsByManager(user.id);
+      setEvents(managerEvents || []);
+
+      // Calculate dates
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // 1. Newly published events (created in last 7 days, status = approved)
+      const newlyPublished = (managerEvents || [])
+        .filter((event) => {
+          if (event.status !== "approved") return false;
+          const createdAt = event.createdAt ? new Date(event.createdAt) : null;
+          return createdAt && createdAt >= sevenDaysAgo;
+        })
+        .map((event) => ({
+          id: event.id,
+          title: event.title || "Không có tiêu đề",
+          date: event.date
+            ? new Date(event.date).toLocaleDateString("vi-VN")
+            : "Chưa có",
+          location: event.location || "Chưa có",
+          status: event.status,
+          createdAt: event.createdAt
+            ? new Date(event.createdAt).toLocaleDateString("vi-VN")
+            : "",
+        }));
+
+      setNewlyPublishedEvents(newlyPublished);
+
+      // 2. Events with new posts (posts created in last 24h)
+      const eventsWithPosts = [];
+      for (const event of managerEvents || []) {
+        if (event.status !== "approved") continue;
+
+        try {
+          // Get channel for this event
+          let channel;
+          try {
+            channel = await channelService.getChannelByEventId(event.id);
+          } catch (err) {
+            // Channel doesn't exist, skip
+            continue;
+          }
+
+          if (channel) {
+            // Get posts for this channel
+            const channelPosts = await postService
+              .getPostsByChannel(channel.id)
+              .catch(() => []);
+
+            // Check if there are posts created in last 24h
+            const recentPosts = (channelPosts || []).filter((post) => {
+              const postDate = post.createdAt ? new Date(post.createdAt) : null;
+              return postDate && postDate >= twentyFourHoursAgo;
+            });
+
+            if (recentPosts.length > 0) {
+              eventsWithPosts.push({
+                id: event.id,
+                title: event.title || "Không có tiêu đề",
+                date: event.date
+                  ? new Date(event.date).toLocaleDateString("vi-VN")
+                  : "Chưa có",
+                location: event.location || "Chưa có",
+                status: event.status,
+                newPostsCount: recentPosts.length,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Error loading posts for event ${event.id}:`, err);
+        }
+      }
+
+      setEventsWithNewPosts(eventsWithPosts);
+
+      // 3. Attractive events (rapid member increase + interaction in last 7 days)
+      const attractive = [];
+      for (const event of managerEvents || []) {
+        if (event.status !== "approved") continue;
+
+        try {
+          // Get registrations for this event
+          const registrations = await registrationService
+            .getRegistrationsByEvent(event.id)
+            .catch(() => []);
+
+          // Count new registrations in last 7 days
+          const newRegistrations = (registrations || []).filter((reg) => {
+            const regDate = reg.registeredAt
+              ? new Date(reg.registeredAt)
+              : null;
+            return regDate && regDate >= sevenDaysAgo;
+          }).length;
+
+          // Get channel and posts for interaction calculation
+          let totalLikes = 0;
+          let totalComments = 0;
+          try {
+            const channel = await channelService
+              .getChannelByEventId(event.id)
+              .catch(() => null);
+
+            if (channel) {
+              const channelPosts = await postService
+                .getPostsByChannel(channel.id)
+                .catch(() => []);
+
+              // Calculate likes and comments from posts created in last 7 days
+              const recentPosts = (channelPosts || []).filter((post) => {
+                const postDate = post.createdAt
+                  ? new Date(post.createdAt)
+                  : null;
+                return postDate && postDate >= sevenDaysAgo;
+              });
+
+              for (const post of recentPosts) {
+                totalLikes += post.likeCount || post.likes || 0;
+                totalComments += post.commentCount || post.comments || 0;
+              }
+            }
+          } catch (err) {
+            console.error(
+              `Error loading channel/posts for event ${event.id}:`,
+              err
+            );
+          }
+
+          // Calculate attractiveness score (new registrations + interactions)
+          const attractivenessScore =
+            newRegistrations + totalLikes + totalComments;
+
+          if (attractivenessScore > 0) {
+            attractive.push({
+              id: event.id,
+              title: event.title || "Không có tiêu đề",
+              date: event.date
+                ? new Date(event.date).toLocaleDateString("vi-VN")
+                : "Chưa có",
+              location: event.location || "Chưa có",
+              status: event.status,
+              newRegistrations,
+              totalLikes,
+              totalComments,
+              attractivenessScore,
+              totalVolunteers: (registrations || []).length,
+            });
+          }
+        } catch (err) {
+          console.error(
+            `Error calculating attractiveness for event ${event.id}:`,
+            err
+          );
+        }
+      }
+
+      // Sort by attractiveness score (descending)
+      attractive.sort((a, b) => b.attractivenessScore - a.attractivenessScore);
+      setAttractiveEvents(attractive.slice(0, 5)); // Top 5
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+      setError(err.message || "Không thể tải dữ liệu dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -68,12 +236,38 @@ export default function ManagerDashboardPage() {
     }
   };
 
-  const getTrendingEvents = () => {
-    return recentEvents
-      .filter((event) => event.status === "approved")
-      .sort((a, b) => b.likes + b.newPosts - (a.likes + a.newPosts))
-      .slice(0, 3);
-  };
+  if (loading) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <LoadingSpinner />
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-destructive">{error}</p>
+              <Button onClick={loadDashboardData} className="mt-4">
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  // Calculate stats
+  const totalEvents = events.length;
+  const pendingEvents = events.filter((e) => e.status === "pending").length;
+  const approvedEvents = events.filter((e) => e.status === "approved").length;
+  const totalVolunteers = statistics?.approvedRegistrations || 0;
 
   return (
     <ManagerLayout>
@@ -97,12 +291,7 @@ export default function ManagerDashboardPage() {
                   Tạo sự kiện mới
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/manager/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Cài đặt
-                </Link>
-              </Button>
+              {/* Bỏ nút cài đặt theo yêu cầu */}
             </div>
           </div>
 
@@ -115,9 +304,11 @@ export default function ManagerDashboardPage() {
                     <p className="text-sm text-muted-foreground">
                       Tổng sự kiện
                     </p>
-                    <p className="mt-1 text-3xl font-bold text-primary">12</p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {totalEvents}
+                    </p>
                     <p className="mt-1 text-xs text-green-600">
-                      +2 sự kiện mới tháng này
+                      {approvedEvents} đã duyệt
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -134,9 +325,11 @@ export default function ManagerDashboardPage() {
                     <p className="text-sm text-muted-foreground">
                       Tình nguyện viên
                     </p>
-                    <p className="mt-1 text-3xl font-bold text-primary">156</p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {totalVolunteers}
+                    </p>
                     <p className="mt-1 text-xs text-green-600">
-                      +23 người mới tham gia
+                      {statistics?.totalRegistrations || 0} tổng đăng ký
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -151,7 +344,9 @@ export default function ManagerDashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-                    <p className="mt-1 text-3xl font-bold text-primary">3</p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {pendingEvents}
+                    </p>
                     <p className="mt-1 text-xs text-yellow-600">Cần xử lý</p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -165,11 +360,13 @@ export default function ManagerDashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Tương tác</p>
-                    <p className="mt-1 text-3xl font-bold text-primary">89</p>
-                    <p className="mt-1 text-xs text-green-600">
-                      +15 bài viết mới
+                    <p className="text-sm text-muted-foreground">
+                      Đăng ký chờ duyệt
                     </p>
+                    <p className="mt-1 text-3xl font-bold text-primary">
+                      {statistics?.pendingRegistrations || 0}
+                    </p>
+                    <p className="mt-1 text-xs text-green-600">Cần xác nhận</p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <MessageSquare className="h-6 w-6 text-primary" />
@@ -181,206 +378,191 @@ export default function ManagerDashboardPage() {
 
           {/* Main Content */}
           <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              {/* Recent Events */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Sự kiện gần đây
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {recentEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">
-                            {event.title}
-                          </h3>
-                          {getStatusBadge(event.status)}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{event.date}</span>
-                          <span>{event.location}</span>
-                          <span>{event.volunteers} tình nguyện viên</span>
-                        </div>
-                        {event.status === "approved" && (
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="h-4 w-4" />
-                              {event.newPosts} bài viết mới
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <TrendingUp className="h-4 w-4" />
-                              {event.likes} lượt thích
-                            </span>
+            <div className="lg:col-span-2 space-y-6">
+              {/* Newly Published Events */}
+              {newlyPublishedEvents.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5" />
+                      Sự kiện mới công bố (7 ngày qua)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {newlyPublishedEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">
+                              {event.title}
+                            </h3>
+                            {getStatusBadge(event.status)}
+                            <Badge variant="outline" className="bg-blue-50">
+                              Mới
+                            </Badge>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/manager/events/${event.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Xem chi tiết
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hành động nhanh</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
-                    asChild
-                  >
-                    <Link to="/manager/events/create">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Tạo sự kiện mới
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/manager/events">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Quản lý sự kiện
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/manager/volunteers">
-                      <Users className="mr-2 h-4 w-4" />
-                      Quản lý tình nguyện viên
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start bg-transparent"
-                    asChild
-                  >
-                    <Link to="/manager/community">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Kênh trao đổi
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Trending Events */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Sự kiện thu hút
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {getTrendingEvents().map((event) => (
-                    <div key={event.id} className="p-3 border rounded-lg">
-                      <h4 className="font-semibold text-sm">{event.title}</h4>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                        <span>{event.volunteers} tình nguyện viên</span>
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3" />
-                            {event.newPosts}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {event.likes}
-                          </span>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{event.date}</span>
+                            <span>{event.location}</span>
+                            <span>Tạo: {event.createdAt}</span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Pending Approvals */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Chờ duyệt
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {recentEvents
-                    .filter((event) => event.status === "pending")
-                    .map((event) => (
-                      <div key={event.id} className="p-3 border rounded-lg">
-                        <h4 className="font-semibold text-sm">{event.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {event.date} - {event.location}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          <Button size="sm" className="text-xs">
-                            Duyệt
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            Từ chối
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/manager/events/${event.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Xem chi tiết
+                            </Link>
                           </Button>
                         </div>
                       </div>
                     ))}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Activity Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tóm tắt hoạt động</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Sự kiện đang diễn ra
-                    </span>
-                    <span className="font-semibold">5</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Tình nguyện viên hoạt động
-                    </span>
-                    <span className="font-semibold">89</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Bài viết mới tuần này
-                    </span>
-                    <span className="font-semibold">23</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Tỷ lệ tham gia
-                    </span>
-                    <span className="font-semibold">78%</span>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Events with New Posts */}
+              {eventsWithNewPosts.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Sự kiện có tin bài mới (24h qua)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {eventsWithNewPosts.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">
+                              {event.title}
+                            </h3>
+                            {getStatusBadge(event.status)}
+                            <Badge variant="outline" className="bg-green-50">
+                              {event.newPostsCount} bài mới
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{event.date}</span>
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/manager/community?event=${event.id}`}>
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Xem bài viết
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Bỏ khung Hành động nhanh theo yêu cầu */}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Attractive Events */}
+              {attractiveEvents.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Sự kiện thu hút
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {attractiveEvents.map((event) => (
+                      <div key={event.id} className="p-3 border rounded-lg">
+                        <h4 className="font-semibold text-sm">{event.title}</h4>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                          <span>{event.totalVolunteers} tình nguyện viên</span>
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />+
+                              {event.newRegistrations}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              {event.totalComments}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" />
+                              {event.totalLikes}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            asChild
+                          >
+                            <Link to={`/manager/events/${event.id}`}>
+                              <Eye className="mr-2 h-3 w-3" />
+                              Xem chi tiết
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Pending Approvals */}
+              {pendingEvents > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Chờ duyệt
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {events
+                      .filter((event) => event.status === "pending")
+                      .slice(0, 5)
+                      .map((event) => (
+                        <div key={event.id} className="p-3 border rounded-lg">
+                          <h4 className="font-semibold text-sm">
+                            {event.title || "Không có tiêu đề"}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {event.date
+                              ? new Date(event.date).toLocaleDateString("vi-VN")
+                              : "Chưa có"}{" "}
+                            - {event.location || "Chưa có"}
+                          </p>
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              className="text-xs"
+                              variant="outline"
+                              asChild
+                            >
+                              <Link to={`/manager/events/${event.id}`}>
+                                Xem
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

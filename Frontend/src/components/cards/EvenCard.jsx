@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Calendar, MapPin, Users, Clock } from "lucide-react";
 
-// Custom Image component thay thế Next.js Image
+// custom img -->  Trong TH dùng riêng
 const Image = ({ src, alt, fill, className, ...props }) => {
   return (
     <img
@@ -19,7 +19,9 @@ const Image = ({ src, alt, fill, className, ...props }) => {
   );
 };
 
+// Nhận 1 obj event
 export function EventCard({ event }) {
+  // Thanh progress 
   const progress =
     (event.volunteers_registered / event.volunteers_needed) * 100;
 
@@ -32,6 +34,7 @@ export function EventCard({ event }) {
           fill
           className="object-cover transition-transform group-hover:scale-105"
         />
+        {/* Thể hiện category của sự kiện */}
         <Badge className="absolute right-3 top-3 bg-primary">
           {event.category}
         </Badge>

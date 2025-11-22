@@ -12,6 +12,7 @@ import { Input } from "../../components/ui/input";
 import { UserLayout } from "../../components/Layout";
 import { useAuth } from "../../hooks/useAuth";
 import eventService from "../../services/eventService";
+import userService from "../../services/userService";
 import {
   Calendar,
   MapPin,
@@ -47,31 +48,64 @@ export default function UserEventsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Load data from Mock API
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Load all events and user events in parallel
-        const [allEvents, userEventsData, stats] = await Promise.all([
+        const [allEvents, userRegistrations, statsData] = await Promise.all([
           eventService.getEvents(),
           user ? eventService.getUserEvents(user.id) : Promise.resolve([]),
           user
-            ? eventService.getUserEventStats(user.id)
+            ? userService.getUserStats(user.id).catch(() => ({
+                totalEventsRegistered: 0,
+                completedEvents: 0,
+                upcomingEvents: 0,
+                totalHours: 0,
+                totalPoints: 0,
+              }))
             : Promise.resolve({
-                totalRegistered: 0,
-                completed: 0,
-                upcoming: 0,
+                totalEventsRegistered: 0,
+                completedEvents: 0,
+                upcomingEvents: 0,
                 totalHours: 0,
                 totalPoints: 0,
               }),
         ]);
 
-        setEvents(allEvents);
-        setUserEvents(userEventsData);
-        setUserStats(stats);
+        setEvents(allEvents || []);
+
+        const userEventsWithDetails = await Promise.all(
+          (userRegistrations || []).map(async (reg) => {
+            try {
+              const event = await eventService.getEventById(reg.eventId);
+              return {
+                id: event.id,
+                eventId: event.id,
+                registrationId: reg.id,
+                title: event.title,
+                description: event.description,
+                date: event.date,
+                location: event.location,
+                status: event.status,
+                registrationStatus: reg.status,
+                registeredAt: reg.registeredAt,
+              };
+            } catch (err) {
+              console.error(`Error loading event ${reg.eventId}:`, err);
+              return null;
+            }
+          })
+        );
+        setUserEvents(userEventsWithDetails.filter((e) => e !== null));
+        setUserStats({
+          totalRegistered: statsData?.totalEventsRegistered || 0,
+          completed: statsData?.completedEvents || 0,
+          upcoming: statsData?.upcomingEvents || 0,
+          totalHours: statsData?.totalHours || 0,
+          totalPoints: statsData?.totalPoints || 0,
+        });
       } catch (err) {
         setError(err.message);
         console.error("Error loading data:", err);
@@ -91,30 +125,38 @@ export default function UserEventsPage() {
     { value: "completed", label: "Đã hoàn thành" },
   ];
 
-  // Combine all events with user registration status
   const eventsWithStatus = events.map((event) => {
-    const userEvent = userEvents.find((ue) => ue.id === event.id);
+    const userEvent = userEvents.find(
+      (ue) => ue.eventId === event.id || ue.id === event.id
+    );
     return {
       ...event,
       isRegistered: !!userEvent,
       registrationStatus: userEvent?.registrationStatus || null,
+      registrationId: userEvent?.registrationId || null,
       userRating: userEvent?.userRating || null,
       userReview: userEvent?.userReview || null,
     };
   });
 
   const filteredEvents = eventsWithStatus.filter((event) => {
+    const title = (event.title || "").toLowerCase();
+    const description = (event.description || "").toLowerCase();
     const matchesSearch =
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase());
+      title.includes(searchTerm.toLowerCase()) ||
+      description.includes(searchTerm.toLowerCase());
 
     const matchesCategory =
-      filterCategory === "all" || event.category === filterCategory;
+      filterCategory === "all" ||
+      !event.category ||
+      event.category === filterCategory;
 
+    const eventDate = event.date ? new Date(event.date) : null;
     const matchesDate =
       filterDate === "all" ||
-      (filterDate === "upcoming" && new Date(event.date) > new Date()) ||
-      (filterDate === "this-week" && isThisWeek(new Date(event.date)));
+      !eventDate ||
+      (filterDate === "upcoming" && eventDate > new Date()) ||
+      (filterDate === "this-week" && isThisWeek(eventDate));
 
     const matchesStatus =
       filterStatus === "all" ||
@@ -164,53 +206,125 @@ export default function UserEventsPage() {
         return;
       }
 
-      await eventService.registerForEvent(user.id, eventId);
+      await eventService.registerForEvent(eventId);
 
-      // Reload data to reflect changes
-      const [allEvents, userEventsData, stats] = await Promise.all([
+      const [allEvents, userRegistrations, statsData] = await Promise.all([
         eventService.getEvents(),
         eventService.getUserEvents(user.id),
-        eventService.getUserEventStats(user.id),
+        userService.getUserStats(user.id).catch(() => ({
+          totalEventsRegistered: 0,
+          completedEvents: 0,
+          upcomingEvents: 0,
+          totalHours: 0,
+          totalPoints: 0,
+        })),
       ]);
 
-      setEvents(allEvents);
-      setUserEvents(userEventsData);
-      setUserStats(stats);
+      setEvents(allEvents || []);
+      const userEventsWithDetails = await Promise.all(
+        (userRegistrations || []).map(async (reg) => {
+          try {
+            const event = await eventService.getEventById(reg.eventId);
+            return {
+              id: event.id,
+              eventId: event.id,
+              registrationId: reg.id,
+              title: event.title,
+              description: event.description,
+              date: event.date,
+              location: event.location,
+              status: event.status,
+              registrationStatus: reg.status,
+              registeredAt: reg.registeredAt,
+            };
+          } catch (err) {
+            console.error(`Error loading event ${reg.eventId}:`, err);
+            return null;
+          }
+        })
+      );
+      setUserEvents(userEventsWithDetails.filter((e) => e !== null));
+      setUserStats({
+        totalRegistered: statsData?.totalEventsRegistered || 0,
+        completed: statsData?.completedEvents || 0,
+        upcoming: statsData?.upcomingEvents || 0,
+        totalHours: statsData?.totalHours || 0,
+        totalPoints: statsData?.totalPoints || 0,
+      });
 
-      // Show success message (you can add a toast notification here)
-      console.log("Successfully registered for event");
+      alert("Đăng ký sự kiện thành công!");
     } catch (error) {
       console.error("Error registering for event:", error);
-      setError(error.message);
+      alert(
+        "Không thể đăng ký sự kiện: " + (error.message || "Lỗi không xác định")
+      );
     }
   };
 
-  const handleUnregisterClick = async (eventId) => {
+  const handleUnregisterClick = async (registrationId) => {
     try {
       if (!user) return;
 
-      await eventService.cancelEventRegistration(user.id, eventId);
+      if (!confirm("Bạn có chắc chắn muốn hủy đăng ký sự kiện này?")) {
+        return;
+      }
 
-      // Reload data to reflect changes
-      const [allEvents, userEventsData, stats] = await Promise.all([
+      await eventService.cancelEventRegistration(registrationId);
+
+      const [allEvents, userRegistrations, statsData] = await Promise.all([
         eventService.getEvents(),
         eventService.getUserEvents(user.id),
-        eventService.getUserEventStats(user.id),
+        userService.getUserStats(user.id).catch(() => ({
+          totalEventsRegistered: 0,
+          completedEvents: 0,
+          upcomingEvents: 0,
+          totalHours: 0,
+          totalPoints: 0,
+        })),
       ]);
 
-      setEvents(allEvents);
-      setUserEvents(userEventsData);
-      setUserStats(stats);
+      setEvents(allEvents || []);
+      const userEventsWithDetails = await Promise.all(
+        (userRegistrations || []).map(async (reg) => {
+          try {
+            const event = await eventService.getEventById(reg.eventId);
+            return {
+              id: event.id,
+              eventId: event.id,
+              registrationId: reg.id,
+              title: event.title,
+              description: event.description,
+              date: event.date,
+              location: event.location,
+              status: event.status,
+              registrationStatus: reg.status,
+              registeredAt: reg.registeredAt,
+            };
+          } catch (err) {
+            console.error(`Error loading event ${reg.eventId}:`, err);
+            return null;
+          }
+        })
+      );
+      setUserEvents(userEventsWithDetails.filter((e) => e !== null));
+      setUserStats({
+        totalRegistered: statsData?.totalEventsRegistered || 0,
+        completed: statsData?.completedEvents || 0,
+        upcoming: statsData?.upcomingEvents || 0,
+        totalHours: statsData?.totalHours || 0,
+        totalPoints: statsData?.totalPoints || 0,
+      });
 
-      console.log("Successfully unregistered from event");
+      alert("Hủy đăng ký sự kiện thành công!");
     } catch (error) {
       console.error("Error unregistering from event:", error);
-      setError(error.message);
+      alert(
+        "Không thể hủy đăng ký: " + (error.message || "Lỗi không xác định")
+      );
     }
   };
 
   const handleRateEvent = (eventId) => {
-    // TODO: Implement rating modal/dialog
     console.log("Rate event:", eventId);
   };
 
@@ -368,9 +482,11 @@ export default function UserEventsPage() {
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute top-3 right-3 flex gap-2">
-                      <Badge className="bg-primary text-primary-foreground">
-                        {event.category}
-                      </Badge>
+                      {event.category && (
+                        <Badge className="bg-primary text-primary-foreground">
+                          {event.category}
+                        </Badge>
+                      )}
                       {getStatusBadge(event)}
                     </div>
                   </div>
@@ -379,9 +495,11 @@ export default function UserEventsPage() {
                     <h3 className="text-lg font-semibold mb-2">
                       {event.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {event.organization}
-                    </p>
+                    {event.organization && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {event.organization}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {event.description}
                     </p>
@@ -394,14 +512,16 @@ export default function UserEventsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {new Date(event.date).toLocaleDateString("vi-VN")}
+                          {event.date
+                            ? new Date(event.date).toLocaleDateString("vi-VN")
+                            : "Chưa có"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
                         <span>
-                          {event.registeredCount}/{event.maxVolunteers} tình
-                          nguyện viên
+                          {event.registeredCount || 0}/
+                          {event.maxVolunteers || "N/A"} tình nguyện viên
                         </span>
                       </div>
                     </div>
@@ -422,16 +542,22 @@ export default function UserEventsPage() {
                     )}
 
                     {/* Interaction Stats */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-4 w-4" />
-                        {event.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" />
-                        {event.comments}
-                      </span>
-                    </div>
+                    {(event.likes || event.comments) && (
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                        {event.likes !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <Heart className="h-4 w-4" />
+                            {event.likes || 0}
+                          </span>
+                        )}
+                        {event.comments !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-4 w-4" />
+                            {event.comments || 0}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-2">
@@ -441,10 +567,7 @@ export default function UserEventsPage() {
                         asChild
                         className="flex-1"
                       >
-                        <Link to={`/events/${event.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Xem chi tiết
-                        </Link>
+                        <Link to={`/events/${event.id}`}>Xem chi tiết</Link>
                       </Button>
                       {event.isRegistered ? (
                         <div className="flex gap-1">
@@ -464,7 +587,9 @@ export default function UserEventsPage() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleUnregisterClick(event.id)}
+                              onClick={() =>
+                                handleUnregisterClick(event.registrationId)
+                              }
                               className="flex-1"
                             >
                               Hủy đăng ký

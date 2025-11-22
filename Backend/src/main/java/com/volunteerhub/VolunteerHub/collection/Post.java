@@ -17,16 +17,27 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Post {
+
     @Id
     String id;
+
     String channelId;
     String authorId;
+    String authorName;
+    String authorAvatar;
+
+    String title;
     String content;
+    String category;
+    List<String> tags;    
+
     List<String> images;
 
-    Number likesCount;
-    Number commentsCount;
+    Long likesCount;
+    Long commentsCount;
+    Long views;            
 
+    // Thời gian
     @CreatedDate
     Date createdAt;
 

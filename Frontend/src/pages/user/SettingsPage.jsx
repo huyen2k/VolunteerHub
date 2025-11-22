@@ -1,16 +1,16 @@
 import React from "react";
-import { UserLayout } from "../components/Layout";
+import { UserLayout } from "../../components/Layout";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
-import { Separator } from "../components/ui/separator";
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { Switch } from "../../components/ui/switch";
+import { Separator } from "../../components/ui/separator";
 import {
   Settings,
   Bell,
@@ -22,12 +22,34 @@ import {
   Database,
   Info,
 } from "lucide-react";
-import { useTheme } from "../hooks/useTheme";
-import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../hooks/useAuth";
+import { Textarea } from "../../components/ui/textarea";
+import reportService from "../../services/reportService";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const [systemReport, setSystemReport] = React.useState("");
+  const [sendingReport, setSendingReport] = React.useState(false);
+
+  const submitSystemReport = async () => {
+    if (!systemReport.trim()) return;
+    setSendingReport(true);
+    try {
+      await reportService.createReport({
+        type: "system",
+        title: "Báo cáo hệ thống",
+        description: systemReport.trim(),
+      });
+      setSystemReport("");
+      alert("Đã gửi báo cáo hệ thống");
+    } catch (err) {
+      alert("Không thể gửi báo cáo: " + (err.message || "Lỗi không xác định"));
+    } finally {
+      setSendingReport(false);
+    }
+  };
 
   return (
     <UserLayout>
@@ -47,9 +69,7 @@ export default function SettingsPage() {
                 <Settings className="h-5 w-5" />
                 Cài đặt chung
               </CardTitle>
-              <CardDescription>
-                Cài đặt cơ bản về hệ thống
-              </CardDescription>
+              <CardDescription>Cài đặt cơ bản về hệ thống</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -92,9 +112,7 @@ export default function SettingsPage() {
                 <Bell className="h-5 w-5" />
                 Thông báo
               </CardTitle>
-              <CardDescription>
-                Quản lý thông báo và cảnh báo
-              </CardDescription>
+              <CardDescription>Quản lý thông báo và cảnh báo</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -197,6 +215,18 @@ export default function SettingsPage() {
                 </div>
               </div>
               <Separator />
+              <div className="space-y-2">
+                <Label>Báo cáo hệ thống</Label>
+                <Textarea
+                  placeholder="Mô tả vấn đề hệ thống hoặc phản hồi của bạn..."
+                  value={systemReport}
+                  onChange={(e) => setSystemReport(e.target.value)}
+                  rows={4}
+                />
+                <Button variant="outline" className="w-full" onClick={submitSystemReport} disabled={sendingReport || !systemReport.trim()}>
+                  Gửi báo cáo
+                </Button>
+              </div>
               <Button variant="outline" className="w-full">
                 <Database className="mr-2 h-4 w-4" />
                 Xem thông tin chi tiết
@@ -208,4 +238,3 @@ export default function SettingsPage() {
     </UserLayout>
   );
 }
-

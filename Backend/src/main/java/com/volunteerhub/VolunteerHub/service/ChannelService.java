@@ -10,6 +10,7 @@ import com.volunteerhub.VolunteerHub.mapper.ChannelMapper;
 import com.volunteerhub.VolunteerHub.repository.ChannelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class ChannelService {
@@ -61,5 +62,11 @@ public class ChannelService {
             throw new AppException(ErrorCode.CHANNEL_NOT_EXISTED);
         }
         return channelMapper.toChannelResponse(channel);
+    }
+
+    public List<ChannelResponse> getAllChannels(){
+        return channelRepository.findAll().stream()
+                .map(channelMapper::toChannelResponse)
+                .toList();
     }
 }

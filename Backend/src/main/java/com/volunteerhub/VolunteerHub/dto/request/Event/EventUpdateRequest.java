@@ -13,4 +13,7 @@ public class EventUpdateRequest {
     String  description;
     Date date;
     String location;
+    String category;
+    String image;
+    Integer volunteersNeeded;
 }
