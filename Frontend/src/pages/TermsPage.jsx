@@ -152,7 +152,7 @@ export default function TermsPage() {
                     <strong>Điện thoại:</strong> 0123-456-789
                   </p>
                   <p>
-                    <strong>Địa chỉ:</strong> 123 Đường ABC, Quận XYZ, TP.HCM
+                    <strong>Địa chỉ:</strong> Xuân Thuỷ, Cầu Giấy, Hà Nội
                   </p>
                 </div>
               </section>

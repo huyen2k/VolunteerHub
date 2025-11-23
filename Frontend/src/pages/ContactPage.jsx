@@ -97,8 +97,9 @@ export default function ContactPage() {
                     <CardContent className="p-6">
                       <h3 className="font-semibold mb-2">Địa chỉ</h3>
                       <p className="text-muted-foreground">
-                        123 Đường ABC, Quận 1<br />
-                        TP. Hồ Chí Minh, Việt Nam
+                        Xuân Thuỷ, Cầu Giấy
+                        <br />
+                        Hà Nội, Việt Nam
                       </p>
                     </CardContent>
                   </Card>

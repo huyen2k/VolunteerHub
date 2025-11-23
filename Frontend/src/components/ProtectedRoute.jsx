@@ -10,9 +10,11 @@ export function ProtectedRoute({
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
 
-  // Nếu chưa đăng nhập, chuyển hướng đến trang login
+  // Nếu chưa đăng nhập
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <Navigate to="/login" state={{ returnTo: location.pathname }} replace />
+    );
   }
 
   // Nếu cần role cụ thể
@@ -29,11 +31,19 @@ export function ProtectedRoute({
 }
 
 export function GuestRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
-  // Nếu đã đăng nhập, chuyển hướng đến dashboard
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+  // Nếu đã đăng nhập, chuyển hướng đến dashboard phù hợp với role
+  if (isAuthenticated && user) {
+    let dashboardPath = "/dashboard";
+
+    if (user.role === "admin") {
+      dashboardPath = "/admin/dashboard";
+    } else if (user.role === "manager") {
+      dashboardPath = "/manager/dashboard";
+    }
+
+    return <Navigate to={dashboardPath} replace />;
   }
 
   return children;

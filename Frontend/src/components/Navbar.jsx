@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
@@ -27,16 +27,35 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../hooks/useAuth";
 import { SettingsModal } from "./modals/SettingsModal";
 import { NotificationsModal } from "./modals/NotificationsModal";
+import notificationService from "../services/notificationService";
 
 export function Navbar({ role: propRole }) {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [unreadNotifications] = useState(3);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Xác định role từ prop hoặc user context
   const role = propRole || user?.role || "guest";
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (user && role !== "guest") {
+      const fetchUnreadCount = async () => {
+        try {
+          const count = await notificationService.getUnreadCount();
+          setUnreadNotifications(count || 0);
+        } catch (error) {
+          console.error("Error fetching unread count:", error);
+        }
+      };
+      fetchUnreadCount();
+      // Poll every 30 seconds for new notifications
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, role]);
 
   const guestLinks = [
     { href: "/", label: "Trang chủ", icon: Home },
@@ -74,6 +93,7 @@ export function Navbar({ role: propRole }) {
       case "admin":
         return adminLinks;
       case "guest":
+      case "public":
         return guestLinks;
       default:
         return guestLinks;
@@ -150,7 +170,10 @@ export function Navbar({ role: propRole }) {
               </Button>
 
               {/* Modals */}
-              <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+              <SettingsModal
+                open={settingsOpen}
+                onOpenChange={setSettingsOpen}
+              />
               <NotificationsModal
                 open={notificationsOpen}
                 onOpenChange={setNotificationsOpen}
@@ -169,7 +192,7 @@ export function Navbar({ role: propRole }) {
             </div>
           )}
 
-          {/* Mobile Menu */}
+          {/* Mobile */}
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon">

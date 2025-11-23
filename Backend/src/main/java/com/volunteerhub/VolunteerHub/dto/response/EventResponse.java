@@ -16,9 +16,19 @@ public class EventResponse {
     String description;
     Date date;
     String location;
+    String category;
+    String image;
     String status;
     String createdBy;
     String approvedBy;
     Date createdAt;
     Date updatedAt;
+    Integer volunteersNeeded;
+    Integer volunteersRegistered;
+    Long likes;
+    Long comments;
+    Long shares;
+    String contactName;
+    String contactEmail;
+    String contactPhone;
 }

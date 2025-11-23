@@ -8,7 +8,6 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-// Using div with overflow instead of ScrollArea for simplicity
 import {
   Bell,
   Check,
@@ -19,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import notificationService from "../../services/notificationService";
 
 export function NotificationsModal({ open, onOpenChange }) {
   const { user } = useAuth();
@@ -34,48 +34,49 @@ export function NotificationsModal({ open, onOpenChange }) {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const data = await notificationService.getNotifications(user.id);
+      const data = await notificationService.getNotifications();
       
-      // Mock data for now
-      const mockNotifications = [
-        {
-          id: "1",
-          title: "Đăng ký sự kiện thành công",
-          message: "Bạn đã đăng ký sự kiện 'Dọn dẹp bãi biển' thành công",
-          type: "success",
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          isRead: false,
-        },
-        {
-          id: "2",
-          title: "Sự kiện sắp diễn ra",
-          message: "Sự kiện 'Trồng cây xanh' sẽ diễn ra trong 3 ngày tới",
-          type: "info",
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          isRead: false,
-        },
-        {
-          id: "3",
-          title: "Hoàn thành sự kiện",
-          message: "Bạn đã hoàn thành sự kiện 'Dạy học cho trẻ em'",
-          type: "success",
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-          isRead: true,
-        },
-      ];
-      setNotifications(mockNotifications);
+  
+      const transformedNotifications = (data || []).map((n) => ({
+        id: n.id,
+        title: getNotificationTitle(n.type),
+        message: n.message,
+        type: mapNotificationType(n.type),
+        createdAt: n.createdAt ? new Date(n.createdAt) : new Date(),
+        isRead: n.isRead || false,
+      }));
+      
+      setNotifications(transformedNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const getNotificationTitle = (type) => {
+    const titles = {
+      event_status: "Trạng thái sự kiện",
+      registration_status: "Trạng thái đăng ký",
+      post_activity: "Hoạt động bài viết",
+      comment_activity: "Hoạt động bình luận",
+      system: "Thông báo hệ thống",
+    };
+    return titles[type] || "Thông báo";
+  };
+
+  const mapNotificationType = (type) => {
+
+    if (type === "event_status" || type === "registration_status") {
+      return "info";
+    }
+    return type || "info";
+  };
+
   const markAsRead = async (notificationId) => {
     try {
-      // TODO: Replace with actual API call
-      // await notificationService.markAsRead(notificationId);
+      await notificationService.markAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, isRead: true } : n

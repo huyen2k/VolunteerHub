@@ -13,6 +13,6 @@ import java.util.List;
 public class PostUpdateRequest {
     String content;
     List<String> images;
-    Number likesCount;
-    Number commentsCount;
+    Long likesCount;
+    Long commentsCount;
 }

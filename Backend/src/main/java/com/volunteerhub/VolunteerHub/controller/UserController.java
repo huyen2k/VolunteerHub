@@ -30,7 +30,7 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('USER_LIST')")
+    @PreAuthorize("hasAuthority('USER_LIST') or hasRole('ADMIN')")
     ApiResponse<List<UserResponse>> getAllUsers(){
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
@@ -80,5 +80,12 @@ public class UserController {
     ApiResponse<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return ApiResponse.<Void>builder().build();
+    }
+
+    @GetMapping("/{id}/stats")
+    ApiResponse<com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse> getUserStats(@PathVariable String id) {
+        return ApiResponse.<com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse>builder()
+                .result(userService.getUserStats(id))
+                .build();
     }
 }

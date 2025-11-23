@@ -6,52 +6,46 @@ import { ProtectedRoute, GuestRoute } from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingSpinner from "./components/LoadingSpinner";
 
-// Pages
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
-import ProfilePage from "./pages/ProfilePage";
-import UserProfilePage from "./pages/UserProfilePage";
-import SettingsPage from "./pages/SettingsPage";
-import DashboardPage from "./pages/DashboardPage";
-import NotificationsPage from "./pages/NotificationsPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
-import ThemeTestPage from "./pages/ThemeTestPage";
-import UserHistoryPage from "./pages/UserHistoryPage";
-import LoginTestPage from "./pages/LoginTestPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 
-// Event Pages
+// Event Pages (Public)
 import EventsPage from "./pages/events/EventsPage";
-import UserEventsPage from "./pages/events/UserEventsPage";
 import EventDetailPage from "./pages/events/EventDetailPage";
-import CreateEventPage from "./pages/events/CreateEventPage";
 
-// Community Pages
-import CommunityPage from "./pages/community/CommunityPage";
-import ChatPage from "./pages/community/ChatPage";
-import PostsPage from "./pages/community/PostsPage";
-import PostDetailPage from "./pages/community/PostDetailPage";
+// User Pages
+import UserDashboardPage from "./pages/user/DashboardPage";
+import UserProfilePage from "./pages/user/ProfilePage";
+import UserSettingsPage from "./pages/user/SettingsPage";
+import UserHistoryPage from "./pages/user/HistoryPage";
+import UserEventsPage from "./pages/user/EventsPage";
+import CommunityPage from "./pages/user/CommunityPage";
+import ChatPage from "./pages/user/ChatPage";
+import PostDetailPage from "./pages/user/PostDetailPage";
 
 // Admin Pages
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminEventsPage from "./pages/admin/AdminEventsPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
+import AdminCommunityPage from "./pages/admin/AdminCommunityPage";
 
 // Manager Pages
-import ManagerLoginPage from "./pages/manager/ManagerLoginPage";
 import ManagerDashboardPage from "./pages/manager/ManagerDashboardPage";
 import ManagerEventsPage from "./pages/manager/ManagerEventsPage";
 import ManagerEventDetailPage from "./pages/manager/ManagerEventDetailPage";
 import ManagerVolunteersPage from "./pages/manager/ManagerVolunteersPage";
 import ManagerCommunityPage from "./pages/manager/ManagerCommunityPage";
 import ManagerProfilePage from "./pages/manager/ManagerProfilePage";
+import ManagerCreateEventPage from "./pages/manager/CreateEventPage";
+import ManagerEditEventPage from "./pages/manager/EditEventPage";
 
 function App() {
   return (
@@ -67,10 +61,8 @@ function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/theme-test" element={<ThemeTestPage />} />
-                <Route path="/login-test" element={<LoginTestPage />} />
 
-                {/* Guest-only Routes */}
+                {/* Guest Routes */}
                 <Route
                   path="/login"
                   element={
@@ -102,6 +94,14 @@ function App() {
 
                 {/* Protected User Routes */}
                 <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <UserDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/profile"
                   element={
                     <ProtectedRoute>
@@ -113,15 +113,7 @@ function App() {
                   path="/settings"
                   element={
                     <ProtectedRoute>
-                      <SettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardPage />
+                      <UserSettingsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -134,23 +126,14 @@ function App() {
                   }
                 />
                 <Route
-                  path="/notifications"
+                  path="/user/events"
                   element={
                     <ProtectedRoute>
-                      <NotificationsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/events/create"
-                  element={
-                    <ProtectedRoute>
-                      <CreateEventPage />
+                      <UserEventsPage />
                     </ProtectedRoute>
                   }
                 />
 
-                {/* Protected Community Routes */}
                 <Route
                   path="/community"
                   element={
@@ -168,13 +151,14 @@ function App() {
                   }
                 />
                 <Route
-                  path="/community/posts"
+                  path="/community/chat/:channelId"
                   element={
                     <ProtectedRoute>
-                      <PostsPage />
+                      <ChatPage />
                     </ProtectedRoute>
                   }
                 />
+
                 <Route
                   path="/community/posts/:id"
                   element={
@@ -184,12 +168,11 @@ function App() {
                   }
                 />
 
-                {/* Admin Routes */}
                 <Route
                   path="/admin/login"
                   element={
                     <GuestRoute>
-                      <AdminLoginPage />
+                      <LoginPage />
                     </GuestRoute>
                   }
                 />
@@ -233,13 +216,20 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/admin/community"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminCommunityPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-                {/* Manager Routes */}
                 <Route
                   path="/manager/login"
                   element={
                     <GuestRoute>
-                      <ManagerLoginPage />
+                      <LoginPage />
                     </GuestRoute>
                   }
                 />
@@ -256,6 +246,22 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="manager">
                       <ManagerEventsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manager/events/create"
+                  element={
+                    <ProtectedRoute requiredRole="manager">
+                      <ManagerCreateEventPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/manager/events/:id/edit"
+                  element={
+                    <ProtectedRoute requiredRole="manager">
+                      <ManagerEditEventPage />
                     </ProtectedRoute>
                   }
                 />
@@ -292,10 +298,8 @@ function App() {
                   }
                 />
 
-                {/* Utility Routes */}
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-                {/* 404 Route */}
                 <Route path="*" element={<div>404 - Page Not Found</div>} />
               </Routes>
             </div>

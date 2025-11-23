@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
@@ -20,105 +20,147 @@ import {
   UserX,
   Calendar,
   MapPin,
-  Filter,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import eventService from "../../services/eventService";
+import registrationService from "../../services/registrationService";
+import userService from "../../services/userService";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function ManagerVolunteersPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterEvent, setFilterEvent] = useState("all");
+  const [volunteers, setVolunteers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const volunteers = [
-    {
-      id: 1,
-      name: "Trần Thị B",
-      email: "user1@example.com",
-      phone: "0912345678",
-      status: "confirmed",
-      registeredAt: "12/01/2025",
-      skills: ["Lãnh đạo", "Giao tiếp"],
-      experience: "2 năm",
-      events: [
-        { id: 1, title: "Dọn dẹp bãi biển Vũng Tàu", status: "completed" },
-        { id: 2, title: "Trồng cây xanh", status: "confirmed" },
-      ],
-      rating: 4.8,
-      completedEvents: 5,
-    },
-    {
-      id: 2,
-      name: "Lê Văn C",
-      email: "user2@example.com",
-      phone: "0923456789",
-      status: "pending",
-      registeredAt: "13/01/2025",
-      skills: ["Tổ chức", "Làm việc nhóm"],
-      experience: "1 năm",
-      events: [
-        { id: 1, title: "Dọn dẹp bãi biển Vũng Tàu", status: "pending" },
-      ],
-      rating: 4.2,
-      completedEvents: 2,
-    },
-    {
-      id: 3,
-      name: "Phạm Thị D",
-      email: "user3@example.com",
-      phone: "0934567890",
-      status: "confirmed",
-      registeredAt: "14/01/2025",
-      skills: ["Giao tiếp", "Ngoại ngữ"],
-      experience: "3 năm",
-      events: [
-        { id: 1, title: "Dọn dẹp bãi biển Vũng Tàu", status: "confirmed" },
-        { id: 3, title: "Dạy học cho trẻ em", status: "confirmed" },
-      ],
-      rating: 4.9,
-      completedEvents: 8,
-    },
-    {
-      id: 4,
-      name: "Hoàng Văn E",
-      email: "user4@example.com",
-      phone: "0945678901",
-      status: "rejected",
-      registeredAt: "15/01/2025",
-      skills: ["Kỹ thuật", "Sửa chữa"],
-      experience: "1 năm",
-      events: [
-        { id: 1, title: "Dọn dẹp bãi biển Vũng Tàu", status: "rejected" },
-      ],
-      rating: 3.5,
-      completedEvents: 1,
-    },
-    {
-      id: 5,
-      name: "Nguyễn Thị F",
-      email: "user5@example.com",
-      phone: "0956789012",
-      status: "confirmed",
-      registeredAt: "16/01/2025",
-      skills: ["Nhiếp ảnh", "Thiết kế"],
-      experience: "2 năm",
-      events: [
-        { id: 2, title: "Trồng cây xanh", status: "confirmed" },
-        { id: 3, title: "Dạy học cho trẻ em", status: "confirmed" },
-      ],
-      rating: 4.6,
-      completedEvents: 4,
-    },
-  ];
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user]);
 
-  const events = [
-    { id: 1, title: "Dọn dẹp bãi biển Vũng Tàu" },
-    { id: 2, title: "Trồng cây xanh tại công viên" },
-    { id: 3, title: "Dạy học cho trẻ em nghèo" },
-    { id: 4, title: "Phân phát thức ăn cho người vô gia cư" },
-  ];
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Fetch all events of the manager
+      const managerEvents = await eventService.getEventsByManager(user.id);
+      setEvents(managerEvents || []);
+
+      // Fetch registrations for each event and aggregate volunteers
+      const allVolunteers = [];
+      const volunteerMap = new Map(); // To deduplicate volunteers across events
+
+      for (const event of managerEvents || []) {
+        try {
+          // Fetch registrations for this event
+          const registrations = await eventService.getEventRegistrations(
+            event.id
+          );
+
+          // Fetch user details for each registration
+          for (const reg of registrations || []) {
+            const volunteerKey = reg.userId;
+
+            // If we haven't seen this volunteer yet, fetch their details
+            if (!volunteerMap.has(volunteerKey)) {
+              try {
+                const userData = await userService.getUserById(reg.userId);
+                volunteerMap.set(volunteerKey, {
+                  userId: reg.userId,
+                  name: userData.full_name || "Unknown",
+                  email: userData.email || "",
+                  phone: userData.phone || "",
+                  events: [],
+                });
+              } catch (err) {
+                console.error(`Error fetching user ${reg.userId}:`, err);
+                // Create a placeholder entry
+                volunteerMap.set(volunteerKey, {
+                  userId: reg.userId,
+                  name: "Unknown",
+                  email: "",
+                  phone: "",
+                  events: [],
+                });
+              }
+            }
+
+            // Add this event registration to the volunteer's events list
+            const volunteer = volunteerMap.get(volunteerKey);
+            volunteer.events.push({
+              eventId: event.id,
+              eventTitle: event.title || "Unknown Event",
+              registrationId: reg.id,
+              status: reg.status || "pending",
+              registeredAt: reg.registeredAt
+                ? new Date(reg.registeredAt).toLocaleDateString("vi-VN")
+                : "",
+            });
+          }
+        } catch (err) {
+          console.error(
+            `Error loading registrations for event ${event.id}:`,
+            err
+          );
+        }
+      }
+
+      // Convert map to array and determine overall status
+      const volunteersArray = Array.from(volunteerMap.values()).map(
+        (volunteer) => {
+          // Determine overall status: if any event is pending, status is pending
+          // Otherwise, use the most recent event status
+          const hasPending = volunteer.events.some(
+            (e) => e.status === "pending"
+          );
+          const hasApproved = volunteer.events.some(
+            (e) => e.status === "approved"
+          );
+          const hasRejected = volunteer.events.some(
+            (e) => e.status === "rejected"
+          );
+          const hasCompleted = volunteer.events.some(
+            (e) => e.status === "completed"
+          );
+
+          let overallStatus = "pending";
+          if (hasPending) {
+            overallStatus = "pending";
+          } else if (hasCompleted) {
+            overallStatus = "completed";
+          } else if (hasApproved) {
+            overallStatus = "approved";
+          } else if (hasRejected) {
+            overallStatus = "rejected";
+          }
+
+          return {
+            ...volunteer,
+            status: overallStatus,
+            registeredAt: volunteer.events[0]?.registeredAt || "",
+          };
+        }
+      );
+
+      setVolunteers(volunteersArray);
+    } catch (err) {
+      console.error("Error loading volunteers:", err);
+      setError(err.message || "Không thể tải danh sách tình nguyện viên");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case "confirmed":
+      case "approved":
+      case "completed":
         return <Badge className="bg-green-500 text-white">Đã xác nhận</Badge>;
       case "pending":
         return <Badge variant="secondary">Chờ xác nhận</Badge>;
@@ -133,7 +175,7 @@ export default function ManagerVolunteersPage() {
     switch (status) {
       case "completed":
         return <Badge className="bg-blue-500 text-white">Hoàn thành</Badge>;
-      case "confirmed":
+      case "approved":
         return <Badge className="bg-green-500 text-white">Đã xác nhận</Badge>;
       case "pending":
         return <Badge variant="secondary">Chờ xác nhận</Badge>;
@@ -154,25 +196,98 @@ export default function ManagerVolunteersPage() {
 
     const matchesEvent =
       filterEvent === "all" ||
-      volunteer.events.some((event) => event.id === parseInt(filterEvent));
+      volunteer.events.some((event) => event.eventId === filterEvent);
 
     return matchesSearch && matchesStatus && matchesEvent;
   });
 
-  const handleApproveVolunteer = (volunteerId) => {
-    console.log("Approve volunteer:", volunteerId);
-    // TODO: Implement approve logic
+  const handleApproveVolunteer = async (registrationId) => {
+    try {
+      await registrationService.updateRegistrationStatus(
+        registrationId,
+        "approved"
+      );
+      await loadData();
+    } catch (err) {
+      console.error("Error approving volunteer:", err);
+      alert(
+        "Không thể duyệt tình nguyện viên: " +
+          (err.message || "Lỗi không xác định")
+      );
+    }
   };
 
-  const handleRejectVolunteer = (volunteerId) => {
-    console.log("Reject volunteer:", volunteerId);
-    // TODO: Implement reject logic
+  const handleRejectVolunteer = async (registrationId) => {
+    if (!confirm("Bạn có chắc chắn muốn từ chối tình nguyện viên này?")) {
+      return;
+    }
+    try {
+      await registrationService.updateRegistrationStatus(
+        registrationId,
+        "rejected"
+      );
+      await loadData();
+    } catch (err) {
+      console.error("Error rejecting volunteer:", err);
+      alert(
+        "Không thể từ chối tình nguyện viên: " +
+          (err.message || "Lỗi không xác định")
+      );
+    }
   };
 
-  const handleMarkCompleted = (volunteerId, eventId) => {
-    console.log("Mark completed:", volunteerId, eventId);
-    // TODO: Implement mark completed logic
+  const handleMarkCompleted = async (registrationId) => {
+    try {
+      await registrationService.updateRegistrationStatus(
+        registrationId,
+        "completed"
+      );
+      await loadData();
+    } catch (err) {
+      console.error("Error marking completed:", err);
+      alert(
+        "Không thể đánh dấu hoàn thành: " +
+          (err.message || "Lỗi không xác định")
+      );
+    }
   };
+
+  if (loading) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <LoadingSpinner />
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ManagerLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-destructive">{error}</p>
+              <Button onClick={loadData} className="mt-4">
+                Thử lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ManagerLayout>
+    );
+  }
+
+  // Calculate stats
+  const totalVolunteers = volunteers.length;
+  const approvedCount = volunteers.filter(
+    (v) => v.status === "approved" || v.status === "completed"
+  ).length;
+  const pendingCount = volunteers.filter((v) => v.status === "pending").length;
+  const rejectedCount = volunteers.filter(
+    (v) => v.status === "rejected"
+  ).length;
 
   return (
     <ManagerLayout>
@@ -196,7 +311,7 @@ export default function ManagerVolunteersPage() {
                       Tổng tình nguyện viên
                     </p>
                     <p className="mt-1 text-3xl font-bold text-primary">
-                      {volunteers.length}
+                      {totalVolunteers}
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -212,10 +327,7 @@ export default function ManagerVolunteersPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Đã xác nhận</p>
                     <p className="mt-1 text-3xl font-bold text-green-600">
-                      {
-                        volunteers.filter((v) => v.status === "confirmed")
-                          .length
-                      }
+                      {approvedCount}
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -233,7 +345,7 @@ export default function ManagerVolunteersPage() {
                       Chờ xác nhận
                     </p>
                     <p className="mt-1 text-3xl font-bold text-yellow-600">
-                      {volunteers.filter((v) => v.status === "pending").length}
+                      {pendingCount}
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
@@ -249,7 +361,7 @@ export default function ManagerVolunteersPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Từ chối</p>
                     <p className="mt-1 text-3xl font-bold text-red-600">
-                      {volunteers.filter((v) => v.status === "rejected").length}
+                      {rejectedCount}
                     </p>
                   </div>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -278,9 +390,10 @@ export default function ManagerVolunteersPage() {
                 className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
               >
                 <option value="all">Tất cả trạng thái</option>
-                <option value="confirmed">Đã xác nhận</option>
+                <option value="approved">Đã xác nhận</option>
                 <option value="pending">Chờ xác nhận</option>
                 <option value="rejected">Từ chối</option>
+                <option value="completed">Hoàn thành</option>
               </select>
               <select
                 value={filterEvent}
@@ -290,7 +403,7 @@ export default function ManagerVolunteersPage() {
                 <option value="all">Tất cả sự kiện</option>
                 {events.map((event) => (
                   <option key={event.id} value={event.id}>
-                    {event.title}
+                    {event.title || "Unknown Event"}
                   </option>
                 ))}
               </select>
@@ -304,7 +417,7 @@ export default function ManagerVolunteersPage() {
           {/* Volunteers List */}
           <div className="grid gap-6">
             {filteredVolunteers.map((volunteer) => (
-              <Card key={volunteer.id}>
+              <Card key={volunteer.userId}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1">
@@ -313,30 +426,23 @@ export default function ManagerVolunteersPage() {
                           {volunteer.name}
                         </h3>
                         {getStatusBadge(volunteer.status)}
-                        <Badge variant="outline">⭐ {volunteer.rating}</Badge>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
                         <div>
                           <p className="text-muted-foreground">
-                            Email: {volunteer.email}
+                            Email: {volunteer.email || "Chưa có"}
                           </p>
                           <p className="text-muted-foreground">
-                            Số điện thoại: {volunteer.phone}
-                          </p>
-                          <p className="text-muted-foreground">
-                            Kinh nghiệm: {volunteer.experience}
+                            Số điện thoại: {volunteer.phone || "Chưa có"}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">
-                            Đăng ký lúc: {volunteer.registeredAt}
+                            Đăng ký lúc: {volunteer.registeredAt || "Chưa có"}
                           </p>
                           <p className="text-muted-foreground">
-                            Sự kiện hoàn thành: {volunteer.completedEvents}
-                          </p>
-                          <p className="text-muted-foreground">
-                            Kỹ năng: {volunteer.skills.join(", ")}
+                            Số sự kiện: {volunteer.events.length}
                           </p>
                         </div>
                       </div>
@@ -349,55 +455,61 @@ export default function ManagerVolunteersPage() {
                         <div className="space-y-2">
                           {volunteer.events.map((event) => (
                             <div
-                              key={event.id}
+                              key={event.registrationId}
                               className="flex items-center justify-between p-2 border rounded"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-sm">{event.title}</span>
+                                <span className="text-sm">
+                                  {event.eventTitle}
+                                </span>
                                 {getEventStatusBadge(event.status)}
                               </div>
-                              {event.status === "confirmed" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleMarkCompleted(volunteer.id, event.id)
-                                  }
-                                >
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Đánh dấu hoàn thành
-                                </Button>
-                              )}
+                              <div className="flex gap-2">
+                                {event.status === "pending" && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-500 hover:bg-green-600"
+                                      onClick={() =>
+                                        handleApproveVolunteer(
+                                          event.registrationId
+                                        )
+                                      }
+                                    >
+                                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                                      Duyệt
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() =>
+                                        handleRejectVolunteer(
+                                          event.registrationId
+                                        )
+                                      }
+                                    >
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Từ chối
+                                    </Button>
+                                  </>
+                                )}
+                                {event.status === "approved" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleMarkCompleted(event.registrationId)
+                                    }
+                                  >
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Đánh dấu hoàn thành
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 lg:flex-row">
-                      {volunteer.status === "pending" && (
-                        <>
-                          <Button
-                            size="sm"
-                            className="bg-green-500 hover:bg-green-600"
-                            onClick={() => handleApproveVolunteer(volunteer.id)}
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Xác nhận
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRejectVolunteer(volunteer.id)}
-                          >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Từ chối
-                          </Button>
-                        </>
-                      )}
-                      <Button variant="outline" size="sm">
-                        Xem hồ sơ
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -413,7 +525,9 @@ export default function ManagerVolunteersPage() {
                   Không tìm thấy tình nguyện viên
                 </h3>
                 <p className="text-muted-foreground text-center">
-                  Không có tình nguyện viên nào phù hợp với bộ lọc của bạn
+                  {searchTerm || filterStatus !== "all" || filterEvent !== "all"
+                    ? "Không có tình nguyện viên nào phù hợp với bộ lọc của bạn"
+                    : "Chưa có tình nguyện viên nào đăng ký sự kiện của bạn"}
                 </p>
               </CardContent>
             </Card>

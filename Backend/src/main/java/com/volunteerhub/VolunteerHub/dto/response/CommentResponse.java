@@ -16,6 +16,7 @@ public class CommentResponse {
     String id;
     String postId;
     String authorId;
+    String authorName;
     String content;
 
     @CreatedDate

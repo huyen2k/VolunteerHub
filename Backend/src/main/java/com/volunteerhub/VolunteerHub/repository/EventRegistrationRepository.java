@@ -9,4 +9,6 @@ public interface EventRegistrationRepository extends MongoRepository<EventRegist
     boolean existsByEventId(String eventId);
     boolean existsByUserId(String userId);
     boolean existsByEventIdAndUserId(String eventId, String userId);
+    java.util.List<EventRegistration> findByEventId(String eventId);
+    java.util.List<EventRegistration> findByUserId(String userId);
 }

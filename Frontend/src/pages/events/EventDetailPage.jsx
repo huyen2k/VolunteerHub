@@ -18,6 +18,18 @@ import { GuestLayout } from "../../components/Layout";
 import { useAuth } from "../../hooks/useAuth";
 import eventService from "../../services/eventService";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { Textarea } from "../../components/ui/textarea";
+import postService from "../../services/postService";
+import channelService from "../../services/channelService";
+import userService from "../../services/userService";
+import reportService from "../../services/reportService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { AlertCircle } from "lucide-react";
 import {
   Calendar,
   MapPin,
@@ -35,10 +47,18 @@ import {
   LogIn,
 } from "lucide-react";
 
+const defaultEventImage =
+  "https://www.wildapricot.com/wp-content/uploads/2022/10/bigstock-portrait-of-a-happy-and-divers-19389686.jpg";
+
 export default function EventDetailPage() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [event, setEvent] = useState(null);
+  const [managerContact, setManagerContact] = useState(null);
+  const [commentContent, setCommentContent] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [eventReportText, setEventReportText] = useState("");
+  const [eventReportOpen, setEventReportOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { isAuthenticated } = useAuth();
@@ -50,7 +70,7 @@ export default function EventDetailPage() {
         setLoading(true);
         setError("");
         const data = await eventService.getEventById(id);
-        // Map backend event format to frontend format
+        // Map backend
         const mappedEvent = {
           id: data.id || data._id || id,
           title: data.title || "Không có tiêu đề",
@@ -60,34 +80,27 @@ export default function EventDetailPage() {
             ? new Date(data.date).toLocaleDateString("vi-VN")
             : "",
           status: data.status || "pending",
-          category: "Sự kiện",
-          image: "/placeholder.svg",
+          category: data.category || "Sự kiện",
+          image: data.image || defaultEventImage,
           volunteers: 0,
-          maxVolunteers: 100,
+          maxVolunteers: data.volunteersNeeded || 0,
           likes: 0,
           comments: 0,
           shares: 0,
-          requirements: [
-            "Mang theo găng tay và dụng cụ bảo hộ",
-            "Mặc quần áo thoải mái, dễ vận động",
-            "Mang theo nước uống và đồ ăn nhẹ",
-            "Có tinh thần tích cực và nhiệt tình",
-            "Tuân thủ hướng dẫn của ban tổ chức",
-          ],
-          benefits: [
-            "Nhận chứng chỉ tham gia tình nguyện",
-            "Cơ hội giao lưu với các tình nguyện viên khác",
-            "Học hỏi về bảo vệ môi trường",
-            "Đóng góp tích cực cho cộng đồng",
-          ],
-          contact: {
-            name: "Ban tổ chức",
-            email: "contact@volunteerhub.com",
-            phone: "0123456789",
-            role: "Quản lý sự kiện",
-          },
+          contact: null,
         };
         setEvent(mappedEvent);
+        if (data.createdBy) {
+          try {
+            const creator = await userService.getUserById(data.createdBy);
+            setManagerContact({
+              name: creator.full_name || creator.email || "Ban tổ chức",
+              email: creator.email || "",
+              phone: creator.phone || "",
+              role: "Quản lý sự kiện",
+            });
+          } catch {}
+        }
       } catch (err) {
         setError(err.message || "Không thể tải thông tin sự kiện");
         console.error("Error loading event:", err);
@@ -101,7 +114,7 @@ export default function EventDetailPage() {
     }
   }, [id]);
 
-  // Use event from state, fallback to empty object if loading
+  // Sử dụng event được lấy hoặc exception for default
   const displayEvent = event || {
     id: id,
     title: "",
@@ -110,7 +123,7 @@ export default function EventDetailPage() {
     date: "",
     status: "pending",
     category: "Sự kiện",
-    image: "/placeholder.svg",
+    image: defaultEventImage,
     volunteers: 0,
     maxVolunteers: 100,
     likes: 0,
@@ -155,6 +168,48 @@ export default function EventDetailPage() {
       });
     } else {
       navigate(`/community?event=${id}`);
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    if (!isAuthenticated || !commentContent.trim()) return;
+    setSubmittingComment(true);
+    try {
+      let channel;
+      try {
+        channel = await channelService.getChannelByEventId(id);
+      } catch (err) {
+        channel = await channelService.createChannel({ eventId: id });
+      }
+      await postService.createPost({
+        content: commentContent.trim(),
+        images: [],
+        channelId: channel.id,
+      });
+      setCommentContent("");
+      alert("Đã gửi bình luận vào kênh sự kiện");
+    } catch (err) {
+      alert(
+        "Không thể gửi bình luận: " + (err.message || "Lỗi không xác định")
+      );
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const submitEventReport = async () => {
+    if (!eventReportText.trim()) return;
+    try {
+      await reportService.createReport({
+        type: "event",
+        targetId: id,
+        title: "Báo cáo sự kiện",
+        description: eventReportText.trim(),
+      });
+      setEventReportText("");
+      alert("Đã gửi báo cáo sự kiện");
+    } catch (err) {
+      alert("Không thể gửi báo cáo: " + (err.message || "Lỗi không xác định"));
     }
   };
 
@@ -251,10 +306,15 @@ export default function EventDetailPage() {
                 <Share2 className="mr-2 h-4 w-4" />
                 Chia sẻ
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEventReportOpen(true)}
+              >
+                <AlertCircle className="mr-2 h-4 w-4" /> Báo cáo
+              </Button>
             </div>
           </div>
 
-          {/* Login Prompt for Guest */}
           {!isAuthenticated && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-3">
@@ -434,7 +494,6 @@ export default function EventDetailPage() {
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-6 space-y-6">
-                  {/* Contact Info */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Thông tin liên hệ</CardTitle>
@@ -445,31 +504,66 @@ export default function EventDetailPage() {
                           <User className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="font-semibold">
-                              {displayEvent.contact?.name || "Ban tổ chức"}
+                              {managerContact?.name || "Ban tổ chức"}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {displayEvent.contact?.role || "Quản lý sự kiện"}
+                              {managerContact?.role || "Quản lý sự kiện"}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Mail className="h-5 w-5 text-muted-foreground" />
                           <span className="text-sm">
-                            {displayEvent.contact?.email ||
+                            {managerContact?.email ||
                               "contact@volunteerhub.com"}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
                           <Phone className="h-5 w-5 text-muted-foreground" />
                           <span className="text-sm">
-                            {displayEvent.contact?.phone || "0123456789"}
+                            {managerContact?.phone || "0123456789"}
                           </span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Event Schedule */}
+                  <Dialog
+                    open={eventReportOpen}
+                    onOpenChange={setEventReportOpen}
+                  >
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Báo cáo sự kiện</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        <Textarea
+                          placeholder="Mô tả vấn đề của sự kiện..."
+                          value={eventReportText}
+                          onChange={(e) => setEventReportText(e.target.value)}
+                          rows={4}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            onClick={() => setEventReportOpen(false)}
+                          >
+                            Hủy
+                          </Button>
+                          <Button
+                            onClick={async () => {
+                              await submitEventReport();
+                              setEventReportOpen(false);
+                            }}
+                            disabled={!eventReportText.trim()}
+                          >
+                            Gửi báo cáo
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                   <Card>
                     <CardHeader>
                       <CardTitle>Lịch trình sự kiện</CardTitle>
@@ -520,27 +614,40 @@ export default function EventDetailPage() {
                 <TabsContent value="community" className="mt-6 space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Kênh trao đổi</CardTitle>
+                      <CardTitle>Bình luận sự kiện</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground mb-4">
-                        Tham gia thảo luận với các tình nguyện viên khác về sự
-                        kiện này.
-                      </p>
                       {isAuthenticated ? (
-                        <Button asChild className="w-full">
-                          <Link to={`/community?event=${event.id}`}>
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Tham gia thảo luận
-                          </Link>
-                        </Button>
+                        <div className="space-y-3">
+                          <Textarea
+                            placeholder="Viết bình luận về sự kiện này..."
+                            value={commentContent}
+                            onChange={(e) => setCommentContent(e.target.value)}
+                            rows={4}
+                          />
+                          <Button
+                            className="w-full"
+                            onClick={handleSubmitComment}
+                            disabled={
+                              submittingComment || !commentContent.trim()
+                            }
+                          >
+                            <MessageSquare className="mr-2 h-4 w-4" /> Gửi bình
+                            luận
+                          </Button>
+                          <Button variant="outline" className="w-full" asChild>
+                            <Link to={`/community?event=${event.id}`}>
+                              Xem thảo luận trong cộng đồng
+                            </Link>
+                          </Button>
+                        </div>
                       ) : (
                         <Button
                           onClick={handleCommunityClick}
                           className="w-full"
                         >
-                          <LogIn className="mr-2 h-4 w-4" />
-                          Đăng nhập để tham gia thảo luận
+                          <LogIn className="mr-2 h-4 w-4" /> Đăng nhập để bình
+                          luận
                         </Button>
                       )}
                     </CardContent>
