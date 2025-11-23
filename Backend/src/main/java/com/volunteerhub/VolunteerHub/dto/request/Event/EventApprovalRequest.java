@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class EventApprovalRequest {
-    private EventStatus status;
+    private String status;
     private String reason;
 }
