@@ -3,7 +3,7 @@ package com.volunteerhub.VolunteerHub.service;
 import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
@@ -52,8 +52,10 @@ public class EventService {
 
     //Get events by manager
     public List<EventResponse> getEventsByManager(String managerId) {
-        return eventRepository.findAll().stream()
-                .filter(event -> managerId.equals(event.getCreatedBy()))
+        log.info("Dang tim kiem su kien cho Manager ID: " + managerId);
+        var events = eventRepository.findByCreatedBy(managerId);
+
+        return events.stream()
                 .map(this::toEnrichedResponse)
                 .toList();
     }
@@ -66,18 +68,19 @@ public class EventService {
 
     //Creat new event, user can create but need to be approved by admin or manager
     public EventResponse createEvent(EventCreationRequest request) {
-        log.info(request.toString());
+        log.info("Create Event Request: " + request.toString());
         Event event = eventMapper.toEvent(request);
-        log.info(event.toString());
-        event.setCreatedAt(new Date());
-        event.setUpdatedAt(new Date());
+
         event.setStatus("pending");
         event.setApprovedBy(null);
         event.setApprovedAt(null);
-        try {
-            var currentUser = userService.getMyInfo();
-            event.setCreatedBy(currentUser.getId());
-        } catch (Exception ignored) {}
+
+        var currentUser = userService.getMyInfo();
+        event.setCreatedBy(currentUser.getId());
+
+        if (event.getCreatedBy() == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         eventRepository.save(event);
         return toEnrichedResponse(event);
@@ -88,7 +91,7 @@ public class EventService {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         eventMapper.updateEvent(event, request);
         event.setStatus("pending");
-        event.setUpdatedAt(new Date());
+//        event.setUpdatedAt(new Date());
 
         eventRepository.save(event);
         return toEnrichedResponse(event);

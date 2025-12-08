@@ -45,7 +45,6 @@ public class Event {
     String approvedBy;     // userId của admin duyệt
     Date approvedAt;
 
-    @CreatedBy
     String createdBy;      // userId tạo event
 
     @CreatedDate

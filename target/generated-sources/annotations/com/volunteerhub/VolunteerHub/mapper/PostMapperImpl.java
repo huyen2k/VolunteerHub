@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-23T09:33:26+0700",
+    date = "2025-11-23T09:46:12+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -74,13 +74,22 @@ public class PostMapperImpl implements PostMapper {
         postResponse.id( post.getId() );
         postResponse.channelId( post.getChannelId() );
         postResponse.authorId( post.getAuthorId() );
-        postResponse.content( post.getContent() );
-        List<String> list = post.getImages();
+        postResponse.authorName( post.getAuthorName() );
+        postResponse.authorAvatar( post.getAuthorAvatar() );
+        postResponse.title( post.getTitle() );
+        postResponse.category( post.getCategory() );
+        List<String> list = post.getTags();
         if ( list != null ) {
-            postResponse.images( new ArrayList<String>( list ) );
+            postResponse.tags( new ArrayList<String>( list ) );
+        }
+        postResponse.content( post.getContent() );
+        List<String> list1 = post.getImages();
+        if ( list1 != null ) {
+            postResponse.images( new ArrayList<String>( list1 ) );
         }
         postResponse.likesCount( post.getLikesCount() );
         postResponse.commentsCount( post.getCommentsCount() );
+        postResponse.views( post.getViews() );
         postResponse.createdAt( post.getCreatedAt() );
         postResponse.updatedAt( post.getUpdatedAt() );
 
