@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-12T09:28:33+0700",
+    date = "2025-11-23T09:46:12+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -46,6 +46,7 @@ public class EventRegistrationMapperImpl implements EventRegistrationMapper {
 
         EventRegistrationResponse.EventRegistrationResponseBuilder eventRegistrationResponse = EventRegistrationResponse.builder();
 
+        eventRegistrationResponse.id( EventRegistration.getId() );
         eventRegistrationResponse.eventId( EventRegistration.getEventId() );
         eventRegistrationResponse.userId( EventRegistration.getUserId() );
         eventRegistrationResponse.status( EventRegistration.getStatus() );

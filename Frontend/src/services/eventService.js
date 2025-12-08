@@ -3,7 +3,7 @@ import apiService from "./api";
 
 export const eventService = {
   // Lấy danh sách tất cả sự kiện
-  async getEvents(filters = {}) {
+  async getEvents() {
     try {
       // Backend endpoint: GET /events
       const events = await apiService.get("/events");

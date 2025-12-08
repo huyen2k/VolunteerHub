@@ -117,48 +117,76 @@ export default function CreateEventPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("=== 1. BẮT ĐẦU SUBMIT FORM ===");
+
     setSubmitError("");
     setErrors({});
 
-    // Convert date string to Date object for validation
+    // Chuẩn bị dữ liệu để validate
     const eventData = {
       ...formData,
       date: formData.date ? new Date(formData.date) : null,
+      image: imageFile ? "https://waiting-for-upload.com/temp.jpg" : formData.image,
     };
 
-    // Validate entire form
+    console.log("2. Dữ liệu chuẩn bị validate:", eventData);
+
+    // Validate
     const validation = validateEvent(eventData);
+    console.log("3. Kết quả validate:", validation);
+
     if (!validation.isValid) {
       const validationErrors = getValidationErrors(eventData);
+      console.warn("4. Validate THẤT BẠI. Lỗi chi tiết:", validationErrors);
       setErrors(validationErrors);
-      return;
+      return; // <--- Code sẽ dừng ở đây nếu validate sai
     }
 
+    console.log("5. Validate THÀNH CÔNG. Bắt đầu xử lý upload ảnh...");
     setLoading(true);
 
     try {
-      // Format date for backend (ISO string)
+      // Logic upload ảnh
       let imageUrl = null;
       try {
-        imageUrl = await uploadImageIfNeeded();
-      } catch (_) {}
+        // Gọi hàm uploadImageIfNeeded (để hết lỗi unused)
+        if (imageFile) {
+          console.log("6. Đang upload ảnh...");
+          imageUrl = await uploadImageIfNeeded();
+          console.log("7. Upload ảnh thành công. URL:", imageUrl);
+        } else {
+          console.log("6. Người dùng không chọn ảnh, bỏ qua upload.");
+        }
+      } catch (uploadErr) {
+        console.warn("Lỗi upload ảnh (không nghiêm trọng):", uploadErr);
+      }
+
+      // Chuẩn bị payload gửi về Backend
       const submitData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        date: new Date(formData.date).toISOString(),
+        date: new Date(formData.date).toISOString(), // Format ISO chuẩn cho Backend
         location: formData.location.trim(),
         category: formData.category?.trim() || undefined,
         image: imageUrl || formData.image?.trim() || undefined,
         volunteersNeeded: formData.maxVolunteers ? parseInt(formData.maxVolunteers, 10) : undefined,
       };
 
+      console.log("8. Dữ liệu cuối cùng gửi đi (Payload):", submitData);
+
+      // Gọi API createEvent (để hết lỗi unused eventService)
+      console.log("9. Đang gọi API createEvent...");
       await eventService.createEvent(submitData);
+
+      console.log("10. TẠO SỰ KIỆN THÀNH CÔNG! Chuyển trang...");
       navigate("/manager/events", { replace: true });
+
     } catch (err) {
-      console.error("Error creating event:", err);
+      console.error("❌ LỖI XẢY RA (Catch Block):", err);
       setSubmitError(err.message || "Không thể tạo sự kiện. Vui lòng thử lại.");
     } finally {
       setLoading(false);
+      console.log("=== KẾT THÚC SUBMIT ===");
     }
   };
 

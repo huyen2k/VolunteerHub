@@ -2,7 +2,7 @@ package com.volunteerhub.VolunteerHub.controller;
 
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.service.EventService;

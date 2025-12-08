@@ -41,7 +41,10 @@ export default function ManagerEventsPage() {
 
   useEffect(() => {
     if (user?.id) {
+      console.log("User ID hien tai o Frontend:", user.id);
       loadEvents();
+    } else {
+      console.log("Chua co User ID (user null hoac undefined)");
     }
   }, [user]);
 
