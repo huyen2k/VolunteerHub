@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-23T09:46:12+0700",
+    date = "2025-12-10T20:20:37+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -50,7 +50,7 @@ public class UserMapperImpl implements UserMapper {
         user.setPhone( request.getPhone() );
         user.setAddress( request.getAddress() );
         user.setBio( request.getBio() );
-        user.setIs_active( request.getIs_active() );
+        user.setIsActive( request.getIsActive() );
     }
 
     @Override
@@ -59,24 +59,7 @@ public class UserMapperImpl implements UserMapper {
             return;
         }
 
-        user.setEmail( request.getEmail() );
-        if ( user.getRoles() != null ) {
-            Set<String> set = request.getRoles();
-            if ( set != null ) {
-                user.getRoles().clear();
-                user.getRoles().addAll( set );
-            }
-            else {
-                user.setRoles( null );
-            }
-        }
-        else {
-            Set<String> set = request.getRoles();
-            if ( set != null ) {
-                user.setRoles( new LinkedHashSet<String>( set ) );
-            }
-        }
-        user.setIs_active( request.getIs_active() );
+        user.setIsActive( request.getIsActive() );
     }
 
     @Override
@@ -98,7 +81,7 @@ public class UserMapperImpl implements UserMapper {
         userResponse.phone( user.getPhone() );
         userResponse.address( user.getAddress() );
         userResponse.bio( user.getBio() );
-        userResponse.is_active( user.getIs_active() );
+        userResponse.isActive( user.getIsActive() );
         userResponse.created_at( user.getCreated_at() );
         userResponse.updated_at( user.getUpdated_at() );
 

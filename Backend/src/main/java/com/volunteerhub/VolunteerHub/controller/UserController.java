@@ -55,6 +55,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<UserResponse> updateUserStatus(@PathVariable String id, @RequestBody UserStatusRequest request){
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUserStatus(id, request))

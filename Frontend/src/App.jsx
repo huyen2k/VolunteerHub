@@ -4,8 +4,8 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute, GuestRoute } from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
-import LoadingSpinner from "./components/LoadingSpinner";
 
+// --- Import Pages ---
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -15,7 +15,7 @@ import UnauthorizedPage from "./pages/UnauthorizedPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 
-// Event Pages (Public)
+// Event Pages
 import EventsPage from "./pages/events/EventsPage";
 import EventDetailPage from "./pages/events/EventDetailPage";
 
@@ -48,266 +48,68 @@ import ManagerCreateEventPage from "./pages/manager/CreateEventPage";
 import ManagerEditEventPage from "./pages/manager/EditEventPage";
 
 function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" enableSystem>
-        <AuthProvider>
-          <Router>
-            <div className="App">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
+    return (
+        <ErrorBoundary>
+            <ThemeProvider defaultTheme="light" enableSystem>
+                <AuthProvider>
+                    <Router>
+                        <div className="App min-h-screen bg-background font-sans antialiased">
+                            <Routes>
+                                {/* --- PUBLIC ROUTES --- */}
+                                <Route path="/" element={<HomePage />} />
+                                <Route path="/about" element={<AboutPage />} />
+                                <Route path="/contact" element={<ContactPage />} />
+                                <Route path="/terms" element={<TermsPage />} />
+                                <Route path="/privacy" element={<PrivacyPage />} />
+                                <Route path="/events" element={<EventsPage />} />
+                                <Route path="/events/:id" element={<EventDetailPage />} />
+                                <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-                {/* Guest Routes */}
-                <Route
-                  path="/login"
-                  element={
-                    <GuestRoute>
-                      <LoginPage />
-                    </GuestRoute>
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
-                    <GuestRoute>
-                      <RegisterPage />
-                    </GuestRoute>
-                  }
-                />
+                                {/* --- GUEST ROUTES (Chưa đăng nhập mới vào được) --- */}
+                                <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+                                <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+                                <Route path="/admin/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+                                <Route path="/manager/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
 
-                {/* Event Routes - Public for guests, Protected for authenticated users */}
-                <Route path="/events" element={<EventsPage />} />
-                <Route
-                  path="/user/events"
-                  element={
-                    <ProtectedRoute>
-                      <UserEventsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/events/:id" element={<EventDetailPage />} />
+                                {/* --- USER / VOLUNTEER ROUTES --- */}
+                                {/* requiredRole mặc định null tức là chỉ cần login là vào được */}
+                                <Route path="/dashboard" element={<ProtectedRoute><UserDashboardPage /></ProtectedRoute>} />
+                                <Route path="/profile" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+                                <Route path="/settings" element={<ProtectedRoute><UserSettingsPage /></ProtectedRoute>} />
+                                <Route path="/profile/history" element={<ProtectedRoute><UserHistoryPage /></ProtectedRoute>} />
+                                <Route path="/user/events" element={<ProtectedRoute><UserEventsPage /></ProtectedRoute>} />
+                                <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+                                <Route path="/community/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                                <Route path="/community/chat/:channelId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                                <Route path="/community/posts/:id" element={<ProtectedRoute><PostDetailPage /></ProtectedRoute>} />
 
-                {/* Protected User Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <UserDashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <UserProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <UserSettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile/history"
-                  element={
-                    <ProtectedRoute>
-                      <UserHistoryPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/user/events"
-                  element={
-                    <ProtectedRoute>
-                      <UserEventsPage />
-                    </ProtectedRoute>
-                  }
-                />
+                                {/* --- ADMIN ROUTES (requiredRole="admin") --- */}
+                                <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboardPage /></ProtectedRoute>} />
+                                <Route path="/admin/events" element={<ProtectedRoute requiredRole="admin"><AdminEventsPage /></ProtectedRoute>} />
+                                <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsersPage /></ProtectedRoute>} />
+                                <Route path="/admin/reports" element={<ProtectedRoute requiredRole="admin"><AdminReportsPage /></ProtectedRoute>} />
+                                <Route path="/admin/profile" element={<ProtectedRoute requiredRole="admin"><AdminProfilePage /></ProtectedRoute>} />
+                                <Route path="/admin/community" element={<ProtectedRoute requiredRole="admin"><AdminCommunityPage /></ProtectedRoute>} />
 
-                <Route
-                  path="/community"
-                  element={
-                    <ProtectedRoute>
-                      <CommunityPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/community/chat"
-                  element={
-                    <ProtectedRoute>
-                      <ChatPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/community/chat/:channelId"
-                  element={
-                    <ProtectedRoute>
-                      <ChatPage />
-                    </ProtectedRoute>
-                  }
-                />
+                                {/* --- MANAGER ROUTES (requiredRole="manager") --- */}
+                                <Route path="/manager/dashboard" element={<ProtectedRoute requiredRole="manager"><ManagerDashboardPage /></ProtectedRoute>} />
+                                <Route path="/manager/events" element={<ProtectedRoute requiredRole="manager"><ManagerEventsPage /></ProtectedRoute>} />
+                                <Route path="/manager/events/create" element={<ProtectedRoute requiredRole="manager"><ManagerCreateEventPage /></ProtectedRoute>} />
+                                <Route path="/manager/events/:id/edit" element={<ProtectedRoute requiredRole="manager"><ManagerEditEventPage /></ProtectedRoute>} />
+                                <Route path="/manager/events/:id" element={<ProtectedRoute requiredRole="manager"><ManagerEventDetailPage /></ProtectedRoute>} />
+                                <Route path="/manager/volunteers" element={<ProtectedRoute requiredRole="manager"><ManagerVolunteersPage /></ProtectedRoute>} />
+                                <Route path="/manager/community" element={<ProtectedRoute requiredRole="manager"><ManagerCommunityPage /></ProtectedRoute>} />
+                                <Route path="/manager/profile" element={<ProtectedRoute requiredRole="manager"><ManagerProfilePage /></ProtectedRoute>} />
 
-                <Route
-                  path="/community/posts/:id"
-                  element={
-                    <ProtectedRoute>
-                      <PostDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/admin/login"
-                  element={
-                    <GuestRoute>
-                      <LoginPage />
-                    </GuestRoute>
-                  }
-                />
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminDashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/events"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminEventsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminUsersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/reports"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminReportsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/profile"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/community"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminCommunityPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/manager/login"
-                  element={
-                    <GuestRoute>
-                      <LoginPage />
-                    </GuestRoute>
-                  }
-                />
-                <Route
-                  path="/manager/dashboard"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerDashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/events"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerEventsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/events/create"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerCreateEventPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/events/:id/edit"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerEditEventPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/events/:id"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerEventDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/volunteers"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerVolunteersPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/community"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerCommunityPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/manager/profile"
-                  element={
-                    <ProtectedRoute requiredRole="manager">
-                      <ManagerProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route path="/unauthorized" element={<UnauthorizedPage />} />
-
-                <Route path="*" element={<div>404 - Page Not Found</div>} />
-              </Routes>
-            </div>
-          </Router>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
+                                {/* Fallback 404 */}
+                                <Route path="*" element={<div className="flex items-center justify-center h-screen">404 - Page Not Found</div>} />
+                            </Routes>
+                        </div>
+                    </Router>
+                </AuthProvider>
+            </ThemeProvider>
+        </ErrorBoundary>
+    );
 }
 
 export default App;

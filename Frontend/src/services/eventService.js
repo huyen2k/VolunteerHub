@@ -2,10 +2,9 @@
 import apiService from "./api";
 
 export const eventService = {
-  // Lấy danh sách tất cả sự kiện
+  // Lấy danh sách sự kiện (Public - Chỉ Approved)
   async getEvents() {
     try {
-      // Backend endpoint: GET /events
       const events = await apiService.get("/events");
       return events || [];
     } catch (error) {
@@ -14,7 +13,18 @@ export const eventService = {
     }
   },
 
-  // Lấy chi tiết sự kiện theo ID
+  // Lấy tất cả sự kiện cho Admin (Pending/Rejected/Approved)
+  async getEventsForAdmin() {
+    try {
+      // Backend endpoint: GET /events/admin
+      const events = await apiService.get("/events/admin");
+      return events || [];
+    } catch (error) {
+      console.error("Error fetching admin events:", error);
+      throw error;
+    }
+  },
+
   async getEventById(id) {
     try {
       return await apiService.get(`/events/${id}`);
@@ -24,7 +34,6 @@ export const eventService = {
     }
   },
 
-  // Tạo sự kiện mới
   async createEvent(eventData) {
     try {
       return await apiService.post("/events", eventData);
@@ -34,7 +43,6 @@ export const eventService = {
     }
   },
 
-  // Cập nhật sự kiện
   async updateEvent(id, eventData) {
     try {
       return await apiService.put(`/events/${id}`, eventData);
@@ -44,7 +52,6 @@ export const eventService = {
     }
   },
 
-  // Xóa sự kiện
   async deleteEvent(id) {
     try {
       return await apiService.delete(`/events/${id}`);
@@ -54,7 +61,6 @@ export const eventService = {
     }
   },
 
-  // Duyệt sự kiện (Admin)
   async approveEvent(id, status, reason) {
     try {
       return await apiService.put(`/events/${id}/approve`, { status, reason });
@@ -64,7 +70,6 @@ export const eventService = {
     }
   },
 
-  // Đăng ký tham gia sự kiện
   async registerForEvent(eventId) {
     try {
       return await apiService.post("/registrations", { eventId });
@@ -74,7 +79,6 @@ export const eventService = {
     }
   },
 
-  // Hủy đăng ký sự kiện
   async cancelEventRegistration(registrationId) {
     try {
       return await apiService.delete(`/registrations/${registrationId}`);
@@ -84,7 +88,6 @@ export const eventService = {
     }
   },
 
-  // Lấy danh sách sự kiện của user
   async getUserEvents(userId) {
     try {
       return await apiService.get(`/registrations/user/${userId}`);
@@ -94,7 +97,6 @@ export const eventService = {
     }
   },
 
-  // Lấy danh sách tình nguyện viên đã đăng ký sự kiện
   async getEventRegistrations(eventId) {
     try {
       return await apiService.get(`/registrations/event/${eventId}`);
@@ -104,7 +106,6 @@ export const eventService = {
     }
   },
 
-  // Lấy danh sách sự kiện của manager
   async getEventsByManager(managerId) {
     try {
       return await apiService.get(`/events/manager/${managerId}`);
@@ -114,7 +115,6 @@ export const eventService = {
     }
   },
 
-  // Reject event (admin)
   async rejectEvent(id, reason) {
     try {
       return await apiService.put(`/events/${id}/reject`, { status: "rejected", reason });

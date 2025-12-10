@@ -1,175 +1,119 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 import { authService } from "../services/authService";
 
-const AuthContext = createContext();
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext({
+  user: null,
+  loading: true,
+  isAuthenticated: false,
+  login: async () => {},
+  register: async () => {},
+  updateUser: async () => {},
+  logout: () => {},
+  hasRole: () => false,
+});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = async () => {
-    try {
-      const userData = await authService.getProfile();
-      const mappedUser = mapBackendUserToFrontend(userData);
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Check for existing session and validate token
-    const token = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-
-    if (token && savedUser) {
-      authService
-        .introspect(token)
-        .then((result) => {
-          if (result.valid) {
-            loadUserProfile();
-          } else {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            setLoading(false);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
+  // Helper map dữ liệu
   const mapBackendUserToFrontend = (backendUser) => {
     const roles = backendUser.roles || [];
-    const role = roles.includes("ADMIN")
-      ? "admin"
-      : roles.includes("EVEN_MANAGER")
-      ? "manager"
-      : "volunteer";
+    let role = "volunteer";
+    if (roles.includes("ADMIN")) role = "admin";
+    else if (roles.includes("EVEN_MANAGER")) role = "manager";
+
     return {
       id: backendUser.id,
       email: backendUser.email,
       name: backendUser.full_name || backendUser.email,
-      role,
-      avatar: backendUser.avatar_url || "/avatars/default.jpg",
+      role: role,
+      roles: roles,
+      avatar: backendUser.avatar_url || "",
       phone: backendUser.phone || "",
       address: backendUser.address || "",
       bio: backendUser.bio || "",
-      isActive: backendUser.is_active !== false,
+      isActive: backendUser.isActive,
       createdAt: backendUser.created_at,
       updatedAt: backendUser.updated_at,
-      roles,
     };
   };
 
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await authService.getProfile();
+        if (userData) {
+          const mappedUser = mapBackendUserToFrontend(userData);
+          setUser(mappedUser);
+          localStorage.setItem("user", JSON.stringify(mappedUser));
+        }
+      } catch (error) {
+        console.error("Auth init failed:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
   const login = async (email, password) => {
-    try {
-      await authService.login(email, password);
-      const userData = await authService.getProfile();
-      const mappedUser = mapBackendUserToFrontend(userData);
-
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-
-      return mappedUser;
-    } catch (error) {
-      throw new Error("Login failed: " + error.message);
-    }
+    await authService.login(email, password);
+    const userData = await authService.getProfile();
+    const mappedUser = mapBackendUserToFrontend(userData);
+    setUser(mappedUser);
+    localStorage.setItem("user", JSON.stringify(mappedUser));
+    return mappedUser;
   };
 
   const register = async (name, email, password, phone = "", address = "", role = "volunteer") => {
-    try {
-      // Register user
-      await authService.register({
-        email,
-        password,
-        full_name: name,
-        phone,
-        address,
-        avatar_url: "/avatars/default.jpg",
-        bio: "",
-        role: role, // Send role to backend
-      });
-
-      // After successful registration, login to get token
-      await authService.login(email, password);
-
-      // Get user profile with token
-      const profileData = await authService.getProfile();
-      const mappedUser = mapBackendUserToFrontend(profileData);
-
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-
-      return mappedUser;
-    } catch (error) {
-      throw new Error("Registration failed: " + error.message);
-    }
+    await authService.register({
+      email,
+      password,
+      full_name: name,
+      phone,
+      address,
+      avatar_url: "",
+      role: role,
+    });
+    return await login(email, password);
   };
 
   const updateUser = async (updatedData) => {
-    try {
-      if (!user) {
-        throw new Error("No user logged in");
-      }
-
-      const updatedUser = await authService.updateProfile(user.id, updatedData);
-      const mappedUser = mapBackendUserToFrontend(updatedUser);
-
-      setUser(mappedUser);
-      localStorage.setItem("user", JSON.stringify(mappedUser));
-      return mappedUser;
-    } catch (error) {
-      throw new Error("Update failed: " + error.message);
-    }
+    if (!user) throw new Error("No user logged in");
+    const updatedBackendUser = await authService.updateProfile(user.id, updatedData);
+    const mappedUser = mapBackendUserToFrontend(updatedBackendUser);
+    setUser(mappedUser);
+    localStorage.setItem("user", JSON.stringify(mappedUser));
+    return mappedUser;
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setUser(null);
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-      window.location.href = "/";
-    }
+  const logout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setUser(null);
+    window.location.href = "/login";
   };
 
-  const hasPermission = (permission) => {
-    if (!user) return false;
-    return user.permissions?.includes(permission) || false;
-  };
+  const hasRole = (roleToCheck) => user?.role === roleToCheck;
 
-  const hasRole = (role) => {
-    if (!user) return false;
-    return user.role === role;
-  };
-
-  const value = {
-    user,
-    login,
-    register,
-    updateUser,
-    logout,
-    loading,
-    isAuthenticated: !!user,
-    hasPermission,
-    hasRole,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+      <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, updateUser, logout, hasRole }}>
+        {children}
+      </AuthContext.Provider>
+  );
 }
 
-export { AuthContext };
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = () => useContext(AuthContext);

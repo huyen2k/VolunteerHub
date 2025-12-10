@@ -47,7 +47,16 @@ public class EventService {
 
     //Get all events, anyone can use this service
     public List<EventResponse> getEvents() {
-        return eventRepository.findAll().stream().map(this::toEnrichedResponse).toList();
+        return eventRepository.findAll().stream()
+                .filter(event -> "approved".equals(event.getStatus()))
+                .map(this::toEnrichedResponse)
+                .toList();
+    }
+
+    public List<EventResponse> getAllEventsForAdmin() {
+        return eventRepository.findAll().stream()
+                .map(this::toEnrichedResponse)
+                .toList();
     }
 
     //Get events by manager

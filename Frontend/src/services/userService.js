@@ -43,9 +43,14 @@ export const userService = {
   },
 
   // Cập nhật trạng thái user (Admin)
-  async updateUserStatus(id, status) {
+  async updateUserStatus(userId, status) {
     try {
-      return await apiService.put(`/users/${id}/status`, { is_active: status });
+      console.log("Sending status update:", status);
+
+
+      const payload = { isActive: status };
+
+      return await apiService.put(`/users/${userId}/status`, payload);
     } catch (error) {
       console.error("Error updating user status:", error);
       throw error;
