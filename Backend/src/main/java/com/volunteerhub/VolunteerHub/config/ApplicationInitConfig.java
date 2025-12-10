@@ -52,7 +52,7 @@ public class ApplicationInitConfig {
                         .password(passwordEncoder.encode(ADMIN_USER_PASSWORD))
                         .roles(roles)
                         .full_name("Admin User")
-                        .is_active(true)
+                        .isActive(true)
                         .build();
 
                 userRepository.save(user);
@@ -69,7 +69,7 @@ public class ApplicationInitConfig {
                         .password(passwordEncoder.encode(MANAGER_USER_PASSWORD))
                         .roles(roles)
                         .full_name("Event Manager")
-                        .is_active(true)
+                        .isActive(true)
                         .build();
 
                 userRepository.save(user);

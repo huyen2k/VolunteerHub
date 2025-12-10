@@ -20,5 +20,5 @@ public class UserUpdateRequest {
     private String phone;
     private String address;
     private String bio;
-    private Boolean is_active;
+    private Boolean isActive;
 }

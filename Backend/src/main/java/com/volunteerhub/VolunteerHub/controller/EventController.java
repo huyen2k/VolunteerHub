@@ -33,6 +33,14 @@ public class EventController {
                             .build();
     }
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ Admin được gọi
+    public ApiResponse<List<EventResponse>> getAllEventsForAdmin() {
+        return ApiResponse.<List<EventResponse>>builder()
+                .result(eventService.getAllEventsForAdmin())
+                .build();
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('EVEN_MANAGER') or hasAuthority('CREATE_EVENT')")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {

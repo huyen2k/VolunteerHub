@@ -71,6 +71,12 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
+        if (!user.getIsActive()) {
+            throw new AppException(ErrorCode.USER_LOCKED); // Hoặc ném lỗi tương tự
+            // Nếu chưa có ErrorCode.USER_LOCKED, bạn có thể ném tạm:
+            // throw new RuntimeException("Tài khoản đã bị khóa!");
+        }
+
         var token = generateToken(user);
         return AuthenticationResponse.builder()
                 .token(token)
