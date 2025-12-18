@@ -21,6 +21,8 @@ public class Channel {
     String id;
     String eventId;
     Number postCount;
+    private String name;
+    private String type;
 
     @CreatedDate
     Date createdAt;

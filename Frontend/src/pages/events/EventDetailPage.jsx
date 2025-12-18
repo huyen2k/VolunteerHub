@@ -1,788 +1,430 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Textarea } from "../../components/ui/textarea";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../components/ui/tabs";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from "../../components/ui/dialog";
 import {
-  GuestLayout,
-  UserLayout,
-  AdminLayout,
-  ManagerLayout,
+  GuestLayout, UserLayout, AdminLayout, ManagerLayout,
 } from "../../components/Layout";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import PostItem from "../../components/PostItem";
+
+// Hooks & Services
 import { useAuth } from "../../hooks/useAuth";
 import eventService from "../../services/eventService";
-import LoadingSpinner from "../../components/LoadingSpinner";
-import { Textarea } from "../../components/ui/textarea";
 import postService from "../../services/postService";
 import channelService from "../../services/channelService";
 import userService from "../../services/userService";
 import reportService from "../../services/reportService";
+
+// Icons
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
-import {
-  AlertCircle,
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  ArrowLeft,
-  Heart,
-  MessageSquare,
-  Share2,
-  CheckCircle2,
-  XCircle,
-  User,
-  Phone,
-  Mail,
-  LogIn,
+  Calendar, MapPin, Users, Clock, ArrowLeft, Heart,
+  MessageSquare, Share2, CheckCircle2, AlertCircle,
+  Phone, Mail, User, LogIn, Send, Hourglass, Star
 } from "lucide-react";
 
-const defaultEventImage =
-    "https://www.wildapricot.com/wp-content/uploads/2022/10/bigstock-portrait-of-a-happy-and-divers-19389686.jpg";
+const defaultEventImage = "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=1000";
 
 export default function EventDetailPage() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+
+  // --- STATE ---
   const [event, setEvent] = useState(null);
   const [managerContact, setManagerContact] = useState(null);
-  const [commentContent, setCommentContent] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [eventReportText, setEventReportText] = useState("");
-  const [eventReportOpen, setEventReportOpen] = useState(false);
+  const [userRegistration, setUserRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Community State
+  const [activeTab, setActiveTab] = useState("overview");
+  const [channelPosts, setChannelPosts] = useState([]);
+  const [currentChannel, setCurrentChannel] = useState(null);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [commentContent, setCommentContent] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
 
-  const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
+  // Report State
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
 
   const getLayout = () => {
     if (!isAuthenticated) return GuestLayout;
-
-    // Dựa vào role của user để trả về Layout tương ứng
     switch (user?.role) {
-      case "admin":
-        return AdminLayout;
-      case "manager":
-        return ManagerLayout;
-      case "volunteer":
-        return UserLayout;
-      default:
-        return UserLayout; // Mặc định cho user đăng nhập
+      case "admin": return AdminLayout;
+      case "manager": return ManagerLayout;
+      case "volunteer": return UserLayout;
+      default: return UserLayout;
     }
   };
-
   const Layout = getLayout();
 
+  // --- 1. LOAD DATA ---
   useEffect(() => {
-    const loadEvent = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        setError("");
-        const data = await eventService.getEventById(id);
-        // Map backend
-        const mappedEvent = {
-          id: data.id || data._id || id,
-          title: data.title || "Không có tiêu đề",
-          description: data.description || "",
-          location: data.location || "Chưa có địa điểm",
-          date: data.date
-              ? new Date(data.date).toLocaleDateString("vi-VN")
-              : "",
-          status: data.status || "pending",
-          category: data.category || "Sự kiện",
-          image: data.image || defaultEventImage,
-          volunteers: 0,
-          maxVolunteers: data.volunteersNeeded || 0,
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          contact: null,
 
-          requirements: data.requirements || [],
-          benefits: data.benefits || [],
+        const [eventData, userRegs] = await Promise.all([
+          eventService.getEventById(id),
+          (isAuthenticated && user?.id) ? eventService.getUserEvents(user.id).catch(() => []) : Promise.resolve([])
+        ]);
+
+        // Map Event Data
+        const mappedEvent = {
+          ...eventData,
+          id: eventData.id || id,
+          image: eventData.image || defaultEventImage,
+          dateDisplay: eventData.date ? new Date(eventData.date).toLocaleDateString("vi-VN") : "Chưa cập nhật",
+          timeDisplay: eventData.date ? new Date(eventData.date).toLocaleTimeString("vi-VN", {hour: '2-digit', minute:'2-digit'}) : "",
+          fullDate: eventData.date ? new Date(eventData.date) : null,
+          volunteersRegistered: eventData.volunteersRegistered || 0,
+          volunteersNeeded: eventData.volunteersNeeded || 0,
         };
         setEvent(mappedEvent);
 
-        if (data.createdBy) {
-          try {
-            const creator = await userService.getUserById(data.createdBy);
-            setManagerContact({
-              name: creator.full_name || creator.email || "Ban tổ chức",
-              email: creator.email || "",
-              phone: creator.phone || "",
-              role: "Quản lý sự kiện",
-            });
-          } catch (err) {
-            console.error("Không thể tải thông tin người tạo sự kiện:", err);
-          }
+        // Check registration status
+        if (userRegs.length > 0) {
+          const myReg = userRegs.find(r => r.eventId === id);
+          setUserRegistration(myReg || null);
         }
+
+        // Load Manager Info
+        if (eventData.createdBy) {
+          userService.getUserById(eventData.createdBy)
+              .then(creator => setManagerContact({
+                name: creator.full_name || "Ban tổ chức",
+                email: creator.email,
+                phone: creator.phone,
+                avatar: creator.avatar_url
+              }))
+              .catch(() => {});
+        }
+
+        // Load Channel
+        loadChannel(id);
+
       } catch (err) {
-        setError(err.message || "Không thể tải thông tin sự kiện");
-        console.error("Error loading event:", err);
+        setError("Không thể tải thông tin sự kiện.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      loadEvent();
-    }
-  }, [id]);
+    if (id) loadData();
+  }, [id, isAuthenticated, user?.id]);
 
-  // Sử dụng event được lấy hoặc exception for default
-  const displayEvent = event || {
-    id: id,
-    title: "",
-    description: "",
-    location: "",
-    date: "",
-    status: "pending",
-    category: "Sự kiện",
-    image: defaultEventImage,
-    volunteers: 0,
-    maxVolunteers: 100,
-    likes: 0,
-    comments: 0,
-    shares: 0,
-    requirements: [],
-    benefits: [],
-    contact: {
-      name: "Ban tổ chức",
-      email: "contact@volunteerhub.com",
-      phone: "0123456789",
-      role: "Quản lý sự kiện",
-    },
-  };
-
-  const handleRegisterClick = async () => {
-    if (!isAuthenticated) {
-      navigate("/login", {
-        state: {
-          message: "Vui lòng đăng nhập để đăng ký tham gia sự kiện này",
-          returnTo: `/events/${id}`,
-        },
-      });
-    } else {
-      try {
-        await eventService.registerForEvent(id);
-        alert("Đăng ký thành công! Bạn sẽ nhận được thông báo xác nhận.");
-        navigate("/user/events");
-      } catch (err) {
-        alert("Đăng ký thất bại: " + err.message);
-      }
-    }
-  };
-
-  const handleCommunityClick = () => {
-    if (!isAuthenticated) {
-      navigate("/login", {
-        state: {
-          message: "Vui lòng đăng nhập để tham gia thảo luận",
-          returnTo: `/events/${id}`,
-        },
-      });
-    } else {
-      navigate(`/community?event=${id}`);
-    }
-  };
-
-  const handleSubmitComment = async () => {
-    if (!isAuthenticated || !commentContent.trim()) return;
-    setSubmittingComment(true);
+  // --- 2. COMMUNITY LOGIC ---
+  const loadChannel = async (eventId) => {
     try {
-      let channel;
-      try {
-        channel = await channelService.getChannelByEventId(id);
-      } catch (createErr) {
-        // Log lỗi nếu cần thiết để tránh unused var nếu muốn chặt chẽ, hoặc để nguyên nếu code block dưới dùng channel
-        console.log("Channel chưa tồn tại, đang tạo mới...", createErr);
-        channel = await channelService.createChannel({ eventId: id });
-      }
-
+      setLoadingPosts(true);
+      const channel = await channelService.getChannelByEventId(eventId);
       if (channel) {
-        await postService.createPost({
-          content: commentContent.trim(),
-          images: [],
-          channelId: channel.id,
-        });
-        setCommentContent("");
-        alert("Đã gửi bình luận vào kênh sự kiện");
+        setCurrentChannel(channel);
+        const posts = await postService.getPostsByChannel(channel.id);
+        setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       }
     } catch (err) {
-      alert(
-          "Không thể gửi bình luận: " + (err.message || "Lỗi không xác định")
-      );
+      // Lazy load: chưa có channel thì thôi
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!isAuthenticated) return navigate("/login");
+    if (!commentContent.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      let targetChannelId = currentChannel?.id;
+
+      if (!targetChannelId) {
+        const newChannel = await channelService.createChannel({
+          eventId: id,
+          name: `Thảo luận: ${event.title}`
+        });
+        targetChannelId = newChannel.id;
+        setCurrentChannel(newChannel);
+      }
+
+      await postService.createPost({
+        content: commentContent,
+        channelId: targetChannelId,
+        images: []
+      });
+
+      setCommentContent("");
+      const posts = await postService.getPostsByChannel(targetChannelId);
+      setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+
+    } catch (err) {
+      alert("Lỗi đăng bài: " + err.message);
     } finally {
       setSubmittingComment(false);
     }
   };
 
-  const submitEventReport = async () => {
-    if (!eventReportText.trim()) return;
+  // --- ACTIONS ---
+  const handleRegisterClick = async () => {
+    if (!isAuthenticated) return navigate("/login", { state: { returnTo: location.pathname } });
+
+    if (window.confirm("Xác nhận đăng ký tham gia sự kiện?")) {
+      try {
+        await eventService.registerForEvent(id);
+        alert("Đã gửi yêu cầu tham gia! Vui lòng chờ duyệt.");
+        window.location.reload();
+      } catch (err) {
+        alert(err.message || "Đăng ký thất bại.");
+      }
+    }
+  };
+
+  const handleUnregisterClick = async () => {
+    if (!userRegistration) return;
+    if (window.confirm("Bạn có chắc chắn muốn hủy đăng ký/yêu cầu này?")) {
+      try {
+        await eventService.cancelEventRegistration(userRegistration.id);
+        alert("Đã hủy thành công.");
+        window.location.reload();
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      }
+    }
+  }
+
+  const handleReport = async () => {
+    if (!reportText.trim()) return;
     try {
-      await reportService.createReport({
-        type: "event",
-        targetId: id,
-        title: "Báo cáo sự kiện",
-        description: eventReportText.trim(),
-      });
-      setEventReportText("");
-      alert("Đã gửi báo cáo sự kiện");
-    } catch (err) {
-      alert("Không thể gửi báo cáo: " + (err.message || "Lỗi không xác định"));
-    }
+      await reportService.createReport({ type: "event", targetId: id, title: "Báo cáo sự kiện", description: reportText });
+      alert("Đã gửi báo cáo.");
+      setReportOpen(false);
+      setReportText("");
+    } catch (err) { alert("Lỗi: " + err.message); }
   };
 
-  const handleLike = () => {
-    if (!isAuthenticated) {
-      navigate("/login", {
-        state: {
-          message: "Vui lòng đăng nhập để thích sự kiện này",
-          returnTo: `/events/${id}`,
-        },
-      });
-    } else {
-      console.log("Like event:", id);
-    }
-  };
-
-  const handleShare = () => {
-    console.log("Share event:", id);
-  };
-
-  // Logic xác định đường dẫn nút Quay lại
   const getBackLink = () => {
-    if (!isAuthenticated) return "/events"; // Khách -> Về trang công khai
-
-    // Đã đăng nhập -> Về trang quản lý tương ứng với role
-    switch (user?.role) {
-      case "admin":
-        return "/admin/events";
-      case "manager":
-        return "/manager/events";
-      case "volunteer":
-      default:
-        return "/user/events"; // Volunteer -> Về trang cá nhân
-    }
+    if (user?.role === "admin") return "/admin/events";
+    if (user?.role === "manager") return "/manager/events";
+    return "/user/events";
   };
 
-  if (loading) {
-    return (
-        <Layout>
-          <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner />
-          </div>
-        </Layout>
-    );
-  }
+  // --- HELPER RENDER BUTTON (LOGIC HOÀN CHỈNH) ---
+  const renderActionButton = () => {
+    const now = new Date();
+    const eventDate = event.fullDate ? new Date(event.fullDate) : new Date();
 
-  if (error || !event) {
+    // Giả định sự kiện kéo dài 4 tiếng (hoặc logic tùy chỉnh của bạn)
+    const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+
+    const isEnded = now > endDate;
+    const isHappening = !isEnded && now >= eventDate;
+
+    const isFull = event.volunteersNeeded > 0 && event.volunteersRegistered >= event.volunteersNeeded;
+
+    // 1. CHƯA ĐĂNG KÝ
+    if (!userRegistration) {
+      if (isEnded) return <Button disabled variant="secondary" className="w-full">Đã kết thúc</Button>;
+      if (isHappening) return <Button disabled variant="secondary" className="w-full">Đang diễn ra</Button>;
+      if (isFull) return <Button disabled variant="secondary" className="w-full">Hết chỗ</Button>;
+
+      return (
+          <Button className="w-full text-lg h-12 shadow-md hover:shadow-lg transition-all" onClick={handleRegisterClick}>
+            Đăng ký ngay
+          </Button>
+      );
+    }
+
+    // 2. ĐÃ ĐĂNG KÝ (XỬ LÝ TRẠNG THÁI)
+    const status = userRegistration.status;
+
+    // Case: Hoàn thành hoặc Từ chối
+    if (status === 'completed') {
+      return <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white" disabled><Star className="w-4 h-4 mr-2"/> Đã hoàn thành</Button>;
+    }
+    if (status === 'rejected') {
+      return <Button disabled variant="secondary" className="w-full bg-red-50 text-red-500">Bị từ chối</Button>;
+    }
+
+    // Case: Đang diễn ra (Dù Pending hay Approved đều không được hủy ngang)
+    if (isHappening) {
+      return <Button disabled variant="outline" className="w-full text-green-600 bg-green-50 border-green-200">
+        Đang diễn ra...
+      </Button>;
+    }
+
+    // Case: Đã kết thúc (Chưa completed)
+    if (isEnded) {
+      if (status === 'approved') {
+        return <Button disabled variant="outline" className="w-full text-gray-500">Chờ xác nhận</Button>; // Đợi Manager duyệt completed
+      }
+      if (status === 'pending') {
+        return <Button disabled variant="outline" className="w-full text-gray-400">Hết hạn duyệt</Button>; // Hết giờ mà vẫn pending
+      }
+    }
+
+    // Case: Sắp diễn ra (Pending hoặc Approved) -> Cho phép Hủy
     return (
-        <Layout>
-          <div className="container mx-auto px-4 py-8">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <XCircle className="h-12 w-12 text-destructive mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Lỗi tải dữ liệu</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {error || "Không tìm thấy sự kiện"}
-                </p>
-                <div className="flex gap-2">
-                  <Button onClick={() => navigate("/events")} variant="outline">
-                    Quay lại danh sách
-                  </Button>
-                  <Button onClick={() => window.location.reload()}>
-                    Thử lại
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </Layout>
+        <Button
+            variant="destructive"
+            className="w-full bg-red-50 text-red-600 hover:bg-red-100 border-red-200 border"
+            onClick={handleUnregisterClick}
+        >
+          {status === 'pending' ? "Hủy yêu cầu" : "Hủy tham gia"}
+        </Button>
     );
-  }
+  };
+
+  // --- RENDER ---
+  if (loading) return <Layout><div className="flex justify-center py-20"><LoadingSpinner /></div></Layout>;
+  if (!event) return <Layout><div className="text-center py-20">Sự kiện không tồn tại.</div></Layout>;
 
   return (
-      // 5. Sử dụng Component Layout động thay vì GuestLayout cứng
       <Layout>
-        <div className="bg-muted/30">
+        <div className="bg-gray-50/50 min-h-screen pb-12">
           <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-            {/* Header */}
-            <div className="mb-6 flex items-center gap-4">
-              <Button variant="outline" size="sm" asChild>
-                {/* Gọi hàm getBackLink() để lấy đường dẫn đúng */}
-                <Link to={getBackLink()}>
-                  <ArrowLeft className="mr-2 h-4 w-4"/>
-                  Quay lại
-                </Link>
+
+            {/* HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" asChild>
+                <Link to={getBackLink()}><ArrowLeft className="mr-2 h-4 w-4"/> Quay lại danh sách</Link>
               </Button>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold">{displayEvent.title}</h1>
-                  <Badge className="bg-primary text-primary-foreground">
-                    {displayEvent.category}
-                  </Badge>
-                  <Badge
-                      variant={
-                        displayEvent.status === "approved" ? "default" : "secondary"
-                      }
-                  >
-                    {displayEvent.status === "approved"
-                        ? "Đã duyệt"
-                        : displayEvent.status === "pending"
-                            ? "Chờ duyệt"
-                            : displayEvent.status}
-                  </Badge>
-                </div>
-              </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleLike}>
-                  <Heart className="mr-2 h-4 w-4"/>
-                  {displayEvent.likes}
+                <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+                  <AlertCircle className="mr-2 h-4 w-4 text-orange-500"/> Báo cáo
                 </Button>
-                <Button variant="outline" onClick={handleShare}>
-                  <Share2 className="mr-2 h-4 w-4"/>
-                  Chia sẻ
-                </Button>
-                <Button
-                    variant="outline"
-                    onClick={() => setEventReportOpen(true)}
-                >
-                  <AlertCircle className="mr-2 h-4 w-4"/> Báo cáo
-                </Button>
+                <Button variant="outline" size="sm"><Share2 className="mr-2 h-4 w-4"/> Chia sẻ</Button>
               </div>
             </div>
 
-            {!isAuthenticated && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <LogIn className="h-5 w-5 text-blue-600"/>
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-800">
-                        Muốn tham gia sự kiện này?
-                      </p>
-                      <p className="text-sm text-blue-700">
-                        Đăng nhập để đăng ký tham gia và truy cập đầy đủ tính năng
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" asChild>
-                        <Link to="/login">Đăng nhập</Link>
-                      </Button>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link to="/register">Đăng ký</Link>
-                      </Button>
-                    </div>
-                  </div>
+            {/* BANNER */}
+            <div className="relative aspect-[21/9] w-full bg-gray-200 rounded-2xl overflow-hidden mb-8 shadow-sm">
+              <img src={event.image} alt={event.title} className="w-full h-full object-cover"/>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-10">
+                <Badge className="w-fit mb-3 bg-primary text-white border-none">{event.category || "Hoạt động"}</Badge>
+                <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">{event.title}</h1>
+                <div className="flex flex-wrap gap-4 text-gray-200 text-sm md:text-base">
+                  <span className="flex items-center gap-1"><Calendar className="h-4 w-4"/> {event.dateDisplay}</span>
+                  <span className="flex items-center gap-1"><MapPin className="h-4 w-4"/> {event.location}</span>
                 </div>
-            )}
-
-            {/* Event Image */}
-            <div className="mb-8">
-              <img
-                  src={displayEvent.image || "/placeholder.svg"}
-                  alt={displayEvent.title}
-                  className="w-full h-64 object-cover rounded-lg"
-              />
+              </div>
             </div>
 
-            {/* Event Info Cards */}
-            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Ngày diễn ra
-                      </p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {displayEvent.date || "Chưa có"}
-                      </p>
-                    </div>
-                    <Calendar className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
+            {/* GRID CONTENT */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Địa điểm</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {displayEvent.location}
-                      </p>
-                    </div>
-                    <MapPin className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
+              {/* LEFT: INFO */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <Card className="bg-white shadow-sm border-0"><CardContent className="p-4 flex flex-col items-center justify-center text-center"><Calendar className="h-6 w-6 text-blue-500 mb-2"/><span className="text-xs text-gray-500">Ngày</span><span className="font-bold">{event.dateDisplay}</span></CardContent></Card>
+                  <Card className="bg-white shadow-sm border-0"><CardContent className="p-4 flex flex-col items-center justify-center text-center"><Clock className="h-6 w-6 text-orange-500 mb-2"/><span className="text-xs text-gray-500">Giờ</span><span className="font-bold">{event.timeDisplay}</span></CardContent></Card>
+                  <Card className="bg-white shadow-sm border-0"><CardContent className="p-4 flex flex-col items-center justify-center text-center"><Users className="h-6 w-6 text-green-500 mb-2"/><span className="text-xs text-gray-500">Đã duyệt</span><span className="font-bold">{event.volunteersRegistered}/{event.volunteersNeeded > 0 ? event.volunteersNeeded : '∞'}</span></CardContent></Card>
+                  <Card className="bg-white shadow-sm border-0"><CardContent className="p-4 flex flex-col items-center justify-center text-center"><MessageSquare className="h-6 w-6 text-purple-500 mb-2"/><span className="text-xs text-gray-500">Thảo luận</span><span className="font-bold">{channelPosts.length}</span></CardContent></Card>
+                </div>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Trạng thái</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {displayEvent.status === "approved"
-                            ? "Đã duyệt"
-                            : displayEvent.status === "pending"
-                                ? "Chờ duyệt"
-                                : displayEvent.status}
-                      </p>
-                    </div>
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tương tác</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {displayEvent.likes +
-                            displayEvent.comments +
-                            displayEvent.shares}
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        {displayEvent.likes} thích, {displayEvent.comments} bình
-                        luận
-                      </p>
-                    </div>
-                    <MessageSquare className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Content */}
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-3">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-xl shadow-sm border">
                     <TabsTrigger value="overview">Tổng quan</TabsTrigger>
                     <TabsTrigger value="details">Chi tiết</TabsTrigger>
                     <TabsTrigger value="community">Cộng đồng</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="overview" className="mt-6 space-y-6">
-                    {/* Description */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Mô tả sự kiện</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground">
-                          {displayEvent.description || "Chưa có mô tả"}
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    {/* Requirements */}
-                    {displayEvent.requirements &&
-                        displayEvent.requirements.length > 0 && (
-                            <Card>
-                              <CardHeader>
-                                <CardTitle>Yêu cầu tham gia</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <ul className="space-y-2">
-                                  {displayEvent.requirements.map((req, index) => (
-                                      <li
-                                          key={index}
-                                          className="flex items-start gap-2"
-                                      >
-                                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                        <span className="text-sm">{req}</span>
-                                      </li>
-                                  ))}
-                                </ul>
-                              </CardContent>
-                            </Card>
-                        )}
-
-                    {/* Benefits */}
-                    {displayEvent.benefits &&
-                        displayEvent.benefits.length > 0 && (
-                            <Card>
-                              <CardHeader>
-                                <CardTitle>Lợi ích khi tham gia</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <ul className="space-y-2">
-                                  {displayEvent.benefits.map((benefit, index) => (
-                                      <li
-                                          key={index}
-                                          className="flex items-start gap-2"
-                                      >
-                                        <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                        <span className="text-sm">{benefit}</span>
-                                      </li>
-                                  ))}
-                                </ul>
-                              </CardContent>
-                            </Card>
-                        )}
+                    <Card className="border-none shadow-sm"><CardHeader><CardTitle>Mô tả</CardTitle></CardHeader><CardContent className="text-gray-600 leading-relaxed whitespace-pre-line">{event.description}</CardContent></Card>
+                    {(event.requirements?.length > 0 || event.benefits?.length > 0) && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <Card className="border-none shadow-sm h-full"><CardHeader><CardTitle className="text-base">Yêu cầu</CardTitle></CardHeader><CardContent><ul className="space-y-2">{event.requirements?.map((req, i) => <li key={i} className="flex gap-2 text-sm text-gray-600"><CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0"/> {req}</li>) || <li className="text-gray-400 italic">Không có yêu cầu</li>}</ul></CardContent></Card>
+                          <Card className="border-none shadow-sm h-full"><CardHeader><CardTitle className="text-base">Quyền lợi</CardTitle></CardHeader><CardContent><ul className="space-y-2">{event.benefits?.map((ben, i) => <li key={i} className="flex gap-2 text-sm text-gray-600"><Heart className="h-4 w-4 text-red-500 flex-shrink-0"/> {ben}</li>) || <li className="text-gray-400 italic">Không có thông tin</li>}</ul></CardContent></Card>
+                        </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="details" className="mt-6 space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Thông tin liên hệ</CardTitle>
-                      </CardHeader>
+                    <Card className="border-none shadow-sm">
+                      <CardHeader><CardTitle>Liên hệ</CardTitle></CardHeader>
                       <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <User className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">
-                                {managerContact?.name || "Ban tổ chức"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {managerContact?.role || "Quản lý sự kiện"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Mail className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm">
-                            {managerContact?.email ||
-                                "contact@volunteerhub.com"}
-                          </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Phone className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm">
-                            {managerContact?.phone || "0123456789"}
-                          </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Dialog
-                        open={eventReportOpen}
-                        onOpenChange={setEventReportOpen}
-                    >
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Báo cáo sự kiện</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3">
-                          <Textarea
-                              placeholder="Mô tả vấn đề của sự kiện..."
-                              value={eventReportText}
-                              onChange={(e) => setEventReportText(e.target.value)}
-                              rows={4}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                                variant="outline"
-                                onClick={() => setEventReportOpen(false)}
-                            >
-                              Hủy
-                            </Button>
-                            <Button
-                                onClick={async () => {
-                                  await submitEventReport();
-                                  setEventReportOpen(false);
-                                }}
-                                disabled={!eventReportText.trim()}
-                            >
-                              Gửi báo cáo
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Lịch trình sự kiện</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">08:00 - 08:30</p>
-                              <p className="text-sm text-muted-foreground">
-                                Tập trung và điểm danh
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">08:30 - 12:00</p>
-                              <p className="text-sm text-muted-foreground">
-                                Dọn dẹp rác thải
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">12:00 - 13:00</p>
-                              <p className="text-sm text-muted-foreground">
-                                Nghỉ trưa
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">13:00 - 17:00</p>
-                              <p className="text-sm text-muted-foreground">
-                                Tiếp tục dọn dẹp và tổng kết
-                              </p>
+                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border">
+                          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">{managerContact?.name?.charAt(0) || "M"}</div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{managerContact?.name}</h4>
+                            <div className="flex gap-4 text-sm text-gray-500 mt-1">
+                              {managerContact?.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5"/> {managerContact.email}</span>}
+                              {managerContact?.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5"/> {managerContact.phone}</span>}
                             </div>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
+                    <Card className="border-none shadow-sm"><CardHeader><CardTitle>Địa điểm</CardTitle></CardHeader><CardContent><div className="flex gap-2 text-gray-600 mb-4"><MapPin className="h-5 w-5 text-red-500"/> {event.location}</div></CardContent></Card>
                   </TabsContent>
 
-                  <TabsContent value="community" className="mt-6 space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Bình luận sự kiện</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {isAuthenticated ? (
-                            <div className="space-y-3">
-                              <Textarea
-                                  placeholder="Viết bình luận về sự kiện này..."
-                                  value={commentContent}
-                                  onChange={(e) => setCommentContent(e.target.value)}
-                                  rows={4}
-                              />
-                              <Button
-                                  className="w-full"
-                                  onClick={handleSubmitComment}
-                                  disabled={
-                                      submittingComment || !commentContent.trim()
-                                  }
-                              >
-                                <MessageSquare className="mr-2 h-4 w-4" /> Gửi bình
-                                luận
-                              </Button>
-                              <Button variant="outline" className="w-full" asChild>
-                                <Link to={`/community?event=${event.id}`}>
-                                  Xem thảo luận trong cộng đồng
-                                </Link>
-                              </Button>
+                  <TabsContent value="community" className="mt-6">
+                    <Card className="border-none shadow-sm bg-transparent"><CardContent className="p-0">
+                      {isAuthenticated ? (
+                          <div className="bg-white p-4 rounded-xl border shadow-sm mb-6">
+                            <div className="flex gap-3">
+                              <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">{user?.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover"/> : <User className="h-6 w-6 m-2 text-gray-500"/>}</div>
+                              <div className="flex-1">
+                                <Textarea placeholder="Chia sẻ suy nghĩ..." value={commentContent} onChange={(e) => setCommentContent(e.target.value)} className="bg-gray-50 border-0 min-h-[80px] mb-2"/>
+                                <div className="flex justify-end"><Button size="sm" onClick={handlePostComment} disabled={submittingComment || !commentContent.trim()}>{submittingComment ? <LoadingSpinner size="sm"/> : <><Send className="w-3 h-3 mr-2"/> Đăng bài</>}</Button></div>
+                              </div>
                             </div>
-                        ) : (
-                            <Button
-                                onClick={handleCommunityClick}
-                                className="w-full"
-                            >
-                              <LogIn className="mr-2 h-4 w-4" /> Đăng nhập để bình
-                              luận
-                            </Button>
-                        )}
-                      </CardContent>
-                    </Card>
+                          </div>
+                      ) : (
+                          <div className="bg-blue-50 p-6 rounded-xl text-center mb-6 border border-blue-100"><p className="text-blue-700 mb-3">Đăng nhập để thảo luận!</p><Button size="sm" variant="outline" className="bg-white text-blue-600" onClick={() => navigate("/login")}><LogIn className="w-4 h-4 mr-2"/> Đăng nhập</Button></div>
+                      )}
+                      <div className="space-y-4">{channelPosts.length > 0 ? channelPosts.map(post => <PostItem key={post.id} post={post} currentUser={user} />) : <div className="text-center py-10 bg-white rounded-xl border border-dashed text-gray-500">Chưa có thảo luận nào.</div>}</div>
+                    </CardContent></Card>
                   </TabsContent>
                 </Tabs>
               </div>
 
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {/* Registration */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Đăng ký tham gia</CardTitle>
-                  </CardHeader>
+              {/* RIGHT: SIDEBAR */}
+              <div className="lg:col-span-1 space-y-6">
+                <Card className="border-0 shadow-lg sticky top-6 overflow-hidden">
+                  <div className="h-2 bg-primary w-full"></div>
+                  <CardHeader className="pb-2"><CardTitle className="text-xl">Đăng ký tham gia</CardTitle><CardDescription>Đừng bỏ lỡ cơ hội này.</CardDescription></CardHeader>
                   <CardContent className="space-y-4">
-                    {isAuthenticated ? (
-                        <div className="space-y-2">
-                          <Button className="w-full" onClick={handleRegisterClick}>
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Đăng ký tham gia
-                          </Button>
-                          <p className="text-xs text-muted-foreground text-center">
-                            Bạn sẽ nhận được thông báo xác nhận sau khi đăng ký
-                          </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                          <Button className="w-full" onClick={handleRegisterClick}>
-                            <LogIn className="mr-2 h-4 w-4" />
-                            Đăng nhập để đăng ký
-                          </Button>
-                          <p className="text-xs text-muted-foreground text-center">
-                            Đăng nhập để có thể đăng ký tham gia sự kiện
-                          </p>
-                        </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    <div className="flex justify-between items-center text-sm py-2 border-b"><span className="text-gray-500">Trạng thái:</span><Badge variant={event.status === 'approved' ? 'default' : 'secondary'}>{event.status === 'approved' ? 'Đang mở' : 'Tạm đóng'}</Badge></div>
 
-                {/* Event Stats */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Thống kê sự kiện</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Lượt thích</span>
-                      <span className="font-semibold">{displayEvent.likes}</span>
+                    {/* ✅ Hiển thị Vô cực nếu Needed = 0 */}
+                    <div className="flex justify-between items-center text-sm py-2 border-b">
+                      <span className="text-gray-500">Số lượng:</span>
+                      <span className="font-semibold">{event.volunteersRegistered} / {event.volunteersNeeded > 0 ? event.volunteersNeeded : '∞'}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Bình luận</span>
-                      <span className="font-semibold">
-                      {displayEvent.comments}
-                    </span>
+
+                    {/* ✅ Thanh tiến độ: Chỉ chạy % nếu có giới hạn */}
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${event.volunteersNeeded > 0 ? Math.min((event.volunteersRegistered / event.volunteersNeeded) * 100, 100) : 0}%` }}
+                      ></div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Chia sẻ</span>
-                      <span className="font-semibold">{displayEvent.shares}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Trạng thái</span>
-                      <Badge
-                          variant={
-                            displayEvent.status === "approved"
-                                ? "default"
-                                : "secondary"
-                          }
-                      >
-                        {displayEvent.status === "approved"
-                            ? "Đã duyệt"
-                            : displayEvent.status === "pending"
-                                ? "Chờ duyệt"
-                                : displayEvent.status}
-                      </Badge>
-                    </div>
+
+                    {/* RENDER BUTTON THEO LOGIC MỚI */}
+                    {renderActionButton()}
+
+                    <p className="text-xs text-center text-gray-400">Bằng việc đăng ký, bạn đồng ý với quy định của sự kiện.</p>
                   </CardContent>
                 </Card>
               </div>
             </div>
           </div>
+
+          <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+            <DialogContent><DialogHeader><DialogTitle>Báo cáo sự kiện</DialogTitle></DialogHeader><Textarea placeholder="Mô tả vấn đề..." value={reportText} onChange={(e) => setReportText(e.target.value)} rows={4}/><DialogFooter><Button variant="outline" onClick={() => setReportOpen(false)}>Hủy</Button><Button onClick={handleReport} className="bg-red-600 text-white">Gửi</Button></DialogFooter></DialogContent>
+          </Dialog>
         </div>
       </Layout>
   );

@@ -49,17 +49,39 @@ public class UserService {
     @Autowired
     private LikeRepository likeRepository;
 
-    private UserMapper userMapper;
+    UserMapper userMapper;
+    PasswordEncoder passwordEncoder;
 
     public List<UserResponse> getUsers() {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
 
-    public UserResponse getMyInfo(){
+    public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String email = context.getAuthentication().getName();
-        User user = userRepository.findUserByEmail(email).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        User user = userRepository.findUserByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+
         return userMapper.toUserResponse(user);
+    }
+
+    public UserResponse updateMyInfo(UserUpdateRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String userId = context.getAuthentication().getName();
+        String email = context.getAuthentication().getName();
+        User user = userRepository.findUserByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Mapping thủ công cho các trường cho phép (Lombok sinh ra getFull_name)
+        if (request.getFull_name() != null) user.setFull_name(request.getFull_name());
+        if (request.getAvatar_url() != null) user.setAvatar_url(request.getAvatar_url());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getBio() != null) user.setBio(request.getBio());
+
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     public UserResponse getUserById(String id){
@@ -93,14 +115,19 @@ public class UserService {
     }
 
     public UserResponse updateUser(String id, UserUpdateRequest request) {
-        User user = userRepository.findUserById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Map các trường cơ bản
         userMapper.updateUser(user, request);
 
+        // Riêng password
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            PasswordEncoder enc = new BCryptPasswordEncoder(10);
-            user.setPassword(enc.encode(request.getPassword()));
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-//        user.setUpdated_at(new Date());
+
+        // Riêng Active (chỉ Admin)
+        if(request.getIsActive() != null) user.setIsActive(request.getIsActive());
+
         return userMapper.toUserResponse(userRepository.save(user));
     }
 

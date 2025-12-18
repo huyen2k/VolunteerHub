@@ -13,7 +13,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findUserByEmail (String email);
     Boolean existsByEmail (String email);
 
-    // Đếm theo Role (Vì roles là Set<String>, ta dùng cú pháp này):
+
     long countByRolesContains(String role);
 
     // Đếm user đang hoạt động

@@ -81,7 +81,6 @@ public class EventRegistrationService {
         // Lấy user hiện tại đang gọi API
         var currentUser = userService.getMyInfo();
 
-        // Nếu user này KHÔNG PHẢI là người tạo sự kiện (Manager) thì báo lỗi
         if (!event.getCreatedBy().equals(currentUser.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }

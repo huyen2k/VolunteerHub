@@ -1,343 +1,393 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ManagerLayout } from "../../components/Layout"; // Layout riêng cho Manager
-import {
-  Card,
-  CardContent,
-} from "../../components/ui/card";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
+import { ManagerLayout } from "../../components/Layout";
+import { Card, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import {
-  Calendar,
-  MapPin,
-  Plus,
-  Search,
-  Filter,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  Download,
-  Users
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Calendar, MapPin, Plus, Search, Eye, Printer, Users, FileText } from "lucide-react";
 import eventService from "../../services/eventService";
+import registrationService from "../../services/registrationService";
 import LoadingSpinner from "../../components/LoadingSpinner";
-// Giả sử bạn có Modal chi tiết riêng cho Manager, nếu chưa có thì dùng chung AdminEventDetailModal hoặc tạo mới
 import { ManagerEventDetailModal } from "./ManagerEventDetailModal";
 
 export default function ManagerEventsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- STATE ---
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State cho Modal chi tiết
+  // Modal State
   const [detailId, setDetailId] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  // Filter States
+  // Filter State
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterDate, setFilterDate] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
+  const printRef = useRef(null);
+  const processedFilterRef = useRef(false);
 
-  // --- FILTER EFFECT ---
+  const safeParseInt = (value) => {
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const getVal = (obj, ...keys) => {
+    if (!obj) return 0;
+    for (const key of keys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        return safeParseInt(obj[key]);
+      }
+    }
+    return 0;
+  };
+
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Danh_sach_su_kien_${new Date().toISOString().slice(0, 10)}`,
+    pageStyle: `
+      @page { size: A4; margin: 20mm; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; font-family: 'Times New Roman', Times, serif; }
+      }
+    `,
+  });
+
+  // 1. XỬ LÝ NHẬN FILTER TỪ DASHBOARD (MỚI BỔ SUNG)
+  useEffect(() => {
+    if (location.state?.filter && !processedFilterRef.current) {
+      const filterType = location.state.filter;
+
+      // Reset các filter khác về default trước
+      setFilterDate("all");
+      setStatusFilter("all");
+
+      // Map logic từ Dashboard sang Filter của trang này
+      if (filterType === 'upcoming') setFilterDate('upcoming');
+      else if (filterType === 'happening') setFilterDate('happening');
+      else if (filterType === 'ended') setFilterDate('ended');
+      else if (filterType === 'pending') setStatusFilter('pending'); // Chờ duyệt
+      else if (filterType === 'rejected') setStatusFilter('rejected');
+
+      // Đánh dấu đã xử lý để không bị reset khi component render lại
+      processedFilterRef.current = true;
+
+      // Xóa state trên URL để F5 không bị kẹt filter
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => { loadEvents(); }, []);
+
+  const uniqueCategories = useMemo(() => {
+    const defaultCats = ["Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa"];
+    const eventCats = events.map(e => e.category).filter(Boolean);
+    const cleanedCats = eventCats.map(c => c.trim());
+    return Array.from(new Set([...defaultCats, ...cleanedCats])).sort();
+  }, [events]);
+
+  // --- 2. XỬ LÝ FILTER LOGIC ---
   useEffect(() => {
     let result = events;
 
-    // 1. Lọc theo Search Term (Tên hoặc Địa điểm)
+    // Search & Category
     if (searchTerm) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(e =>
-          e.title.toLowerCase().includes(lowerTerm) ||
-          e.location.toLowerCase().includes(lowerTerm)
-      );
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(e => e.title.toLowerCase().includes(lower) || e.location.toLowerCase().includes(lower));
+    }
+    if (filterCategory !== "all") {
+      result = result.filter(e => e.category === filterCategory);
     }
 
-    // 2. Lọc theo Status (Computed Status)
+    // Date Logic
+    const now = new Date();
+    if (filterDate !== "all") {
+      result = result.filter(e => {
+        const eventDate = new Date(e.date);
+        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // 4h duration
+
+        if (filterDate === "upcoming") return eventDate > now;
+        if (filterDate === "happening") return now >= eventDate && now <= endDate;
+        if (filterDate === "ended") return now > endDate;
+        if (filterDate === "this-week") {
+          const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
+          const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+          return eventDate >= startOfWeek && eventDate <= endOfWeek;
+        }
+        return true;
+      });
+    }
+
+    // Status Filter (Dựa trên computedStatus)
     if (statusFilter !== "all") {
       result = result.filter(e => e.computedStatus === statusFilter);
     }
 
     setFilteredEvents(result);
-  }, [events, searchTerm, statusFilter]);
+  }, [events, searchTerm, statusFilter, filterCategory, filterDate]);
 
+
+  // --- 3. LOAD DATA ---
   const loadEvents = async () => {
     try {
       setLoading(true);
-      // Gọi API lấy sự kiện của chính Manager này tạo
-      // Nếu chưa có hàm getMyEvents, bạn có thể dùng getEvents và lọc ở backend hoặc frontend
       const data = await eventService.getMyEvents();
-
       const now = new Date();
-      now.setHours(0, 0, 0, 0); // Reset về 0h sáng nay để so sánh ngày chuẩn
 
-      const transformedEvents = (data || []).map((event) => {
-        // --- LOGIC TRẠNG THÁI CHUẨN ---
-        let computedStatus = event.status; // pending, rejected
-        let statusLabel = "";
-        let statusVariant = "default";
+      const transformed = data.map((ev) => {
+        const evDate = new Date(ev.date);
+        const endDate = new Date(evDate.getTime() + 4 * 60 * 60 * 1000); // Giả định 4h
 
-        const eventDate = new Date(event.date);
-        eventDate.setHours(0, 0, 0, 0);
+        const currentQty = getVal(ev, 'volunteersRegistered', 'registeredCount', 'currentVolunteers');
+        const maxQty = getVal(ev, 'volunteersNeeded', 'maxVolunteers', 'limit');
+        const isFull = maxQty > 0 && currentQty >= maxQty;
 
-        if (event.status === "pending") {
-          statusLabel = "Đang chờ duyệt";
-          statusVariant = "secondary"; // Vàng/Xám
+        // Logic Badge
+        let badgeLabel = "";
+        let badgeClass = "";
+        let computedStatus = ev.status;
+
+        if (ev.status === "pending") {
+          badgeLabel = "Chờ duyệt";
+          badgeClass = "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200";
           computedStatus = "pending";
-        } else if (event.status === "rejected") {
-          statusLabel = "Bị từ chối";
-          statusVariant = "destructive"; // Đỏ
+        } else if (ev.status === "rejected") {
+          badgeLabel = "Bị từ chối";
+          badgeClass = "bg-red-100 text-red-700 hover:bg-red-200 border-red-200";
           computedStatus = "rejected";
-        } else if (event.status === "approved") {
-          // Logic thời gian cho sự kiện đã duyệt
-          if (eventDate.getTime() === now.getTime()) {
-            statusLabel = "Đang diễn ra";
-            statusVariant = "default"; // Xanh (Primary)
-            computedStatus = "happening";
-          } else if (eventDate < now) {
-            statusLabel = "Đã hoàn thành";
-            statusVariant = "outline"; // Trắng viền
+        } else if (ev.status === "approved") {
+          if (now > endDate) {
+            badgeLabel = "Đã kết thúc";
+            badgeClass = "bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200";
             computedStatus = "completed";
+          } else if (now >= evDate && now <= endDate) {
+            badgeLabel = "Đang diễn ra";
+            badgeClass = "bg-green-500 text-white animate-pulse border-green-600";
+            computedStatus = "happening";
+          } else if (isFull) {
+            badgeLabel = "Hết chỗ";
+            badgeClass = "bg-red-500 text-white hover:bg-red-600 border-red-600";
+            computedStatus = "upcoming";
           } else {
-            statusLabel = "Sắp diễn ra";
-            statusVariant = "success"; // Xanh lá (Hoặc dùng class riêng)
+            badgeLabel = "Sắp diễn ra";
+            badgeClass = "bg-primary/90 text-white hover:bg-primary border-primary";
             computedStatus = "upcoming";
           }
         }
 
         return {
-          ...event,
+          ...ev,
           computedStatus,
-          statusLabel,
-          statusVariant,
-          displayDate: new Date(event.date).toLocaleDateString("vi-VN"),
-          displayTime: new Date(event.date).toLocaleTimeString("vi-VN", {hour: '2-digit', minute:'2-digit'})
+          badgeLabel,
+          badgeClass,
+          displayDate: evDate.toLocaleDateString("vi-VN"),
+          displayTime: evDate.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' }),
+          realVolunteersCount: currentQty,
+          maxVolunteersDisplay: maxQty > 0 ? maxQty : '∞'
         };
       });
 
-      // Sắp xếp: Mới nhất lên đầu
-      transformedEvents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setEvents(transformed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
-      setEvents(transformedEvents);
-      setFilteredEvents(transformedEvents);
-    } catch (err) {
-      console.error("Lỗi tải sự kiện:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Load Events Error:", err); }
+    finally { setLoading(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa sự kiện này? Hành động này không thể hoàn tác.")) return;
-    try {
-      await eventService.deleteEvent(id);
-      // Reload lại danh sách sau khi xóa
-      loadEvents();
-    } catch (err) {
-      alert("Lỗi khi xóa: " + err.message);
-    }
-  };
-
-  const handleExport = () => {
-    if (filteredEvents.length === 0) return alert("Không có dữ liệu để xuất");
-
-    const headers = ["ID", "Tên sự kiện", "Ngày", "Giờ", "Địa điểm", "Số lượng TNV", "Trạng thái"];
-    const csvRows = [headers.join(",")];
-
-    filteredEvents.forEach(item => {
-      const row = [
-        `"${item.id}"`,
-        `"${item.title.replace(/"/g, '""')}"`,
-        `"${item.displayDate}"`,
-        `"${item.displayTime}"`,
-        `"${item.location.replace(/"/g, '""')}"`,
-        `"${item.volunteersCount || 0}/${item.volunteersNeeded || '∞'}"`,
-        `"${item.statusLabel}"`
-      ];
-      csvRows.push(row.join(","));
-    });
-
-    const csvString = "\uFEFF" + csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `my_events_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const openDetail = (id) => {
+  const openDetailModal = (e, id) => {
+    e.stopPropagation();
     setDetailId(id);
     setIsDetailOpen(true);
   };
 
-  if (loading) return <ManagerLayout><div className="flex justify-center p-10"><LoadingSpinner /></div></ManagerLayout>;
+  if (loading) return <ManagerLayout><div className="p-10 flex justify-center"><LoadingSpinner /></div></ManagerLayout>;
 
   return (
       <ManagerLayout>
-        <div className="bg-muted/30 min-h-screen">
+        <div className="bg-gray-50/50 min-h-screen pb-12">
           <div className="container mx-auto px-4 py-8">
 
             {/* Header */}
-            <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold">Quản lý sự kiện</h1>
-                <p className="mt-1 text-muted-foreground">Danh sách các sự kiện do bạn tổ chức</p>
+                <h1 className="text-3xl font-bold text-gray-900">Quản lý sự kiện</h1>
+                <p className="text-gray-500 text-sm mt-1">Quản lý, theo dõi và báo cáo các sự kiện của bạn</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleExport} variant="outline" className="gap-2 bg-white text-slate-900 border">
-                  <Download className="h-4 w-4" /> Xuất Excel
-                </Button>
-                <Button onClick={() => navigate("/manager/events/create")} className="gap-2 bg-primary hover:bg-primary/90">
-                  <Plus className="h-4 w-4" /> Tạo sự kiện mới
-                </Button>
+                <Button onClick={() => navigate("/manager/events/create")}
+                        className="bg-primary hover:bg-primary/90 shadow-sm"><Plus className="mr-2 h-4 w-4"/> Tạo mới</Button>
+                <Button onClick={handlePrint}
+                        className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"><Printer className="mr-2 h-4 w-4"/> In danh sách</Button>
               </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="mb-6 flex flex-col md:flex-row gap-4 bg-white p-4 rounded-lg shadow-sm border">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                    placeholder="Tìm kiếm theo tên, địa điểm..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="mb-8 bg-white p-4 rounded-xl border shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-4 relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"/>
+                  <Input placeholder="Tìm kiếm tên, địa điểm..." className="pl-9 bg-gray-50" value={searchTerm}
+                         onChange={e => setSearchTerm(e.target.value)}/>
+                </div>
+                <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Danh mục"/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả danh mục</SelectItem>
+                      {uniqueCategories.map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterDate} onValueChange={setFilterDate}>
+                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Thời gian"/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả thời gian</SelectItem>
+                      <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
+                      <SelectItem value="happening">Đang diễn ra</SelectItem>
+                      <SelectItem value="this-week">Tuần này</SelectItem>
+                      <SelectItem value="ended">Đã kết thúc</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="bg-gray-50 col-span-2 md:col-span-1"><SelectValue placeholder="Trạng thái"/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                      <SelectItem value="pending">Chờ duyệt</SelectItem>
+                      <SelectItem value="happening">Đang diễn ra</SelectItem>
+                      <SelectItem value="completed">Đã hoàn thành</SelectItem>
+                      <SelectItem value="rejected">Bị từ chối</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="w-full md:w-64">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      <SelectValue placeholder="Trạng thái" />
+            </div>
+
+            {/* VÙNG IN */}
+            <div ref={printRef}>
+              <div className="hidden print:block p-10 bg-white text-black text-sm"
+                   style={{fontFamily: '"Times New Roman", Times, serif'}}>
+                <div className="text-center mb-8 border-b-2 border-black pb-4 pt-4">
+                  <h1 className="text-2xl font-bold uppercase">DANH SÁCH SỰ KIỆN CỦA TÔI</h1>
+                  <p className="italic">Ngày xuất: {new Date().toLocaleDateString("vi-VN")}</p>
+                </div>
+                <table className="w-full text-sm text-left border-collapse border border-black">
+                  <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-black p-2 w-10 text-center">STT</th>
+                    <th className="border border-black p-2">Tên sự kiện</th>
+                    <th className="border border-black p-2">Thời gian</th>
+                    <th className="border border-black p-2">Địa điểm</th>
+                    <th className="border border-black p-2 text-center">Số TNV</th>
+                    <th className="border border-black p-2 text-center">Trạng thái</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {filteredEvents.map((ev, idx) => (
+                      <tr key={ev.id}>
+                        <td className="border border-black p-2 text-center">{idx + 1}</td>
+                        <td className="border border-black p-2 font-bold">{ev.title}</td>
+                        <td className="border border-black p-2">{ev.displayDate} <br/> {ev.displayTime}</td>
+                        <td className="border border-black p-2">{ev.location}</td>
+                        <td className="border border-black p-2 text-center">{ev.realVolunteersCount} / {ev.maxVolunteersDisplay}</td>
+                        <td className="border border-black p-2 text-center">{ev.badgeLabel}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Grid Cards */}
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 print:hidden">
+                {filteredEvents.length === 0 ? (
+                    <div className="col-span-full text-center py-20 bg-white rounded-xl border border-dashed text-gray-500">
+                      Không tìm thấy sự kiện nào phù hợp.
                     </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                    <SelectItem value="pending">Đang chờ duyệt</SelectItem>
-                    <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
-                    <SelectItem value="happening">Đang diễn ra</SelectItem>
-                    <SelectItem value="completed">Đã hoàn thành</SelectItem>
-                    <SelectItem value="rejected">Bị từ chối</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                ) : (
+                    filteredEvents.map(ev => (
+                        <Card key={ev.id}
+                              className="group overflow-hidden hover:shadow-lg transition-all flex flex-col h-full border-gray-200">
 
-            {/* Event List */}
-            <div className="grid gap-4">
-              {filteredEvents.length > 0 ? (
-                  filteredEvents.map((event) => (
-                      <Card key={event.id} className="group hover:shadow-md transition-all">
-                        <CardContent className="p-6">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="relative aspect-video bg-gray-100 overflow-hidden cursor-pointer"
+                               onClick={(e) => openDetailModal(e, ev.id)}>
+                            <img
+                                src={ev.image || "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=300"}
+                                alt={ev.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
 
-                            {/* Left: Info */}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
-                                  {event.title}
-                                </h3>
-                                <Badge variant={event.statusVariant} className={event.statusVariant === 'default' ? 'bg-blue-600 hover:bg-blue-700' : ''}>
-                                  {event.statusLabel}
-                                </Badge>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>{event.displayDate} - {event.displayTime}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{event.location}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-4 w-4" />
-                                  {/* Hiển thị số lượng đã đăng ký / cần thiết */}
-                                  <span>
-                                {event.volunteersCount || 0} / {event.volunteersNeeded || "∞"} TNV
-                            </span>
-                                </div>
-                              </div>
+                            <div className="absolute top-3 right-3">
+                              <Badge className={`shadow-sm border ${ev.badgeClass}`}>
+                                {ev.badgeLabel}
+                              </Badge>
                             </div>
 
-                            {/* Right: Actions */}
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openDetail(event.id)}>
-                                <Eye className="h-4 w-4 mr-2" /> Chi tiết
-                              </Button>
-
-                              {/* Chỉ cho phép Sửa/Xóa nếu chưa hoàn thành (Tùy logic nghiệp vụ của bạn) */}
-                              {event.computedStatus !== "completed" && (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => navigate(`/manager/events/${event.id}/edit`)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                          className="text-destructive focus:text-destructive"
-                                          onClick={() => handleDelete(event.id)}
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" /> Xóa sự kiện
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                              )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10">
+                              <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm text-xs">
+                                {ev.category || 'Hoạt động'}
+                              </Badge>
                             </div>
-
                           </div>
-                        </CardContent>
-                      </Card>
-                  ))
-              ) : (
-                  <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-dashed">
-                    <Calendar className="h-12 w-12 text-muted-foreground opacity-20 mb-4" />
-                    <p className="text-muted-foreground">Không tìm thấy sự kiện nào.</p>
-                    {searchTerm === "" && statusFilter === "all" && (
-                        <Button variant="link" onClick={() => navigate("/manager/events/create")} className="mt-2">
-                          Tạo sự kiện đầu tiên ngay
-                        </Button>
-                    )}
-                  </div>
-              )}
-            </div>
 
+                          <CardContent className="p-5 flex-1 flex flex-col">
+                            <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900 group-hover:text-primary transition-colors cursor-pointer"
+                                onClick={(e) => openDetailModal(e, ev.id)}>
+                              {ev.title}
+                            </h3>
+
+                            <div className="space-y-2 text-sm text-gray-600 mt-1">
+                              <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-500"/>{ev.displayDate} - {ev.displayTime}</div>
+                              <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-red-500"/> <span className="line-clamp-1">{ev.location}</span></div>
+
+                              <div className="pt-2">
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="font-medium text-gray-700 flex items-center gap-1">
+                                        <Users className="w-3 h-3"/> {ev.realVolunteersCount} đã tham gia
+                                    </span>
+                                  <span className="text-gray-500">Mục tiêu: {ev.maxVolunteersDisplay}</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                  <div
+                                      className={`h-full rounded-full transition-all duration-500 ${ev.badgeLabel === 'Hết chỗ' ? 'bg-red-500' : 'bg-primary'}`}
+                                      style={{ width: `${ev.maxVolunteersDisplay > 0 ? Math.min((ev.realVolunteersCount / ev.maxVolunteersDisplay) * 100, 100) : 0}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+
+                          <CardFooter className="p-4 pt-0 mt-auto border-t border-gray-50 bg-gray-50/50">
+                            <div className="w-full grid grid-cols-2 gap-2 mt-4">
+                              <Button variant="outline" size="sm" onClick={(e) => openDetailModal(e, ev.id)}
+                                      className="bg-white border-gray-200 hover:bg-gray-100 hover:text-primary">
+                                <Eye className="mr-1.5 h-3.5 w-3.5"/> Xem nhanh
+                              </Button>
+                              <Button size="sm" onClick={() => navigate(`/manager/events/${ev.id}`)}
+                                      className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-primary shadow-sm">
+                                <FileText className="mr-1.5 h-3.5 w-3.5"/> Chi tiết
+                              </Button>
+                            </div>
+                          </CardFooter>
+                        </Card>
+                    ))
+                )}
+              </div>
+
+            </div>
           </div>
         </div>
-
-        {/* Modal chi tiết (Nếu cần) */}
-        <ManagerEventDetailModal
-            eventId={detailId}
-            open={isDetailOpen}
-            onOpenChange={setIsDetailOpen}
-            onUpdate={loadEvents} // Truyền callback để reload sau khi sửa/xóa trong modal
-        />
+        <ManagerEventDetailModal eventId={detailId} open={isDetailOpen} onOpenChange={setIsDetailOpen}
+                                 onUpdate={loadEvents}/>
       </ManagerLayout>
   );
 }

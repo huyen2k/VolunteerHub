@@ -26,8 +26,10 @@ import UserSettingsPage from "./pages/user/SettingsPage";
 import UserHistoryPage from "./pages/user/HistoryPage";
 import UserEventsPage from "./pages/user/EventsPage";
 import CommunityPage from "./pages/user/CommunityPage";
-import ChatPage from "./pages/user/ChatPage";
-import PostDetailPage from "./pages/user/PostDetailPage";
+
+// Community Pages
+import ChatPage from "./pages/community/ChatPage";
+import PostDetailPage from "./pages/community/PostDetailPage";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -51,8 +53,8 @@ function App() {
     return (
         <ErrorBoundary>
             <ThemeProvider defaultTheme="light" enableSystem>
-                <AuthProvider>
-                    <Router>
+                <Router>
+                    <AuthProvider>
                         <div className="App min-h-screen bg-background font-sans antialiased">
                             <Routes>
                                 {/* --- PUBLIC ROUTES --- */}
@@ -65,33 +67,35 @@ function App() {
                                 <Route path="/events/:id" element={<EventDetailPage />} />
                                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-                                {/* --- GUEST ROUTES (Chưa đăng nhập mới vào được) --- */}
+                                {/* --- GUEST ROUTES --- */}
                                 <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
                                 <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
                                 <Route path="/admin/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
                                 <Route path="/manager/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
 
                                 {/* --- USER / VOLUNTEER ROUTES --- */}
-                                {/* requiredRole mặc định null tức là chỉ cần login là vào được */}
                                 <Route path="/dashboard" element={<ProtectedRoute><UserDashboardPage /></ProtectedRoute>} />
                                 <Route path="/profile" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
                                 <Route path="/settings" element={<ProtectedRoute><UserSettingsPage /></ProtectedRoute>} />
-                                <Route path="/profile/history" element={<ProtectedRoute><UserHistoryPage /></ProtectedRoute>} />
+                                <Route path="/history" element={<ProtectedRoute><UserHistoryPage /></ProtectedRoute>} />
                                 <Route path="/user/events" element={<ProtectedRoute><UserEventsPage /></ProtectedRoute>} />
                                 <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+
+                                {/* Route chung cho Cộng đồng (Chat & Post Detail) */}
                                 <Route path="/community/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                                 <Route path="/community/chat/:channelId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                                 <Route path="/community/posts/:id" element={<ProtectedRoute><PostDetailPage /></ProtectedRoute>} />
 
-                                {/* --- ADMIN ROUTES (requiredRole="admin") --- */}
+                                {/* --- ADMIN ROUTES --- */}
                                 <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboardPage /></ProtectedRoute>} />
                                 <Route path="/admin/events" element={<ProtectedRoute requiredRole="admin"><AdminEventsPage /></ProtectedRoute>} />
                                 <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsersPage /></ProtectedRoute>} />
                                 <Route path="/admin/reports" element={<ProtectedRoute requiredRole="admin"><AdminReportsPage /></ProtectedRoute>} />
                                 <Route path="/admin/profile" element={<ProtectedRoute requiredRole="admin"><AdminProfilePage /></ProtectedRoute>} />
                                 <Route path="/admin/community" element={<ProtectedRoute requiredRole="admin"><AdminCommunityPage /></ProtectedRoute>} />
+                                <Route path="/admin/community/posts/:id" element={<ProtectedRoute requiredRole="admin"><PostDetailPage /></ProtectedRoute>} />
 
-                                {/* --- MANAGER ROUTES (requiredRole="manager") --- */}
+                                {/* --- MANAGER ROUTES --- */}
                                 <Route path="/manager/dashboard" element={<ProtectedRoute requiredRole="manager"><ManagerDashboardPage /></ProtectedRoute>} />
                                 <Route path="/manager/events" element={<ProtectedRoute requiredRole="manager"><ManagerEventsPage /></ProtectedRoute>} />
                                 <Route path="/manager/events/create" element={<ProtectedRoute requiredRole="manager"><ManagerCreateEventPage /></ProtectedRoute>} />
@@ -100,13 +104,14 @@ function App() {
                                 <Route path="/manager/volunteers" element={<ProtectedRoute requiredRole="manager"><ManagerVolunteersPage /></ProtectedRoute>} />
                                 <Route path="/manager/community" element={<ProtectedRoute requiredRole="manager"><ManagerCommunityPage /></ProtectedRoute>} />
                                 <Route path="/manager/profile" element={<ProtectedRoute requiredRole="manager"><ManagerProfilePage /></ProtectedRoute>} />
+                                <Route path="/manager/community/posts/:id" element={<ProtectedRoute requiredRole="manager"><PostDetailPage /></ProtectedRoute>} />
 
                                 {/* Fallback 404 */}
                                 <Route path="*" element={<div className="flex items-center justify-center h-screen">404 - Page Not Found</div>} />
                             </Routes>
                         </div>
-                    </Router>
-                </AuthProvider>
+                    </AuthProvider>
+                </Router>
             </ThemeProvider>
         </ErrorBoundary>
     );

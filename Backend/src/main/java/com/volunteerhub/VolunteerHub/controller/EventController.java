@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,12 +31,12 @@ public class EventController {
     @GetMapping
     public ApiResponse<List<EventResponse>> getAllEvents() {
         return ApiResponse.<List<EventResponse>>builder()
-                            .result(eventService.getEvents())
-                            .build();
+                .result(eventService.getEvents())
+                .build();
     }
 
     @GetMapping("/admin")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ Admin được gọi
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<EventResponse>> getAllEventsForAdmin() {
         return ApiResponse.<List<EventResponse>>builder()
                 .result(eventService.getAllEventsForAdmin())
@@ -45,16 +47,18 @@ public class EventController {
     @PreAuthorize("hasRole('EVEN_MANAGER') or hasAuthority('CREATE_EVENT')")
     public ApiResponse<EventResponse> createEvent(@RequestBody EventCreationRequest eventCreationRequest) {
         return ApiResponse.<EventResponse>builder()
-                        .result(eventService.createEvent(eventCreationRequest))
-                        .build();
+                .result(eventService.createEvent(eventCreationRequest))
+                .build();
     }
 
     @GetMapping("/{id}")
     public ApiResponse<EventResponse> getEvent(@PathVariable String id) {
+        EventResponse response = eventService.getEventById(id);
         return ApiResponse.<EventResponse>builder()
-                .result(eventService.getEventById(id))
+                .result(response)
                 .build();
     }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('UPDATE_EVENT')")
     public ApiResponse<EventResponse> updateEvent(@PathVariable String id, @RequestBody EventUpdateRequest eventUpdateRequest) {
@@ -70,9 +74,6 @@ public class EventController {
         return ApiResponse.<Void>builder().build();
     }
 
-    /*Approve Controller, will be upgraded to add approvedBy more specific when Role entity is completed
-    *Add reject API, set life time for rejected event and filter for single role to display event
-     */
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasAuthority('APPROVE_EVENT')")
     public ApiResponse<EventResponse> approveEvent(@PathVariable String id,
@@ -85,19 +86,32 @@ public class EventController {
     @PutMapping("/{id}/reject")
     @PreAuthorize("hasAuthority('APPROVE_EVENT')")
     public ApiResponse<EventResponse> rejectEvent(@PathVariable String id,
-                                                    @RequestBody EventApprovalRequest eventApprovalRequest) {
-        // Set status to rejected
+                                                  @RequestBody EventApprovalRequest eventApprovalRequest) {
         eventApprovalRequest.setStatus("rejected");
         return ApiResponse.<EventResponse>builder()
                 .result(eventService.approveEvent(id, eventApprovalRequest))
                 .build();
     }
 
-    @GetMapping("/manager/{managerId}")
-    @PreAuthorize("hasAnyAuthority('UPDATE_EVENT', 'APPROVE_EVENT', 'USER_LIST') or hasRole('EVEN_MANAGER') or hasRole('ADMIN')")
-    public ApiResponse<List<EventResponse>> getEventsByManager(@PathVariable String managerId) {
+    @GetMapping("/my-events")
+    @PreAuthorize("hasRole('EVEN_MANAGER')")
+    public ApiResponse<List<EventResponse>> getMyEvents() {
+        log.info("Manager requested personal events");
         return ApiResponse.<List<EventResponse>>builder()
-                .result(eventService.getEventsByManager(managerId))
+                .result(eventService.getMyEvents())
+                .build();
+    }
+
+    // --- UPLOAD ẢNH ĐẠI DIỆN SỰ KIỆN ---
+    @PostMapping(value = "/{id}/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('EVEN_MANAGER') or hasRole('ADMIN')")
+    public ApiResponse<String> uploadEventImage(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        log.info("Uploading image for event: {}", id);
+        String imageUrl = eventService.uploadEventImage(id, file);
+        return ApiResponse.<String>builder()
+                .result(imageUrl)
                 .build();
     }
 }
