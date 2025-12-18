@@ -170,7 +170,6 @@ public class StatisticsService {
 
             // ---ATTRACTIVE EVENTS (Sự kiện thu hút - Sidebar) ---
             // Logic: Lấy top 5 sự kiện Approved có nhiều người đăng ký nhất
-            // (Nếu muốn chính xác hơn có thể cộng thêm like/comment nếu có repo)
             List<Event> allApprovedEvents = eventRepository.findAll().stream()
                     .filter(e -> "approved".equals(e.getStatus()))
                     .collect(Collectors.toList());
@@ -190,8 +189,7 @@ public class StatisticsService {
                     .limit(5)
                     .collect(Collectors.toList());
 
-            // TOP VOLUNTEERS (Tình nguyện viên tích cực) ---
-            // Lọc các đăng ký đã hoàn thành và user không null
+            // TOP VOLUNTEERS (Tình nguyện viên tích cực)
             List<EventRegistration> completedRegistrations = allRegistrations.stream()
                     .filter(r -> "completed".equals(r.getStatus()))
                     .filter(r -> r.getUserId() != null)

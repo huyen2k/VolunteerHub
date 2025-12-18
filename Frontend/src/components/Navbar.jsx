@@ -66,23 +66,25 @@ export function Navbar({ role: propRole }) {
 
   const volunteerLinks = [
     { href: "/", label: "Trang chủ", icon: Home },
-    { href: "/user/events", label: "Sự kiện", icon: Calendar },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/user/events", label: "Sự kiện", icon: Calendar },
     { href: "/community", label: "Cộng đồng", icon: MessageSquare },
   ];
 
   const managerLinks = [
+    { href: "/", label: "Trang chủ", icon: Home }, // Thêm mới
     { href: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/manager/events", label: "Quản lý sự kiện", icon: Calendar },
+    { href: "/manager/volunteers", label: "Tình nguyện viên", icon: Users },
     { href: "/manager/community", label: "Cộng đồng", icon: MessageSquare },
   ];
 
-
   const adminLinks = [
+    { href: "/", label: "Trang chủ", icon: Home }, // Thêm mới
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/users", label: "Người dùng", icon: Users },
     { href: "/admin/events", label: "Sự kiện", icon: Calendar },
-    { href: "/admin/community", label: "Cộng đồng", icon: MessageSquare }, // Thêm mới
+    { href: "/admin/community", label: "Cộng đồng", icon: MessageSquare },
     { href: "/admin/reports", label: "Báo cáo", icon: Settings },
   ];
 

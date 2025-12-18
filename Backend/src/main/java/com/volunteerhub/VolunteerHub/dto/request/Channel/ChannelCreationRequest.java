@@ -10,5 +10,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChannelCreationRequest {
     String eventId;
+    private String name;
     Number postCount;
 }

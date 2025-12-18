@@ -45,7 +45,7 @@ public class EventRegistrationController {
     }
 
     @GetMapping("/{registrationId}")
-    @PreAuthorize("hasAuthority('READ_REGISTRATION')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVEN_MANAGER', 'VOLUNTEER')")
     ApiResponse<EventRegistrationResponse> getRegistration(@PathVariable String registrationId){
         return ApiResponse.<EventRegistrationResponse>builder()
                 .result(eventRegistrationService.getRegistration(registrationId))

@@ -10,6 +10,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { AdminUserDetailModal } from "./AdminUserDetailModal";
 import { useReactToPrint } from "react-to-print";
 
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -151,9 +152,9 @@ export default function AdminUsersPage() {
                 </div>
 
                 {/* Nút Export Excel */}
-                <Button onClick={handleExportUsers} variant="outline" className="gap-2 bg-white text-slate-900 border">
-                  <Download className="h-4 w-4" /> Excel
-                </Button>
+                {/*<Button onClick={handleExportUsers} variant="outline" className="gap-2 bg-white text-slate-900 border">*/}
+                {/*  <Download className="h-4 w-4" /> Excel*/}
+                {/*</Button>*/}
 
                 {/* NÚT IN MỚI */}
                 <Button onClick={handlePrint} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">

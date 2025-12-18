@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-10T20:20:36+0700",
+    date = "2025-12-18T22:19:12+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -25,6 +25,7 @@ public class ChannelMapperImpl implements ChannelMapper {
 
         channel.eventId( request.getEventId() );
         channel.postCount( request.getPostCount() );
+        channel.name( request.getName() );
 
         return channel.build();
     }
@@ -37,6 +38,7 @@ public class ChannelMapperImpl implements ChannelMapper {
 
         channel.setEventId( request.getEventId() );
         channel.setPostCount( request.getPostCount() );
+        channel.setName( request.getName() );
     }
 
     @Override
@@ -50,6 +52,7 @@ public class ChannelMapperImpl implements ChannelMapper {
         channelResponse.id( channel.getId() );
         channelResponse.eventId( channel.getEventId() );
         channelResponse.postCount( channel.getPostCount() );
+        channelResponse.name( channel.getName() );
         channelResponse.createdAt( channel.getCreatedAt() );
         channelResponse.updatedAt( channel.getUpdatedAt() );
 
