@@ -2,27 +2,27 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Button } from "../../components/ui/button";
+import { Button } from "../../components/ui/button.jsx";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { UserLayout } from "../../components/Layout";
+} from "../../components/ui/card.jsx";
+import { Input } from "../../components/ui/input.jsx";
+import { UserLayout } from "../../components/Layout.jsx";
 import { MessageSquare, Send, ArrowLeft, Users, Search } from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
-import chatService from "../../services/chatService";
-import channelService from "../../services/channelService";
-import eventService from "../../services/eventService";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import { useAuth } from "../../hooks/useAuth.js";
+import chatService from "../../services/chatService.js";
+import channelService from "../../services/channelService.js";
+import eventService from "../../services/eventService.js";
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "../../components/ui/avatar";
-import { Badge } from "../../components/ui/badge";
+} from "../../components/ui/avatar.jsx";
+import { Badge } from "../../components/ui/badge.jsx";
 
 export default function ChatPage() {
   const { channelId } = useParams();

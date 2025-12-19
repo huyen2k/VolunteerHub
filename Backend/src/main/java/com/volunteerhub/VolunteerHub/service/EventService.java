@@ -1,9 +1,11 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.collection.Event;
+import com.volunteerhub.VolunteerHub.collection.Channel;
+import com.volunteerhub.VolunteerHub.collection.Post;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
-import com.volunteerhub.VolunteerHub.dto.request.EventApprovalRequest;
+import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
@@ -11,12 +13,13 @@ import com.volunteerhub.VolunteerHub.mapper.EventMapper;
 import com.volunteerhub.VolunteerHub.repository.EventRepository;
 import com.volunteerhub.VolunteerHub.repository.ChannelRepository;
 import com.volunteerhub.VolunteerHub.repository.PostRepository;
+import com.volunteerhub.VolunteerHub.repository.RegistrationRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile; // Thêm import này
 
 import java.util.Date;
 import java.util.List;
@@ -27,86 +30,94 @@ import java.util.List;
 @Slf4j
 public class EventService {
 
-    @Autowired
-    private EventRepository eventRepository;
+    EventRepository eventRepository;
+    RegistrationRepository registrationRepository;
+    EventMapper eventMapper;
+    NotificationService notificationService;
+    UserService userService;
+    ChannelRepository channelRepository;
+    PostRepository postRepository;
+    FileUploadService fileUploadService; // Thêm Service này để xử lý upload
 
-    @Autowired
-    private EventMapper eventMapper;
+    // --- CÁC HÀM CŨ GIỮ NGUYÊN ---
 
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private com.volunteerhub.VolunteerHub.service.UserService userService;
-
-    @Autowired
-    private ChannelRepository channelRepository;
-
-    @Autowired
-    private PostRepository postRepository;
-
-    //Get all events, anyone can use this service
     public List<EventResponse> getEvents() {
-        return eventRepository.findAll().stream().map(this::toEnrichedResponse).toList();
-    }
-
-    //Get events by manager
-    public List<EventResponse> getEventsByManager(String managerId) {
         return eventRepository.findAll().stream()
-                .filter(event -> managerId.equals(event.getCreatedBy()))
+                .filter(event -> "approved".equals(event.getStatus()))
                 .map(this::toEnrichedResponse)
                 .toList();
     }
 
-    //Get a specific event by id
+    public List<EventResponse> getEventsForAdmin() {
+        return eventRepository.findAll().stream()
+                .map(this::toEnrichedResponse)
+                .toList();
+    }
+
+    public List<EventResponse> getAllEventsForAdmin() {
+        return getEventsForAdmin();
+    }
+
+    public List<EventResponse> getMyEvents() {
+        try {
+            var currentUser = userService.getMyInfo();
+            String currentUserId = currentUser.getId();
+            log.info("Querying events for createdBy: " + currentUserId);
+            return eventRepository.findByCreatedBy(currentUserId).stream()
+                    .map(this::toEnrichedResponse)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error in getMyEvents: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    public List<EventResponse> getEventsByManager(String managerId) {
+        return eventRepository.findByCreatedBy(managerId).stream()
+                .map(this::toEnrichedResponse)
+                .toList();
+    }
+
     public EventResponse getEventById(String id) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         return toEnrichedResponse(event);
     }
 
-    //Creat new event, user can create but need to be approved by admin or manager
     public EventResponse createEvent(EventCreationRequest request) {
-        log.info(request.toString());
         Event event = eventMapper.toEvent(request);
-        log.info(event.toString());
-        event.setCreatedAt(new Date());
-        event.setUpdatedAt(new Date());
         event.setStatus("pending");
         event.setApprovedBy(null);
         event.setApprovedAt(null);
+
+        if (event.getImage() == null || event.getImage().isEmpty()) {
+            event.setImage("https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=1000");
+        }
+
         try {
             var currentUser = userService.getMyInfo();
             event.setCreatedBy(currentUser.getId());
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         eventRepository.save(event);
         return toEnrichedResponse(event);
     }
 
-    //Update an event, still need to wait for approval
     public EventResponse updateEvent(String id, EventUpdateRequest request) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         eventMapper.updateEvent(event, request);
         event.setStatus("pending");
-        event.setUpdatedAt(new Date());
-
         eventRepository.save(event);
         return toEnrichedResponse(event);
     }
 
-    //Delete an event, only admin can use this service
     public void deleteEvent(String id) {
         eventRepository.deleteById(id);
     }
 
-    //Approve event
     public EventResponse approveEvent(String id, EventApprovalRequest request) {
         Event event = eventRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        if (!event.getStatus().equals("pending")) {
-            throw new RuntimeException("Event is not pending");
-        }
-
         event.setStatus(request.getStatus());
 
         try {
@@ -118,22 +129,67 @@ public class EventService {
 
         if ("approved".equals(request.getStatus())) {
             event.setApprovedAt(new Date());
+            try {
+                if (!channelRepository.existsByEventId(event.getId())) {
+                    Channel newChannel = new Channel();
+                    newChannel.setEventId(event.getId());
+                    newChannel.setName("Thảo luận: " + event.getTitle());
+                    newChannel.setType("EVENT_DISCUSSION");
+                    newChannel.setPostCount(1);
+                    newChannel.setCreatedAt(new Date());
+
+                    Channel savedChannel = channelRepository.save(newChannel);
+
+                    Post welcomePost = new Post();
+                    welcomePost.setChannelId(savedChannel.getId());
+                    welcomePost.setContent("Chào mừng các bạn đến với kênh thảo luận chính thức của sự kiện!");
+                    welcomePost.setAuthorName("Hệ thống");
+                    welcomePost.setAuthorAvatar("https://cdn-icons-png.flaticon.com/512/1041/1041883.png");
+                    welcomePost.setCreatedAt(new Date());
+                    welcomePost.setLikesCount(0L);
+                    welcomePost.setCommentsCount(0L);
+                    welcomePost.setImages(List.of());
+
+                    postRepository.save(welcomePost);
+                    log.info("Đã tạo Channel & Post cho event: " + event.getId());
+                }
+            } catch (Exception e) {
+                log.error("Lỗi tạo Channel/Post tự động: ", e);
+            }
         }
 
         eventRepository.save(event);
 
-        // Create notification for event creator
-        String message = "approved".equals(request.getStatus()) 
-            ? String.format("Sự kiện '%s' của bạn đã được duyệt", event.getTitle())
-            : String.format("Sự kiện '%s' của bạn đã bị từ chối", event.getTitle());
-        
-        notificationService.createNotificationForUser(
-            event.getCreatedBy(),
-            "event_status",
-            message
-        );
+        String message = "approved".equals(request.getStatus())
+                ? String.format("Sự kiện '%s' của bạn đã được duyệt", event.getTitle())
+                : String.format("Sự kiện '%s' của bạn đã bị từ chối", event.getTitle());
+
+        try {
+            notificationService.createNotificationForUser(event.getCreatedBy(), "event_status", message);
+        } catch (Exception e) {
+            log.error("Khong gui duoc thong bao: " + e.getMessage());
+        }
 
         return toEnrichedResponse(event);
+    }
+
+    public String uploadEventImage(String eventId, MultipartFile file) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        try {
+            String imageUrl = fileUploadService.uploadImage(file);
+
+            // Cập nhật đường dẫn ảnh mới vào database
+            event.setImage(imageUrl);
+            eventRepository.save(event);
+
+            log.info("Event image updated successfully for ID: " + eventId);
+            return imageUrl;
+        } catch (Exception e) {
+            log.error("Lỗi khi upload ảnh sự kiện: " + e.getMessage());
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
     }
 
     private EventResponse toEnrichedResponse(Event event) {
@@ -143,9 +199,9 @@ public class EventService {
             var channel = channelRepository.findByEventId(event.getId());
             if (channel != null) {
                 var posts = postRepository.findByChannelId(channel.getId());
+                comments = (long) posts.size();
                 for (var p : posts) {
                     if (p.getLikesCount() != null) likes += p.getLikesCount();
-                    if (p.getCommentsCount() != null) comments += p.getCommentsCount();
                 }
             }
         } catch (Exception ignored) {}
@@ -162,14 +218,16 @@ public class EventService {
             }
         } catch (Exception ignored) {}
 
-        Integer registered = null;
+        long realRegisteredCount = 0;
         try {
-            if (event.getRegisteredUsers() != null) {
-                registered = event.getRegisteredUsers().size();
-            } else {
-                registered = event.getVolunteersRegistered();
+            if (registrationRepository != null) {
+                long approved = registrationRepository.countByEventIdAndStatus(event.getId(), "approved");
+                long completed = registrationRepository.countByEventIdAndStatus(event.getId(), "completed");
+                realRegisteredCount = approved + completed;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.error("Lỗi đếm số lượng registration: " + e.getMessage());
+        }
 
         return EventResponse.builder()
                 .id(event.getId())
@@ -185,7 +243,7 @@ public class EventService {
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .volunteersNeeded(event.getVolunteersNeeded())
-                .volunteersRegistered(registered)
+                .volunteersRegistered((int) realRegisteredCount)
                 .likes(likes)
                 .comments(comments)
                 .shares(0L)

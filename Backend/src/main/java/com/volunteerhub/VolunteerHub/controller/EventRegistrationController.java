@@ -35,7 +35,7 @@ public class EventRegistrationController {
                 .result(eventRegistrationService.createRegistration(request))
                 .build();
     }
-    
+
     @PutMapping("/{registrationId}")
     @PreAuthorize("hasAuthority('UPDATE_REGISTRATION')")
     ApiResponse<EventRegistrationResponse> updateRegistration(@PathVariable String registrationId, @RequestBody EventRegistrationUpdateRequest request){
@@ -45,7 +45,7 @@ public class EventRegistrationController {
     }
 
     @GetMapping("/{registrationId}")
-    @PreAuthorize("hasAuthority('READ_REGISTRATION')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVEN_MANAGER', 'VOLUNTEER')")
     ApiResponse<EventRegistrationResponse> getRegistration(@PathVariable String registrationId){
         return ApiResponse.<EventRegistrationResponse>builder()
                 .result(eventRegistrationService.getRegistration(registrationId))
@@ -53,7 +53,8 @@ public class EventRegistrationController {
     }
 
     @DeleteMapping("/{registrationId}")
-    @PreAuthorize("hasAuthority('DELETE_REGISTRATION')")
+    // Cho phép cả người có quyền CREATE (Volunteer) và DELETE (Admin) được gọi
+    @PreAuthorize("hasAuthority('CREATE_REGISTRATION') or hasAuthority('DELETE_REGISTRATION')")
     ApiResponse<Void> delete(@PathVariable String registrationId){
         eventRegistrationService.deleteRegistration(registrationId);
         return ApiResponse.<Void>builder()

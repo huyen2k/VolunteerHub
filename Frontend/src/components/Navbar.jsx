@@ -66,21 +66,25 @@ export function Navbar({ role: propRole }) {
 
   const volunteerLinks = [
     { href: "/", label: "Trang chủ", icon: Home },
-    { href: "/user/events", label: "Sự kiện", icon: Calendar },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/user/events", label: "Sự kiện", icon: Calendar },
     { href: "/community", label: "Cộng đồng", icon: MessageSquare },
   ];
 
   const managerLinks = [
+    { href: "/", label: "Trang chủ", icon: Home }, // Thêm mới
     { href: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/manager/events", label: "Quản lý sự kiện", icon: Calendar },
+    { href: "/manager/volunteers", label: "Tình nguyện viên", icon: Users },
     { href: "/manager/community", label: "Cộng đồng", icon: MessageSquare },
   ];
 
   const adminLinks = [
+    { href: "/", label: "Trang chủ", icon: Home }, // Thêm mới
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/users", label: "Người dùng", icon: Users },
     { href: "/admin/events", label: "Sự kiện", icon: Calendar },
+    { href: "/admin/community", label: "Cộng đồng", icon: MessageSquare },
     { href: "/admin/reports", label: "Báo cáo", icon: Settings },
   ];
 
@@ -108,140 +112,140 @@ export function Navbar({ role: propRole }) {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-            <Users className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">VolunteerHub</span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden items-center gap-6 md:flex">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const isActive = location.pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {link.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <LanguageToggle />
-
-          {role !== "guest" && (
-            <>
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => setNotificationsOpen(true)}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
-                  <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
-                    {unreadNotifications}
-                  </Badge>
-                )}
-              </Button>
-
-              {/* User Menu - Settings Modal */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-
-              {/* Modals */}
-              <SettingsModal
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-              />
-              <NotificationsModal
-                open={notificationsOpen}
-                onOpenChange={setNotificationsOpen}
-              />
-            </>
-          )}
-
-          {role === "guest" && (
-            <div className="hidden items-center gap-2 md:flex">
-              <Button variant="ghost" asChild>
-                <Link to="/login">Đăng nhập</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/register">Đăng ký</Link>
-              </Button>
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+              <Users className="h-6 w-6 text-primary-foreground" />
             </div>
-          )}
+            <span className="text-xl font-bold">VolunteerHub</span>
+          </Link>
 
-          {/* Mobile */}
-          <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-64">
-              <div className="flex flex-col gap-4 py-4">
-                {links.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = location.pathname === link.href;
-                  return (
-                    <Link
+          {/* Desktop Navigation */}
+          <div className="hidden items-center gap-6 md:flex">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const isActive = location.pathname === link.href;
+              return (
+                  <Link
                       key={link.href}
                       to={link.href}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
-                        isActive
-                          ? "bg-accent text-primary"
-                          : "text-muted-foreground"
+                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
+                          isActive ? "text-primary" : "text-muted-foreground"
                       }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {link.label}
-                    </Link>
-                  );
-                })}
-                <div className="flex items-center justify-between px-3 py-2 border-t">
-                  <span className="text-sm text-muted-foreground">Theme</span>
-                  <ThemeToggle />
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+              );
+            })}
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageToggle />
+
+            {role !== "guest" && (
+                <>
+                  {/* Notifications */}
+                  <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative"
+                      onClick={() => setNotificationsOpen(true)}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadNotifications > 0 && (
+                        <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
+                          {unreadNotifications}
+                        </Badge>
+                    )}
+                  </Button>
+
+                  {/* User Menu - Settings Modal */}
+                  <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSettingsOpen(true)}
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+
+                  {/* Modals */}
+                  <SettingsModal
+                      open={settingsOpen}
+                      onOpenChange={setSettingsOpen}
+                  />
+                  <NotificationsModal
+                      open={notificationsOpen}
+                      onOpenChange={setNotificationsOpen}
+                  />
+                </>
+            )}
+
+            {role === "guest" && (
+                <div className="hidden items-center gap-2 md:flex">
+                  <Button variant="ghost" asChild>
+                    <Link to="/login">Đăng nhập</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/register">Đăng ký</Link>
+                  </Button>
                 </div>
-                {role === "guest" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      asChild
-                      className="w-full bg-transparent"
-                    >
-                      <Link to="/login">Đăng nhập</Link>
-                    </Button>
-                    <Button asChild className="w-full">
-                      <Link to="/register">Đăng ký</Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+            )}
+
+            {/* Mobile */}
+            <Sheet>
+              <SheetTrigger asChild className="md:hidden">
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <div className="flex flex-col gap-4 py-4">
+                  {links.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = location.pathname === link.href;
+                    return (
+                        <Link
+                            key={link.href}
+                            to={link.href}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
+                                isActive
+                                    ? "bg-accent text-primary"
+                                    : "text-muted-foreground"
+                            }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {link.label}
+                        </Link>
+                    );
+                  })}
+                  <div className="flex items-center justify-between px-3 py-2 border-t">
+                    <span className="text-sm text-muted-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
+                  {role === "guest" && (
+                      <>
+                        <Button
+                            variant="outline"
+                            asChild
+                            className="w-full bg-transparent"
+                        >
+                          <Link to="/login">Đăng nhập</Link>
+                        </Button>
+                        <Button asChild className="w-full">
+                          <Link to="/register">Đăng ký</Link>
+                        </Button>
+                      </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
   );
 }

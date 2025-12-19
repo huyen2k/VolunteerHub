@@ -1,634 +1,358 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
+import { Card, CardContent, CardFooter } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { UserLayout } from "../../components/Layout";
 import { useAuth } from "../../hooks/useAuth";
 import eventService from "../../services/eventService";
 import userService from "../../services/userService";
 import {
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  Search,
-  Filter,
-  Heart,
-  MessageSquare,
-  Eye,
-  UserCheck,
-  Star,
-  TrendingUp,
-  Loader2,
+    Calendar, MapPin, Search, Star, AlertCircle,
+    Clock, CheckCircle2, XCircle, ArrowRight, Filter, Users, History, Hourglass
 } from "lucide-react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 export default function UserEventsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterDate, setFilterDate] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [events, setEvents] = useState([]);
-  const [userEvents, setUserEvents] = useState([]);
-  const [userStats, setUserStats] = useState({
-    totalRegistered: 0,
-    completed: 0,
-    upcoming: 0,
-    totalHours: 0,
-    totalPoints: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { user } = useAuth();
-  const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterCategory, setFilterCategory] = useState("all");
+    const [filterDate, setFilterDate] = useState("all");
+    const [filterStatus, setFilterStatus] = useState("all");
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const [displayEvents, setDisplayEvents] = useState([]);
+    const [userStats, setUserStats] = useState({ totalRegistered: 0, completed: 0, upcoming: 0, totalHours: 0, totalPoints: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-        const [allEvents, userRegistrations, statsData] = await Promise.all([
-          eventService.getEvents(),
-          user ? eventService.getUserEvents(user.id) : Promise.resolve([]),
-          user
-            ? userService.getUserStats(user.id).catch(() => ({
-                totalEventsRegistered: 0,
-                completedEvents: 0,
-                upcomingEvents: 0,
-                totalHours: 0,
-                totalPoints: 0,
-              }))
-            : Promise.resolve({
-                totalEventsRegistered: 0,
-                completedEvents: 0,
-                upcomingEvents: 0,
-                totalHours: 0,
-                totalPoints: 0,
-              }),
-        ]);
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const processedFilterRef = useRef(false);
 
-        setEvents(allEvents || []);
 
-        const userEventsWithDetails = await Promise.all(
-          (userRegistrations || []).map(async (reg) => {
-            try {
-              const event = await eventService.getEventById(reg.eventId);
-              return {
-                id: event.id,
-                eventId: event.id,
-                registrationId: reg.id,
-                title: event.title,
-                description: event.description,
-                date: event.date,
-                location: event.location,
-                status: event.status,
-                registrationStatus: reg.status,
-                registeredAt: reg.registeredAt,
-              };
-            } catch (err) {
-              console.error(`Error loading event ${reg.eventId}:`, err);
-              return null;
+    const safeParseInt = (value) => {
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const getVal = (obj, ...keys) => {
+        if (!obj) return 0;
+        for (const key of keys) {
+            if (obj[key] !== undefined && obj[key] !== null) {
+                return safeParseInt(obj[key]);
             }
-          })
+        }
+        return 0;
+    };
+
+    useEffect(() => {
+        if (location.state?.filter && !processedFilterRef.current) {
+            const filterType = location.state.filter;
+            if (filterType === 'upcoming') setFilterDate('upcoming');
+            else if (filterType === 'registered') setFilterStatus('registered');
+            else if (filterType === 'happening') setFilterDate('happening');
+            processedFilterRef.current = true;
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, navigate]);
+
+    // --- LOAD DATA ---
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const [publicEventsRaw, userRegistrations, statsData] = await Promise.all([
+                    eventService.getEvents().catch(() => []),
+                    user?.id ? eventService.getUserEvents(user.id).catch(() => []) : Promise.resolve([]),
+                    user?.id ? userService.getUserStats(user.id).catch(() => ({})) : Promise.resolve({}),
+                ]);
+
+                const finalEvents = publicEventsRaw.map(event => {
+                    const userRegistration = (userRegistrations || []).find(reg => reg.eventId === event.id);
+
+                    return {
+                        ...event,
+                        isRegistered: !!userRegistration,
+                        registrationId: userRegistration?.id,
+                        registrationStatus: userRegistration?.status,
+
+                        currentVolunteers: getVal(event, 'volunteersRegistered', 'registeredCount', 'currentVolunteers'),
+                        maxVolunteers: getVal(event, 'volunteersNeeded', 'maxVolunteers', 'limit')
+                    };
+                });
+
+                setDisplayEvents(finalEvents);
+
+                setUserStats({
+                    totalRegistered: getVal(statsData, 'totalEventsRegistered', 'total_events_registered'),
+                    completed: getVal(statsData, 'completedEvents', 'completed_events'),
+                    upcoming: getVal(statsData, 'upcomingEvents', 'upcoming_events'),
+                    totalHours: getVal(statsData, 'totalHours', 'total_hours'),
+                    totalPoints: getVal(statsData, 'totalPoints', 'total_points'),
+                });
+
+            } catch (err) {
+                console.error("Load Error:", err);
+                setError("Có lỗi khi tải dữ liệu.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [user?.id]);
+
+    const uniqueCategories = useMemo(() => {
+        const defaultCats = ["Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa"];
+        const eventCats = displayEvents.map(e => e.category).filter(Boolean);
+        const cleanedCats = eventCats.map(c => c.trim()); // Xóa khoảng trắng thừa
+
+        // Gộp default + cate mới, dùng Set để unique, sau đó sort
+        return Array.from(new Set([...defaultCats, ...cleanedCats])).sort();
+    }, [displayEvents]);
+
+    // --- FILTERING LOGIC ---
+    const filteredEvents = displayEvents.filter((event) => {
+        const title = (event.title || "").toLowerCase();
+        const matchesSearch = title.includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === "all" || event.category === filterCategory;
+
+        const eventDate = event.date ? new Date(event.date) : null;
+        const now = new Date();
+        const endDate = eventDate ? new Date(eventDate.getTime() + 4 * 60 * 60 * 1000) : null;
+
+        const isThisWeek = (d) => {
+            const start = new Date(now); start.setDate(now.getDate() - now.getDay());
+            const end = new Date(start); end.setDate(start.getDate() + 6);
+            return d >= start && d <= end;
+        };
+
+        let matchesDate = true;
+        if (filterDate !== "all" && eventDate) {
+            if (filterDate === "upcoming") matchesDate = eventDate > now;
+            else if (filterDate === "happening") matchesDate = now >= eventDate && now <= endDate;
+            else if (filterDate === "ended") matchesDate = now > endDate;
+            else if (filterDate === "this-week") matchesDate = isThisWeek(eventDate);
+        }
+
+        let matchesStatus = true;
+        if (filterStatus !== "all") {
+            if (filterStatus === "registered") matchesStatus = event.isRegistered;
+            else if (filterStatus === "completed") matchesStatus = event.registrationStatus === "completed";
+            else if (filterStatus === "available") matchesStatus = !event.isRegistered && event.status === "approved";
+        }
+
+        const isVisible = (event.status !== 'rejected' && event.status !== 'cancelled') || event.isRegistered;
+
+        return matchesSearch && matchesCategory && matchesDate && matchesStatus && isVisible;
+    });
+
+    const handleRegisterClick = async (eventId) => {
+        if (!user) return navigate("/login");
+        if (confirm("Xác nhận đăng ký tham gia sự kiện này?")) {
+            try { await eventService.registerForEvent(eventId); alert("Gửi yêu cầu thành công! Vui lòng chờ duyệt."); window.location.reload(); } catch (error) { alert("Lỗi: " + error.message); }
+        }
+    };
+
+    const handleUnregisterClick = async (registrationId) => {
+        if (!confirm("Bạn có chắc muốn hủy đăng ký/yêu cầu này?")) return;
+        try { await eventService.cancelEventRegistration(registrationId); alert("Đã hủy thành công."); window.location.reload(); } catch (error) { alert("Lỗi: " + error.message); }
+    };
+
+    const getStatusBadge = (event, isFull, isHappening, isEnded) => {
+        if (event.isRegistered) {
+            if (event.registrationStatus === "completed") return <Badge className="bg-purple-100 text-purple-700 border-purple-200">Đã hoàn thành</Badge>;
+            if (event.registrationStatus === "approved") return <Badge className="bg-green-100 text-green-700 border-green-200">Đã tham gia</Badge>;
+            if (event.registrationStatus === "rejected") return <Badge className="bg-red-100 text-red-700 border-red-200">Bị từ chối</Badge>;
+            if (event.registrationStatus === "pending" && isEnded) return <Badge variant="secondary">Hết hạn duyệt</Badge>;
+            return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200"><Hourglass className="w-3 h-3 mr-1"/> Chờ duyệt</Badge>;
+        }
+
+        if (isEnded) return <Badge variant="secondary">Đã kết thúc</Badge>;
+        if (isHappening) return <Badge className="bg-green-500 text-white animate-pulse">Đang diễn ra</Badge>;
+        if (isFull) return <Badge variant="destructive">Hết chỗ</Badge>;
+        return <Badge className="bg-primary/90 text-white hover:bg-primary">Đang mở</Badge>;
+    };
+
+    const renderActionButton = (event, isFull, isHappening, isEnded) => {
+        if (!event.isRegistered) {
+            if (isEnded) return <Button disabled variant="secondary" className="w-full">Đã kết thúc</Button>;
+            if (isHappening) return <Button disabled variant="secondary" className="w-full">Đang diễn ra</Button>;
+            if (isFull) return <Button disabled variant="secondary" className="w-full">Hết chỗ</Button>;
+            return <Button className="w-full shadow-sm hover:shadow-md transition-all" onClick={() => handleRegisterClick(event.id)}>Đăng ký tham gia</Button>;
+        }
+
+        if (event.registrationStatus === "completed") {
+            return <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white" disabled><Star className="w-4 h-4 mr-2"/> Đã hoàn thành</Button>;
+        }
+        if (event.registrationStatus === "rejected") {
+            return <Button disabled variant="secondary" className="w-full bg-red-50 text-red-500">Bị từ chối</Button>;
+        }
+        if (isHappening) {
+            return <Button disabled variant="outline" className="w-full text-green-600 bg-green-50 border-green-200">Đang diễn ra...</Button>;
+        }
+        if (isEnded) {
+            if (event.registrationStatus === 'approved') return <Button disabled variant="outline" className="w-full text-gray-500">Chờ xác nhận</Button>;
+            if (event.registrationStatus === 'pending') return <Button disabled variant="outline" className="w-full text-gray-400">Hết hạn duyệt</Button>;
+        }
+        return (
+            <Button
+                variant="destructive"
+                className="w-full bg-red-50 text-red-600 hover:bg-red-100 border-red-200 border"
+                onClick={() => handleUnregisterClick(event.registrationId)}
+            >
+                {event.registrationStatus === 'pending' ? "Hủy yêu cầu" : "Hủy tham gia"}
+            </Button>
         );
-        setUserEvents(userEventsWithDetails.filter((e) => e !== null));
-        setUserStats({
-          totalRegistered: statsData?.totalEventsRegistered || 0,
-          completed: statsData?.completedEvents || 0,
-          upcoming: statsData?.upcomingEvents || 0,
-          totalHours: statsData?.totalHours || 0,
-          totalPoints: statsData?.totalPoints || 0,
-        });
-      } catch (err) {
-        setError(err.message);
-        console.error("Error loading data:", err);
-      } finally {
-        setLoading(false);
-      }
     };
 
-    loadData();
-  }, [user]);
+    return (
+        <UserLayout>
+            <div className="bg-gray-50/50 min-h-screen pb-12">
+                <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
 
-  const categories = ["Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa"];
-  const statusOptions = [
-    { value: "all", label: "Tất cả trạng thái" },
-    { value: "registered", label: "Đã đăng ký" },
-    { value: "available", label: "Có thể đăng ký" },
-    { value: "completed", label: "Đã hoàn thành" },
-  ];
+                    {/* HEADER */}
+                    <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Sự kiện tình nguyện</h1>
+                            <p className="text-gray-500 mt-1">Khám phá và tham gia các hoạt động ý nghĩa ngay hôm nay.</p>
+                        </div>
 
-  const eventsWithStatus = events.map((event) => {
-    const userEvent = userEvents.find(
-      (ue) => ue.eventId === event.id || ue.id === event.id
+                        {user && (
+                            <div className="flex gap-3 items-center">
+                                <Button variant="outline" className="bg-white border-gray-200 shadow-sm hover:bg-gray-50" asChild>
+                                    <Link to="/history">
+                                        <History className="w-4 h-4 mr-2 text-gray-600"/>
+                                        Lịch sử hoạt động
+                                    </Link>
+                                </Button>
+
+                                <Badge variant="outline" className="text-sm py-2 px-3 bg-white shadow-sm border-gray-200">
+                                    <CheckCircle2 className="w-4 h-4 mr-2 text-green-600"/>
+                                    {userStats.totalRegistered} đã tham gia
+                                </Badge>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* FILTER BAR */}
+                    <div className="bg-white p-4 rounded-xl border shadow-sm mb-8 sticky top-4 z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div className="md:col-span-5"><Input placeholder="Tìm kiếm sự kiện, địa điểm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-gray-50"/></div>
+                            <div className="md:col-span-7 grid grid-cols-3 gap-3">
+
+                                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Danh mục"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tất cả danh mục</SelectItem>
+                                        {uniqueCategories.map(c => (
+                                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select value={filterDate} onValueChange={setFilterDate}>
+                                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Thời gian"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tất cả thời gian</SelectItem>
+                                        <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
+                                        <SelectItem value="happening">Đang diễn ra</SelectItem>
+                                        <SelectItem value="this-week">Trong tuần này</SelectItem>
+                                        <SelectItem value="ended">Đã kết thúc</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Trạng thái"/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                                        <SelectItem value="registered">Đã đăng ký</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* LIST EVENTS */}
+                    {loading ? <div className="flex justify-center py-20"><LoadingSpinner /></div> :
+                        filteredEvents.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-xl border border-dashed">
+                                <div className="text-gray-400 mb-2">Không tìm thấy sự kiện nào phù hợp.</div>
+                                <Button variant="link" onClick={() => {setSearchTerm(""); setFilterCategory("all"); setFilterDate("all"); setFilterStatus("all");}}>Xóa bộ lọc</Button>
+                            </div>
+                        ) : (
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                {filteredEvents.map((event) => {
+                                    const now = new Date();
+                                    const eventDate = new Date(event.date);
+                                    const isUpcoming = now < eventDate;
+                                    const isEnded = now > new Date(eventDate.getTime() + 14400000); // 4 hours duration
+                                    const isHappening = !isUpcoming && !isEnded;
+
+                                    const currentQty = event.currentVolunteers;
+                                    const maxQty = event.maxVolunteers;
+                                    const isFull = maxQty > 0 && currentQty >= maxQty;
+
+                                    return (
+                                        <Card key={event.id} className="group overflow-hidden hover:shadow-lg transition-all flex flex-col h-full border-gray-200">
+
+                                            <Link to={`/events/${event.id}`} className="block relative aspect-video bg-gray-100 overflow-hidden cursor-pointer">
+                                                <img
+                                                    src={event.image || "https://images.unsplash.com/photo-1559027615-cd4628902d4a"}
+                                                    alt={event.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                                <div className="absolute top-3 right-3">{getStatusBadge(event, isFull, isHappening, isEnded)}</div>
+                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10">
+                                                    <div className="text-white text-xs font-medium flex items-center gap-1">
+                                                        <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm">
+                                                            {event.category || 'Hoạt động'}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <CardContent className="p-5 flex-1 flex flex-col">
+                                                <Link to={`/events/${event.id}`} className="hover:underline">
+                                                    <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900 group-hover:text-primary transition-colors">{event.title}</h3>
+                                                </Link>
+
+                                                <div className="space-y-2 text-sm text-gray-600 mt-1">
+                                                    <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-500"/>{new Date(event.date).toLocaleDateString("vi-VN")}</div>
+                                                    <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-red-500"/> <span className="line-clamp-1">{event.location}</span></div>
+
+                                                    <div className="pt-2">
+                                                        <div className="flex justify-between text-xs mb-1">
+                                                            <span className="font-medium text-gray-700 flex items-center gap-1"><Users className="w-3 h-3"/> {currentQty} đã tham gia</span>
+                                                            <span className="text-gray-500">Mục tiêu: {maxQty > 0 ? maxQty : '∞'}</span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all duration-500 ${isFull ? 'bg-red-500' : 'bg-primary'}`}
+                                                                style={{ width: `${maxQty > 0 ? Math.min((currentQty / maxQty) * 100, 100) : 0}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+
+                                            <CardFooter className="p-5 pt-0 mt-auto grid grid-cols-2 gap-3">
+                                                <Button variant="outline" className="w-full border-gray-200 hover:bg-gray-50 hover:text-primary" asChild>
+                                                    <Link to={`/events/${event.id}`}>Chi tiết</Link>
+                                                </Button>
+                                                {renderActionButton(event, isFull, isHappening, isEnded)}
+                                            </CardFooter>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+                </div>
+            </div>
+        </UserLayout>
     );
-    return {
-      ...event,
-      isRegistered: !!userEvent,
-      registrationStatus: userEvent?.registrationStatus || null,
-      registrationId: userEvent?.registrationId || null,
-      userRating: userEvent?.userRating || null,
-      userReview: userEvent?.userReview || null,
-    };
-  });
-
-  const filteredEvents = eventsWithStatus.filter((event) => {
-    const title = (event.title || "").toLowerCase();
-    const description = (event.description || "").toLowerCase();
-    const matchesSearch =
-      title.includes(searchTerm.toLowerCase()) ||
-      description.includes(searchTerm.toLowerCase());
-
-    const matchesCategory =
-      filterCategory === "all" ||
-      !event.category ||
-      event.category === filterCategory;
-
-    const eventDate = event.date ? new Date(event.date) : null;
-    const matchesDate =
-      filterDate === "all" ||
-      !eventDate ||
-      (filterDate === "upcoming" && eventDate > new Date()) ||
-      (filterDate === "this-week" && isThisWeek(eventDate));
-
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "registered" && event.isRegistered) ||
-      (filterStatus === "available" && !event.isRegistered) ||
-      (filterStatus === "completed" &&
-        event.registrationStatus === "completed");
-
-    return matchesSearch && matchesCategory && matchesDate && matchesStatus;
-  });
-
-  const isThisWeek = (date) => {
-    const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-    const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-    return date >= startOfWeek && date <= endOfWeek;
-  };
-
-  const getStatusBadge = (event) => {
-    if (event.isRegistered) {
-      switch (event.registrationStatus) {
-        case "confirmed":
-          return (
-            <Badge className="bg-green-100 text-green-800">Đã xác nhận</Badge>
-          );
-        case "pending":
-          return (
-            <Badge className="bg-yellow-100 text-yellow-800">Chờ duyệt</Badge>
-          );
-        case "completed":
-          return (
-            <Badge className="bg-blue-100 text-blue-800">Đã hoàn thành</Badge>
-          );
-        default:
-          return (
-            <Badge className="bg-gray-100 text-gray-800">Đã đăng ký</Badge>
-          );
-      }
-    }
-    return null;
-  };
-
-  const handleRegisterClick = async (eventId) => {
-    try {
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-
-      await eventService.registerForEvent(eventId);
-
-      const [allEvents, userRegistrations, statsData] = await Promise.all([
-        eventService.getEvents(),
-        eventService.getUserEvents(user.id),
-        userService.getUserStats(user.id).catch(() => ({
-          totalEventsRegistered: 0,
-          completedEvents: 0,
-          upcomingEvents: 0,
-          totalHours: 0,
-          totalPoints: 0,
-        })),
-      ]);
-
-      setEvents(allEvents || []);
-      const userEventsWithDetails = await Promise.all(
-        (userRegistrations || []).map(async (reg) => {
-          try {
-            const event = await eventService.getEventById(reg.eventId);
-            return {
-              id: event.id,
-              eventId: event.id,
-              registrationId: reg.id,
-              title: event.title,
-              description: event.description,
-              date: event.date,
-              location: event.location,
-              status: event.status,
-              registrationStatus: reg.status,
-              registeredAt: reg.registeredAt,
-            };
-          } catch (err) {
-            console.error(`Error loading event ${reg.eventId}:`, err);
-            return null;
-          }
-        })
-      );
-      setUserEvents(userEventsWithDetails.filter((e) => e !== null));
-      setUserStats({
-        totalRegistered: statsData?.totalEventsRegistered || 0,
-        completed: statsData?.completedEvents || 0,
-        upcoming: statsData?.upcomingEvents || 0,
-        totalHours: statsData?.totalHours || 0,
-        totalPoints: statsData?.totalPoints || 0,
-      });
-
-      alert("Đăng ký sự kiện thành công!");
-    } catch (error) {
-      console.error("Error registering for event:", error);
-      alert(
-        "Không thể đăng ký sự kiện: " + (error.message || "Lỗi không xác định")
-      );
-    }
-  };
-
-  const handleUnregisterClick = async (registrationId) => {
-    try {
-      if (!user) return;
-
-      if (!confirm("Bạn có chắc chắn muốn hủy đăng ký sự kiện này?")) {
-        return;
-      }
-
-      await eventService.cancelEventRegistration(registrationId);
-
-      const [allEvents, userRegistrations, statsData] = await Promise.all([
-        eventService.getEvents(),
-        eventService.getUserEvents(user.id),
-        userService.getUserStats(user.id).catch(() => ({
-          totalEventsRegistered: 0,
-          completedEvents: 0,
-          upcomingEvents: 0,
-          totalHours: 0,
-          totalPoints: 0,
-        })),
-      ]);
-
-      setEvents(allEvents || []);
-      const userEventsWithDetails = await Promise.all(
-        (userRegistrations || []).map(async (reg) => {
-          try {
-            const event = await eventService.getEventById(reg.eventId);
-            return {
-              id: event.id,
-              eventId: event.id,
-              registrationId: reg.id,
-              title: event.title,
-              description: event.description,
-              date: event.date,
-              location: event.location,
-              status: event.status,
-              registrationStatus: reg.status,
-              registeredAt: reg.registeredAt,
-            };
-          } catch (err) {
-            console.error(`Error loading event ${reg.eventId}:`, err);
-            return null;
-          }
-        })
-      );
-      setUserEvents(userEventsWithDetails.filter((e) => e !== null));
-      setUserStats({
-        totalRegistered: statsData?.totalEventsRegistered || 0,
-        completed: statsData?.completedEvents || 0,
-        upcoming: statsData?.upcomingEvents || 0,
-        totalHours: statsData?.totalHours || 0,
-        totalPoints: statsData?.totalPoints || 0,
-      });
-
-      alert("Hủy đăng ký sự kiện thành công!");
-    } catch (error) {
-      console.error("Error unregistering from event:", error);
-      alert(
-        "Không thể hủy đăng ký: " + (error.message || "Lỗi không xác định")
-      );
-    }
-  };
-
-  const handleRateEvent = (eventId) => {
-    console.log("Rate event:", eventId);
-  };
-
-  return (
-    <UserLayout>
-      <div className="bg-muted/30">
-        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold">Sự kiện tình nguyện</h1>
-            <p className="mt-2 text-muted-foreground">
-              Chào mừng {user?.name}! Khám phá và tham gia các sự kiện tình
-              nguyện ý nghĩa
-            </p>
-          </div>
-
-          {/* User Stats */}
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Đã tham gia</p>
-                    <p className="text-2xl font-bold">
-                      {userStats.totalRegistered}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Sắp diễn ra</p>
-                    <p className="text-2xl font-bold">{userStats.upcoming}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Giờ tình nguyện
-                    </p>
-                    <p className="text-2xl font-bold">{userStats.totalHours}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Điểm tích lũy
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {userStats.totalPoints}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm sự kiện..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
-              >
-                <option value="all">Tất cả danh mục</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
-              >
-                <option value="all">Tất cả thời gian</option>
-                <option value="upcoming">Sắp diễn ra</option>
-                <option value="this-week">Tuần này</option>
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Hiển thị {filteredEvents.length} / {events.length} sự kiện
-            </div>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Đang tải dữ liệu...</span>
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <Card className="mb-8">
-              <CardContent className="p-6">
-                <div className="text-center text-red-600">
-                  <p className="font-semibold">Có lỗi xảy ra:</p>
-                  <p className="text-sm">{error}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Events Grid */}
-          {!loading && !error && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredEvents.map((event) => (
-                <Card
-                  key={event.id}
-                  className="overflow-hidden transition-shadow hover:shadow-lg"
-                >
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={event.image || "/placeholder.svg"}
-                      alt={event.title}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      {event.category && (
-                        <Badge className="bg-primary text-primary-foreground">
-                          {event.category}
-                        </Badge>
-                      )}
-                      {getStatusBadge(event)}
-                    </div>
-                  </div>
-
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold mb-2">
-                      {event.title}
-                    </h3>
-                    {event.organization && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {event.organization}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {event.description}
-                    </p>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {event.date
-                            ? new Date(event.date).toLocaleDateString("vi-VN")
-                            : "Chưa có"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {event.registeredCount || 0}/
-                          {event.maxVolunteers || "N/A"} tình nguyện viên
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* User Rating */}
-                    {event.userRating && (
-                      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className="text-sm font-medium">
-                            Đánh giá của bạn: {event.userRating}/5
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700">
-                          {event.userReview}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Interaction Stats */}
-                    {(event.likes || event.comments) && (
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                        {event.likes !== undefined && (
-                          <span className="flex items-center gap-1">
-                            <Heart className="h-4 w-4" />
-                            {event.likes || 0}
-                          </span>
-                        )}
-                        {event.comments !== undefined && (
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="h-4 w-4" />
-                            {event.comments || 0}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="flex-1"
-                      >
-                        <Link to={`/events/${event.id}`}>Xem chi tiết</Link>
-                      </Button>
-                      {event.isRegistered ? (
-                        <div className="flex gap-1">
-                          {event.registrationStatus === "completed" &&
-                            !event.userRating && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRateEvent(event.id)}
-                                className="flex-1"
-                              >
-                                <Star className="mr-2 h-4 w-4" />
-                                Đánh giá
-                              </Button>
-                            )}
-                          {event.registrationStatus !== "completed" && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() =>
-                                handleUnregisterClick(event.registrationId)
-                              }
-                              className="flex-1"
-                            >
-                              Hủy đăng ký
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleRegisterClick(event.id)}
-                          className="flex-1"
-                        >
-                          <UserCheck className="mr-2 h-4 w-4" />
-                          Đăng ký tham gia
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && filteredEvents.length === 0 && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  Không tìm thấy sự kiện
-                </h3>
-                <p className="text-muted-foreground text-center">
-                  Không có sự kiện nào phù hợp với bộ lọc của bạn
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </UserLayout>
-  );
 }

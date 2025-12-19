@@ -1,50 +1,51 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext"; // Kiểm tra đường dẫn này
+import LoadingSpinner from "./LoadingSpinner"; // Đảm bảo file này tồn tại
 
-export function ProtectedRoute({
-  children,
-  requiredRole = null,
-  requiredPermission = null,
-}) {
-  const { user, isAuthenticated } = useAuth();
-  const location = useLocation();
+// Component bảo vệ Route
+export function ProtectedRoute({ children, requiredRole = null }) {
+    const { user, isAuthenticated, loading } = useAuth();
+    const location = useLocation();
 
-  // Nếu chưa đăng nhập
-  if (!isAuthenticated) {
-    return (
-      <Navigate to="/login" state={{ returnTo: location.pathname }} replace />
-    );
-  }
-
-  // Nếu cần role cụ thể
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  // Nếu cần permission cụ thể
-  if (requiredPermission && !user?.permissions?.includes(requiredPermission)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return children;
-}
-
-export function GuestRoute({ children }) {
-  const { user, isAuthenticated } = useAuth();
-
-  // Nếu đã đăng nhập, chuyển hướng đến dashboard phù hợp với role
-  if (isAuthenticated && user) {
-    let dashboardPath = "/dashboard";
-
-    if (user.role === "admin") {
-      dashboardPath = "/admin/dashboard";
-    } else if (user.role === "manager") {
-      dashboardPath = "/manager/dashboard";
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner />
+            </div>
+        );
     }
 
-    return <Navigate to={dashboardPath} replace />;
-  }
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ returnTo: location.pathname }} replace />;
+    }
 
-  return children;
+    if (requiredRole && user?.role !== requiredRole) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+
+    return children;
+}
+
+// Component bảo vệ trang Login/Register
+export function GuestRoute({ children }) {
+    const { user, isAuthenticated, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    if (isAuthenticated && user) {
+        let path = "/dashboard";
+        if (user.role === "admin") path = "/admin/dashboard";
+        else if (user.role === "manager") path = "/manager/dashboard";
+
+        return <Navigate to={path} replace />;
+    }
+
+    return children;
 }

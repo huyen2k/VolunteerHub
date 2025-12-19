@@ -16,6 +16,7 @@ public class ChannelResponse {
     String id;
     String eventId;
     Number postCount;
+    private String name;
 
     @CreatedDate
     Date createdAt;

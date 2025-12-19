@@ -1,20 +1,30 @@
-// Event Service - Kết nối với Backend API
 import apiService from "./api";
 
 export const eventService = {
-  // Lấy danh sách tất cả sự kiện
-  async getEvents(filters = {}) {
+  // 1. Lấy danh sách sự kiện (ĐÃ TỐI ƯU: KHÔNG DÙNG PROMISE.ALL DƯ THỪA)
+  async getEvents() {
     try {
-      // Backend endpoint: GET /events
-      const events = await apiService.get("/events");
-      return events || [];
+      // Chỉ lấy danh sách, Backend đã xử lý toEnrichedResponse rồi
+      const response = await apiService.get("/events");
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error("Error fetching events:", error);
+      return []; // Trả về mảng rỗng để UI không bị văng lỗi
+    }
+  },
+
+  // 2. Lấy sự kiện của cá nhân Manager (SỬA LẠI URL CHO ĐÚNG CONTROLLER)
+  async getMyEvents() {
+    try {
+      // Dùng chung apiService để hưởng cấu hình baseURL và Token
+      const response = await apiService.get("/events/my-events");
+      return response || [];
+    } catch (error) {
+      console.error("Error fetching my events:", error);
       throw error;
     }
   },
 
-  // Lấy chi tiết sự kiện theo ID
   async getEventById(id) {
     try {
       return await apiService.get(`/events/${id}`);
@@ -24,104 +34,48 @@ export const eventService = {
     }
   },
 
-  // Tạo sự kiện mới
+
+  async getEventsForAdmin() {
+    return await apiService.get("/events/admin");
+  },
+
   async createEvent(eventData) {
-    try {
-      return await apiService.post("/events", eventData);
-    } catch (error) {
-      console.error("Error creating event:", error);
-      throw error;
-    }
+    return await apiService.post("/events", eventData);
   },
 
-  // Cập nhật sự kiện
   async updateEvent(id, eventData) {
-    try {
-      return await apiService.put(`/events/${id}`, eventData);
-    } catch (error) {
-      console.error("Error updating event:", error);
-      throw error;
-    }
+    return await apiService.put(`/events/${id}`, eventData);
   },
 
-  // Xóa sự kiện
   async deleteEvent(id) {
-    try {
-      return await apiService.delete(`/events/${id}`);
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      throw error;
-    }
+    return await apiService.delete(`/events/${id}`);
   },
 
-  // Duyệt sự kiện (Admin)
   async approveEvent(id, status, reason) {
-    try {
-      return await apiService.put(`/events/${id}/approve`, { status, reason });
-    } catch (error) {
-      console.error("Error approving event:", error);
-      throw error;
-    }
+    return await apiService.put(`/events/${id}/approve`, { status, reason });
   },
 
-  // Đăng ký tham gia sự kiện
   async registerForEvent(eventId) {
-    try {
-      return await apiService.post("/registrations", { eventId });
-    } catch (error) {
-      console.error("Error registering for event:", error);
-      throw error;
-    }
+    return await apiService.post("/registrations", { eventId });
   },
 
-  // Hủy đăng ký sự kiện
-  async cancelEventRegistration(registrationId) {
-    try {
-      return await apiService.delete(`/registrations/${registrationId}`);
-    } catch (error) {
-      console.error("Error canceling event registration:", error);
-      throw error;
-    }
-  },
-
-  // Lấy danh sách sự kiện của user
   async getUserEvents(userId) {
-    try {
-      return await apiService.get(`/registrations/user/${userId}`);
-    } catch (error) {
-      console.error("Error fetching user events:", error);
-      throw error;
-    }
+    return await apiService.get(`/registrations/user/${userId}`);
   },
 
-  // Lấy danh sách tình nguyện viên đã đăng ký sự kiện
-  async getEventRegistrations(eventId) {
-    try {
-      return await apiService.get(`/registrations/event/${eventId}`);
-    } catch (error) {
-      console.error("Error fetching event registrations:", error);
-      throw error;
-    }
+  async cancelEventRegistration(registrationId) {
+    return await apiService.delete(`/registrations/${registrationId}`);
   },
 
-  // Lấy danh sách sự kiện của manager
-  async getEventsByManager(managerId) {
-    try {
-      return await apiService.get(`/events/manager/${managerId}`);
-    } catch (error) {
-      console.error("Error fetching events by manager:", error);
-      throw error;
-    }
-  },
+   async uploadEventImage(eventId, file) {
+    const formData = new FormData();
+    formData.append("file", file); // Key 'file' phải khớp với @RequestParam("file") ở Controller
 
-  // Reject event (admin)
-  async rejectEvent(id, reason) {
-    try {
-      return await apiService.put(`/events/${id}/reject`, { status: "rejected", reason });
-    } catch (error) {
-      console.error("Error rejecting event:", error);
-      throw error;
-    }
+    return apiService.request(`/events/${eventId}/upload-image`, {
+      method: "POST",
+      body: formData,
+      headers: {}
+    });
   },
 };
 

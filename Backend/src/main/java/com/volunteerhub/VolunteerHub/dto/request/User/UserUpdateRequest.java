@@ -4,21 +4,22 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserUpdateRequest {
-    private String email;
-    @Field("password_hash")
-    private String password;
-    private String role; //['volunteer', 'event_manager', 'admin']
+    // Các trường người dùng được phép sửa
     private String full_name;
     private String avatar_url;
     private String phone;
     private String address;
     private String bio;
-    private Boolean is_active;
+
+    // Các trường nhạy cảm
+    private String password;
+    private String email;
+    private String role;
+    private Boolean isActive;
 }

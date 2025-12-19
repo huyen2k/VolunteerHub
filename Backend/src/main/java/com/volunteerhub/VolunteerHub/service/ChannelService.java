@@ -1,6 +1,7 @@
 package com.volunteerhub.VolunteerHub.service;
 
 import com.volunteerhub.VolunteerHub.collection.Channel;
+import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.Channel.ChannelCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Channel.ChannelUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ChannelResponse;
@@ -20,6 +21,9 @@ public class ChannelService {
     @Autowired
     ChannelMapper channelMapper;
 
+    @Autowired
+    com.volunteerhub.VolunteerHub.repository.EventRepository eventRepository;
+
     public ChannelResponse createChannel(ChannelCreationRequest request){
         if(channelRepository.existsByEventId(request.getEventId())){
             throw new AppException(ErrorCode.CHANNEL_EXISTED);
@@ -27,10 +31,34 @@ public class ChannelService {
 
         Channel channel = channelMapper.toChannel(request);
 
-        // Set default postCount if not provided
+
+        if (channel.getName() == null || channel.getName().trim().isEmpty()) {
+            String eventId = request.getEventId();
+
+            if ("GLOBAL_FEED".equals(eventId)) {
+                channel.setName("Cộng đồng chung");
+            }
+            else if (eventId != null && !eventId.isEmpty()) {
+                // Tìm tên sự kiện
+                String eventTitle = eventRepository.findById(eventId)
+                        .map(Event::getTitle)
+                        .orElse("Sự kiện");
+
+                channel.setName("Thảo luận: " + eventTitle);
+            }
+            else {
+                channel.setName("Kênh thảo luận");
+            }
+        }
+
         if(channel.getPostCount() == null) {
             channel.setPostCount(0);
         }
+
+        // Gán ngày tạo nếu chưa có
+//        if (channel.getCreatedAt() == null) {
+//            channel.setCreatedAt(new java.util.Date());
+//        }
 
         channelRepository.save(channel);
 

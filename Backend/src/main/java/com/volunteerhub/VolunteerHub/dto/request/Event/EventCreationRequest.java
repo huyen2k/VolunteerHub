@@ -1,6 +1,7 @@
 package com.volunteerhub.VolunteerHub.dto.request.Event;
 
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 

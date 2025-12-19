@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -34,190 +33,215 @@ public class StatisticsService {
     @Autowired
     private EventRegistrationRepository eventRegistrationRepository;
 
+    // Thống kê User
     public StatisticsResponse getUserStatistics() {
         try {
-        List<User> allUsers = userRepository.findAll();
-        
-        long totalUsers = allUsers.size();
-        long totalVolunteers = allUsers.stream()
-                .filter(u -> u.getRoles() != null && u.getRoles().contains(Roles.VOLUNTEER.name()))
-                .count();
-        long totalManagers = allUsers.stream()
-                .filter(u -> u.getRoles() != null && u.getRoles().contains(Roles.EVEN_MANAGER.name()))
-                .count();
-        long totalAdmins = allUsers.stream()
-                .filter(u -> u.getRoles() != null && u.getRoles().contains(Roles.ADMIN.name()))
-                .count();
+            long totalUsers = userRepository.count();
 
-        Map<String, Long> usersByRole = new HashMap<>();
-        usersByRole.put("volunteer", totalVolunteers);
-        usersByRole.put("manager", totalManagers);
-        usersByRole.put("admin", totalAdmins);
+            // Dùng countByRolesContains
+            long totalVolunteers = userRepository.countByRolesContains(Roles.VOLUNTEER.name());
+            long totalManagers = userRepository.countByRolesContains(Roles.EVEN_MANAGER.name());
+            long totalAdmins = userRepository.countByRolesContains(Roles.ADMIN.name());
 
-        return StatisticsResponse.builder()
-                .totalUsers(totalUsers)
-                .totalVolunteers(totalVolunteers)
-                .totalManagers(totalManagers)
-                .totalAdmins(totalAdmins)
-                .usersByRole(usersByRole)
-                .build();
-        } catch (Exception e) {
-            lombok.extern.slf4j.Slf4j.class.getDeclaredMethods(); // keep lombok
-            log.error("Error in getUserStatistics", e);
+            Map<String, Long> usersByRole = new HashMap<>();
+            usersByRole.put("volunteer", totalVolunteers);
+            usersByRole.put("manager", totalManagers);
+            usersByRole.put("admin", totalAdmins);
+
             return StatisticsResponse.builder()
-                    .totalUsers(0L)
-                    .totalVolunteers(0L)
-                    .totalManagers(0L)
-                    .totalAdmins(0L)
-                    .usersByRole(new java.util.HashMap<String, Long>())
+                    .totalUsers(totalUsers)
+                    .totalVolunteers(totalVolunteers)
+                    .totalManagers(totalManagers)
+                    .totalAdmins(totalAdmins)
+                    .usersByRole(usersByRole)
                     .build();
+        } catch (Exception e) {
+            log.error("Error in getUserStatistics", e);
+            return StatisticsResponse.builder().build(); // Trả về rỗng an toàn
         }
     }
 
+    // Thống kê Event (Phân biệt Admin và Manager)
     public StatisticsResponse getEventStatistics(String managerId) {
         try {
-        List<Event> allEvents = managerId != null 
-            ? eventRepository.findAll().stream()
-                .filter(e -> managerId.equals(e.getCreatedBy()))
-                .collect(Collectors.toList())
-            : eventRepository.findAll();
+            long totalEvents, pendingEvents, approvedEvents, rejectedEvents, completedEvents;
+            long totalRegistrations, pendingRegistrations, approvedRegistrations, completedRegistrations;
 
-        long totalEvents = allEvents.size();
-        long pendingEvents = allEvents.stream().filter(e -> "pending".equals(e.getStatus())).count();
-        long approvedEvents = allEvents.stream().filter(e -> "approved".equals(e.getStatus())).count();
-        long rejectedEvents = allEvents.stream().filter(e -> "rejected".equals(e.getStatus())).count();
-        long completedEvents = allEvents.stream().filter(e -> "completed".equals(e.getStatus())).count();
+            Map<String, Long> eventsByStatus = new HashMap<>();
 
-        Map<String, Long> eventsByStatus = new HashMap<>();
-        eventsByStatus.put("pending", pendingEvents);
-        eventsByStatus.put("approved", approvedEvents);
-        eventsByStatus.put("rejected", rejectedEvents);
-        eventsByStatus.put("completed", completedEvents);
+            // TRƯỜNG HỢP 1: MANAGER (Xem dữ liệu của chính mình)
+            if (managerId != null && !managerId.isEmpty()) {
+                // Lấy tất cả sự kiện của Manager này
+                List<Event> managerEvents = eventRepository.findByCreatedBy(managerId);
 
-        List<EventRegistration> allRegistrations = eventRegistrationRepository.findAll();
-        long totalRegistrations = allRegistrations.size();
-        long pendingRegistrations = allRegistrations.stream().filter(r -> "pending".equals(r.getStatus())).count();
-        long approvedRegistrations = allRegistrations.stream().filter(r -> "approved".equals(r.getStatus())).count();
-        long completedRegistrations = allRegistrations.stream().filter(r -> "completed".equals(r.getStatus())).count();
+                // Lấy danh sách ID các sự kiện đó (Ví dụ: [id1, id2, id3])
+                List<String> eventIds = managerEvents.stream().map(Event::getId).collect(Collectors.toList());
 
-        return StatisticsResponse.builder()
-                .totalEvents(totalEvents)
-                .pendingEvents(pendingEvents)
-                .approvedEvents(approvedEvents)
-                .rejectedEvents(rejectedEvents)
-                .completedEvents(completedEvents)
-                .eventsByStatus(eventsByStatus)
-                .totalRegistrations(totalRegistrations)
-                .pendingRegistrations(pendingRegistrations)
-                .approvedRegistrations(approvedRegistrations)
-                .completedRegistrations(completedRegistrations)
-                .build();
+                // Tính toán thống kê Event (Logic Java)
+                totalEvents = managerEvents.size();
+                pendingEvents = managerEvents.stream().filter(e -> "pending".equals(e.getStatus())).count();
+                approvedEvents = managerEvents.stream().filter(e -> "approved".equals(e.getStatus())).count();
+                rejectedEvents = managerEvents.stream().filter(e -> "rejected".equals(e.getStatus())).count();
+                completedEvents = managerEvents.stream().filter(e -> "completed".equals(e.getStatus())).count();
+
+                // Tính toán thống kê Registration dựa trên danh sách eventIds
+                if (eventIds.isEmpty()) {
+                    totalRegistrations = 0; pendingRegistrations = 0; approvedRegistrations = 0; completedRegistrations = 0;
+                } else {
+                    totalRegistrations = eventRegistrationRepository.countByEventIdIn(eventIds);
+                    pendingRegistrations = eventRegistrationRepository.countByStatusAndEventIdIn("pending", eventIds);
+                    approvedRegistrations = eventRegistrationRepository.countByStatusAndEventIdIn("approved", eventIds);
+                    completedRegistrations = eventRegistrationRepository.countByStatusAndEventIdIn("completed", eventIds);
+                }
+            }
+            // TRƯỜNG HỢP 2: ADMIN (Xem toàn bộ hệ thống)
+            else {
+                // Thống kê Event
+                totalEvents = eventRepository.count();
+                pendingEvents = eventRepository.countByStatus("pending");
+                approvedEvents = eventRepository.countByStatus("approved");
+                rejectedEvents = eventRepository.countByStatus("rejected");
+                completedEvents = eventRepository.countByStatus("completed");
+
+                // Thống kê Registration
+                totalRegistrations = eventRegistrationRepository.count();
+                pendingRegistrations = eventRegistrationRepository.countByStatus("pending");
+                approvedRegistrations = eventRegistrationRepository.countByStatus("approved");
+                completedRegistrations = eventRegistrationRepository.countByStatus("completed");
+            }
+
+            eventsByStatus.put("pending", pendingEvents);
+            eventsByStatus.put("approved", approvedEvents);
+            eventsByStatus.put("rejected", rejectedEvents);
+            eventsByStatus.put("completed", completedEvents);
+
+            return StatisticsResponse.builder()
+                    .totalEvents(totalEvents)
+                    .pendingEvents(pendingEvents)
+                    .approvedEvents(approvedEvents)
+                    .rejectedEvents(rejectedEvents)
+                    .completedEvents(completedEvents)
+                    .eventsByStatus(eventsByStatus)
+                    .totalRegistrations(totalRegistrations)
+                    .pendingRegistrations(pendingRegistrations)
+                    .approvedRegistrations(approvedRegistrations)
+                    .completedRegistrations(completedRegistrations)
+                    .build();
         } catch (Exception e) {
             log.error("Error in getEventStatistics", e);
-            return StatisticsResponse.builder()
-                    .totalEvents(0L)
-                    .pendingEvents(0L)
-                    .approvedEvents(0L)
-                    .rejectedEvents(0L)
-                    .completedEvents(0L)
-                    .eventsByStatus(new java.util.HashMap<String, Long>())
-                    .totalRegistrations(0L)
-                    .pendingRegistrations(0L)
-                    .approvedRegistrations(0L)
-                    .completedRegistrations(0L)
-                    .build();
+            return StatisticsResponse.builder().build();
         }
     }
+
+    // 3. Overview Dashboard
 
     public StatisticsResponse getOverviewStatistics() {
         try {
-        List<User> allUsers = userRepository.findAll();
-        List<Event> allEvents = eventRepository.findAll();
-        List<EventRegistration> allRegistrations = eventRegistrationRepository.findAll();
 
-        // Recent events (last 7 days)
-        Date sevenDaysAgo = new Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L);
-        long recentEvents = allEvents.stream()
-                .filter(e -> e.getCreatedAt() != null && e.getCreatedAt().after(sevenDaysAgo))
-                .count();
+            long totalEvents = eventRepository.count();
+            long pendingEventsCount = eventRepository.countByStatus("pending");
 
-        // Upcoming events (next 7 days)
-        Date now = new Date();
-        Date sevenDaysFromNow = new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L);
-        long upcomingEvents = allEvents.stream()
-                .filter(e -> e.getDate() != null && e.getDate().after(now) && e.getDate().before(sevenDaysFromNow))
-                .count();
+            Date sevenDaysAgo = new Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L);
+            long recentEvents = eventRepository.countByCreatedAtAfter(sevenDaysAgo);
+            long upcomingEvents = eventRepository.countByDateAfter(new Date());
 
-        // Active volunteers (with at least one registration)
-        Set<String> activeVolunteerIds = allRegistrations.stream()
-                .map(EventRegistration::getUserId)
-                .collect(Collectors.toSet());
-        long activeVolunteers = activeVolunteerIds.size();
 
-        // Recent event summaries (last 5 events)
-        List<StatisticsResponse.EventSummary> recentEventSummaries = allEvents.stream()
-                .sorted((e1, e2) -> {
-                    if (e1.getCreatedAt() == null) return 1;
-                    if (e2.getCreatedAt() == null) return -1;
-                    return e2.getCreatedAt().compareTo(e1.getCreatedAt());
-                })
-                .limit(5)
-                .map(e -> {
-                    long registrationCount = allRegistrations.stream()
-                            .filter(r -> e.getId().equals(r.getEventId()))
-                            .count();
-                    return StatisticsResponse.EventSummary.builder()
-                            .id(e.getId())
-                            .title(e.getTitle())
-                            .registrationCount(registrationCount)
-                            .status(e.getStatus())
-                            .build();
-                })
-                .collect(Collectors.toList());
+            List<EventRegistration> allRegistrations = eventRegistrationRepository.findAll();
 
-        // Top volunteers (by completed events)
-        Map<String, Long> volunteerCompletedCount = allRegistrations.stream()
-                .filter(r -> "completed".equals(r.getStatus()))
-                .collect(Collectors.groupingBy(
-                        EventRegistration::getUserId,
-                        Collectors.counting()
-                ));
+            Set<String> activeVolunteerIds = allRegistrations.stream()
+                    .map(EventRegistration::getUserId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            long activeVolunteers = activeVolunteerIds.size();
 
-        List<StatisticsResponse.TopVolunteer> topVolunteers = volunteerCompletedCount.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .limit(5)
-                .map(entry -> {
-                    String userId = entry.getKey();
-                    User user = userRepository.findById(userId).orElse(null);
-                    long totalEventCount = allRegistrations.stream()
-                            .filter(r -> userId.equals(r.getUserId()))
-                            .count();
-                    return StatisticsResponse.TopVolunteer.builder()
-                            .userId(userId)
-                            .fullName(user != null ? user.getFull_name() : "Unknown")
-                            .eventCount(totalEventCount)
-                            .completedCount(entry.getValue())
-                            .build();
-                })
-                .collect(Collectors.toList());
 
-        return StatisticsResponse.builder()
-                .recentEvents(recentEvents)
-                .upcomingEvents(upcomingEvents)
-                .activeVolunteers(activeVolunteers)
-                .recentEventSummaries(recentEventSummaries)
-                .topVolunteers(topVolunteers)
-                .build();
+            List<Event> top5NewEvents = eventRepository.findTop5ByOrderByCreatedAtDesc();
+            List<StatisticsResponse.EventSummary> recentEventSummaries = top5NewEvents.stream()
+                    .map(e -> {
+                        long registrationCount = eventRegistrationRepository.countByEventId(e.getId());
+                        return StatisticsResponse.EventSummary.builder()
+                                .id(e.getId())
+                                .title(e.getTitle())
+                                .registrationCount(registrationCount)
+                                .status(e.getStatus())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            // ---ATTRACTIVE EVENTS (Sự kiện thu hút - Sidebar) ---
+            // Logic: Lấy top 5 sự kiện Approved có nhiều người đăng ký nhất
+            List<Event> allApprovedEvents = eventRepository.findAll().stream()
+                    .filter(e -> "approved".equals(e.getStatus()))
+                    .collect(Collectors.toList());
+
+            List<StatisticsResponse.EventSummary> attractiveEvents = allApprovedEvents.stream()
+                    .map(e -> {
+                        long regCount = eventRegistrationRepository.countByEventId(e.getId());
+                        return StatisticsResponse.EventSummary.builder()
+                                .id(e.getId())
+                                .title(e.getTitle())
+                                .registrationCount(regCount)
+                                .score(regCount * 10)
+                                .status(e.getStatus())
+                                .build();
+                    })
+                    .sorted((e1, e2) -> Long.compare(e2.getScore(), e1.getScore())) // Sắp xếp giảm dần
+                    .limit(5)
+                    .collect(Collectors.toList());
+
+            // TOP VOLUNTEERS (Tình nguyện viên tích cực)
+            List<EventRegistration> completedRegistrations = allRegistrations.stream()
+                    .filter(r -> "completed".equals(r.getStatus()))
+                    .filter(r -> r.getUserId() != null)
+                    .collect(Collectors.toList());
+
+            // Gom nhóm theo UserId và đếm số lượng
+            Map<String, Long> volunteerCompletedCount = completedRegistrations.stream()
+                    .collect(Collectors.groupingBy(EventRegistration::getUserId, Collectors.counting()));
+
+            // Sắp xếp top 5 và lấy thông tin user
+            List<StatisticsResponse.TopVolunteer> topVolunteers = volunteerCompletedCount.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                    .limit(5)
+                    .map(entry -> {
+                        String userId = entry.getKey();
+                        User user = userRepository.findById(userId).orElse(null);
+
+                        long totalEventCount = allRegistrations.stream()
+                                .filter(r -> userId.equals(r.getUserId()))
+                                .count();
+
+                        return StatisticsResponse.TopVolunteer.builder()
+                                .userId(userId)
+                                .fullName(user != null ? user.getFull_name() : "Unknown User")
+                                .eventCount(totalEventCount)
+                                .completedCount(entry.getValue())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            // --- TRẢ VỀ KẾT QUẢ ĐẦY ĐỦ ---
+            return StatisticsResponse.builder()
+                    .totalEvents(totalEvents)
+                    .pendingEvents(pendingEventsCount)
+                    .recentEvents(recentEvents)
+                    .upcomingEvents(upcomingEvents)
+                    .activeVolunteers(activeVolunteers)
+                    .recentEventSummaries(recentEventSummaries)
+                    .attractiveEvents(attractiveEvents)
+                    .topVolunteers(topVolunteers)
+                    .build();
+
         } catch (Exception e) {
             log.error("Error in getOverviewStatistics", e);
+
             return StatisticsResponse.builder()
-                    .recentEvents(0L)
-                    .upcomingEvents(0L)
-                    .activeVolunteers(0L)
-                    .recentEventSummaries(new java.util.ArrayList<StatisticsResponse.EventSummary>())
-                    .topVolunteers(new java.util.ArrayList<StatisticsResponse.TopVolunteer>())
+                    .totalEvents(0L)
+                    .pendingEvents(0L)
+                    .recentEventSummaries(new ArrayList<>())
+                    .attractiveEvents(new ArrayList<>())
+                    .topVolunteers(new ArrayList<>())
                     .build();
         }
     }
 }
-

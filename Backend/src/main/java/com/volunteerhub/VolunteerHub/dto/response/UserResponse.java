@@ -25,7 +25,7 @@ public class UserResponse {
     String address;
     String bio;
 
-    Boolean is_active;
+    Boolean isActive;
 
     @CreatedDate
     Date created_at;

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-06T11:16:52+0700",
+    date = "2025-12-18T22:19:12+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
@@ -27,6 +27,11 @@ public class EventMapperImpl implements EventMapper {
         event.description( request.getDescription() );
         event.date( request.getDate() );
         event.location( request.getLocation() );
+        event.image( request.getImage() );
+        event.category( request.getCategory() );
+        if ( request.getVolunteersNeeded() != null ) {
+            event.volunteersNeeded( request.getVolunteersNeeded() );
+        }
 
         return event.build();
     }
@@ -41,6 +46,11 @@ public class EventMapperImpl implements EventMapper {
         event.setDescription( request.getDescription() );
         event.setDate( request.getDate() );
         event.setLocation( request.getLocation() );
+        event.setImage( request.getImage() );
+        event.setCategory( request.getCategory() );
+        if ( request.getVolunteersNeeded() != null ) {
+            event.setVolunteersNeeded( request.getVolunteersNeeded() );
+        }
     }
 
     @Override
@@ -51,10 +61,20 @@ public class EventMapperImpl implements EventMapper {
 
         EventResponse.EventResponseBuilder eventResponse = EventResponse.builder();
 
+        eventResponse.id( request.getId() );
         eventResponse.title( request.getTitle() );
         eventResponse.description( request.getDescription() );
         eventResponse.date( request.getDate() );
         eventResponse.location( request.getLocation() );
+        eventResponse.category( request.getCategory() );
+        eventResponse.image( request.getImage() );
+        eventResponse.status( request.getStatus() );
+        eventResponse.createdBy( request.getCreatedBy() );
+        eventResponse.approvedBy( request.getApprovedBy() );
+        eventResponse.createdAt( request.getCreatedAt() );
+        eventResponse.updatedAt( request.getUpdatedAt() );
+        eventResponse.volunteersNeeded( request.getVolunteersNeeded() );
+        eventResponse.volunteersRegistered( request.getVolunteersRegistered() );
 
         return eventResponse.build();
     }

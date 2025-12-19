@@ -29,7 +29,7 @@ export const eventSchema = Joi.object({
     "string.min": "Danh mục phải có ít nhất 2 ký tự",
     "string.max": "Danh mục không được vượt quá 100 ký tự",
   }),
-  image: Joi.string().uri().optional().messages({
+  image: Joi.string().uri().allow("").allow(null).optional().messages({
     "string.uri": "URL hình ảnh không hợp lệ",
   }),
   maxVolunteers: Joi.number().integer().min(1).optional().messages({

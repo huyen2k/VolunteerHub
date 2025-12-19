@@ -33,7 +33,8 @@ public class User {
     String address;
     String bio;
 
-    Boolean is_active;
+    @Field("is_active")
+    Boolean isActive;
 
     @CreatedDate
     Date created_at;

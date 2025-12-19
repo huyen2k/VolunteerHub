@@ -39,6 +39,7 @@ public class StatisticsResponse {
     Long activeVolunteers; // Volunteers 
     List<EventSummary> recentEventSummaries;
     List<TopVolunteer> topVolunteers;
+    List<EventSummary> attractiveEvents;
 
     @Data
     @NoArgsConstructor
@@ -50,6 +51,10 @@ public class StatisticsResponse {
         String title;
         Long registrationCount;
         String status;
+
+        Long totalLikes;
+        Long totalComments;
+        Long score;
     }
 
     @Data

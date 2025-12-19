@@ -12,6 +12,7 @@ public enum ErrorCode {
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
+    USER_LOCKED(1009, "Your account has been locked. Please contact the Administrator", HttpStatus.FORBIDDEN),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     CONFLICT(1009, "This object is already linked to another object", HttpStatus.CONFLICT),
     ROLE_EXISTED(1010, "Role existed", HttpStatus.BAD_REQUEST),
@@ -25,7 +26,10 @@ public enum ErrorCode {
     LIKE_NOT_EXISTED(1018, "Like not existed", HttpStatus.NOT_FOUND),
     LIKE_EXISTS(1019, "Like existed", HttpStatus.BAD_REQUEST),
     INVALID_TARGET_TYPE(1020, "Invalid target type", HttpStatus.BAD_REQUEST),
-    NOTIFICATION_NOT_EXISTED(1021, "Notification not existed", HttpStatus.NOT_FOUND)
+    NOTIFICATION_NOT_EXISTED(1021, "Notification not existed", HttpStatus.NOT_FOUND),
+
+    EVENT_NOT_EXISTED(1022, "Event not existed", HttpStatus.NOT_FOUND),
+    EVENT_FULL(1023, "Event is full", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
