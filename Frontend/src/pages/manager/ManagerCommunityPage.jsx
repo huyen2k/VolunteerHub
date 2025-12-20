@@ -232,7 +232,7 @@ export default function ManagerCommunityPage() {
             ) : (
                 <div className="space-y-6">
                   {allPosts.map(post => {
-                    // --- LOGIC HIỂN THỊ TÊN (ĐÃ SỬA) ---
+                    // --- LOGIC HIỂN THỊ TÊN  ---
                     let displayTitle;
 
                     if (!post.eventId || post.eventId === "global") {

@@ -142,6 +142,7 @@ export default function UserEventsPage() {
             const now = new Date();
             const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
 
+
             if (filterCategory !== "all" && event.category !== filterCategory) return false;
 
             if (filterDate !== "all") {

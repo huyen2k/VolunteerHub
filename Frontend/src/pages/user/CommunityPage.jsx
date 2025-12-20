@@ -81,7 +81,7 @@ export default function UserCommunityPage() {
         combinedEvents.forEach(ev => {
           if (ev?.id && !seenIds.has(ev.id)) {
             seenIds.add(ev.id);
-            map[ev.id] = ev.title;
+            map[String(ev.id)] = ev.title;
             uniqueEvents.push({ id: ev.id, title: ev.title });
           }
         });
@@ -278,19 +278,27 @@ export default function UserCommunityPage() {
                 <div className="space-y-6">
                   {allPosts.map(post => {
                     // Logic hiển thị tên Badge
-                    let displayTitle;
-                    if (!post.eventId || post.eventId === "global") {
+                    let displayTitle = "Cộng đồng chung";
+
+                    const eventId = post.eventId ? String(post.eventId) : null;
+
+                    // Case 1: Global feed (enum từ BE)
+                    if (eventId === "GLOBAL_FEED") {
                       displayTitle = "Cộng đồng chung";
                     }
-                    else if (eventMap[post.eventId]) {
-                      displayTitle = eventMap[post.eventId];
+                    // Case 2: Event thật – ưu tiên metadata
+                    else if (eventId && eventMap[eventId]) {
+                      displayTitle = eventMap[eventId];
                     }
-                    else if (post.eventName || post.eventTitle || post.event?.title) {
-                      displayTitle = post.eventName || post.eventTitle || post.event?.title;
+                    // Case 3: Fallback – dùng title của post hệ thống / post event
+                    else if (post.title) {
+                      displayTitle = post.title;
                     }
-                    else {
-                      displayTitle = "Cộng đồng chung";
+                    // Case 4: Fallback cuối
+                    else if (post.event?.title || post.eventTitle || post.eventName) {
+                      displayTitle = post.event?.title || post.eventTitle || post.eventName;
                     }
+
 
                     const postWithTitle = { ...post, eventTitle: displayTitle };
                     const canDelete = post.authorId === user.id;
