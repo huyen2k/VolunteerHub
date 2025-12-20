@@ -46,7 +46,11 @@ export default function UserCommunityPage() {
 
   // 2. Sync URL
   useEffect(() => {
-    if (eventParam) setFilterEventId(eventParam);
+    if (eventParam) {
+      setFilterEventId(eventParam);
+    } else {
+      setFilterEventId("all");
+    }
   }, [eventParam]);
 
   // 3. LOAD METADATA
@@ -55,11 +59,12 @@ export default function UserCommunityPage() {
       if (!user?.id) return;
 
       try {
-        const [joinedRes, publicEventsRes] = await Promise.all([
+        const [joinedRes, eventsRes] = await Promise.all([
           eventService.getUserEvents(user.id).catch(() => []),
-          eventService.getEvents(0, 100).catch(() => [])
+          eventService.getEvents(0, 1000).catch(() => []) // lấy đủ
         ]);
 
+        // 1. Joined
         const joinedRegs = Array.isArray(joinedRes)
             ? joinedRes
             : joinedRes?.result || [];
@@ -67,27 +72,24 @@ export default function UserCommunityPage() {
         const joinedIds = new Set(joinedRegs.map(r => String(r.eventId)));
         setJoinedEventIds(joinedIds);
 
-        const eventsFromRegs = joinedRegs.map(r => r.event).filter(Boolean);
-        const publicEventsData = Array.isArray(publicEventsRes)
-            ? publicEventsRes
-            : publicEventsRes?.result?.content || publicEventsRes?.result || [];
+        // 2. All events
+        const allEvents = Array.isArray(eventsRes)
+            ? eventsRes
+            : eventsRes?.result?.content || eventsRes?.result || [];
 
-        const combinedEvents = [...eventsFromRegs, ...publicEventsData];
-
+        // 3. Build map + list
         const map = {};
-        const uniqueEvents = [];
-        const seenIds = new Set();
+        const list = [];
 
-        combinedEvents.forEach(ev => {
-          if (ev?.id && !seenIds.has(ev.id)) {
-            seenIds.add(ev.id);
+        allEvents.forEach(ev => {
+          if (ev?.id) {
             map[String(ev.id)] = ev.title;
-            uniqueEvents.push({ id: ev.id, title: ev.title });
+            list.push({ id: ev.id, title: ev.title });
           }
         });
 
         setEventMap(map);
-        setEvents(uniqueEvents);
+        setEvents(list);
 
       } catch (err) {
         console.error("Lỗi tải metadata:", err);
@@ -95,7 +97,7 @@ export default function UserCommunityPage() {
     };
 
     loadMetadata();
-  }, [user]);
+  }, [user?.id]);
 
   // 4. FETCH POSTS (MEMOIZED)
   const fetchPosts = useCallback(

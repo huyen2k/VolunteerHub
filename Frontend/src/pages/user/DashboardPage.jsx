@@ -81,7 +81,7 @@ export default function DashboardPage() {
         latestPostDate: p.createdAt,
         likesCount: p.likesCount || 0,
         commentsCount: p.commentsCount || 0,
-        title: p.eventTitle || "Thảo luận sự kiện",
+        title: p.title || "Thảo luận sự kiện",
         isGlobal: !p.eventId
       }));
       setRecentDiscussions(discussions);
@@ -120,11 +120,8 @@ export default function DashboardPage() {
   };
 
   const handleDiscussionClick = (item) => {
-    if (item.latestPostId) {
-      navigate(`/community?event=${item.isGlobal ? 'global' : item.id}`);
-    }
-    else if (item.isGlobal) navigate(`/community?event=global`);
-    else navigate(`/community?event=${item.id}`);
+    const targetId = item.isGlobal || !item.id ? 'global' : item.id;
+    navigate(`/community?event=${targetId}`);
   };
 
   if (loading) return <UserLayout><div className="flex justify-center p-20"><LoadingSpinner /></div></UserLayout>;

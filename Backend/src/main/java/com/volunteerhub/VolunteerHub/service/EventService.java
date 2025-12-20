@@ -23,6 +23,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -69,14 +72,15 @@ public class EventService {
             // 3. Post Stats
             long totalPosts = postRepository.count();
 
-            // Tính bài viết trong ngày hôm nay
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0);
-            Date startOfDay = cal.getTime();
+            // Thay ZoneId.systemDefault() bằng ZoneId.of("Asia/Ho_Chi_Minh")
+            ZoneId vietNamZone = ZoneId.of("Asia/Ho_Chi_Minh");
+            LocalDate today = LocalDate.now(vietNamZone);
 
-            cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59);
-            Date endOfDay = cal.getTime();
+            Date startOfDay = Date.from(today.atStartOfDay(vietNamZone).toInstant());
+            Date endOfDay = Date.from(today.atTime(LocalTime.MAX).atZone(vietNamZone).toInstant());
 
+            log.info("Checking posts from {} to {}", startOfDay, endOfDay); // Thêm log để kiểm tra mốc thời gian
+            // Đếm bài viết dựa trên khoảng thời gian tuyệt đối của ngày hôm nay
             long newPostsToday = postRepository.countPostsBetween(startOfDay, endOfDay);
 
             return AdminDashboardResponse.builder()

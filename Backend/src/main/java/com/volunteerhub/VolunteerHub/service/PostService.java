@@ -68,10 +68,10 @@ public class PostService {
      * Lấy bài viết nổi bật (Top 5)
      */
     public List<PostResponse> getHotPosts() {
-        Pageable limit = PageRequest.of(0, 5);
         String currentUserId = getSafeCurrentUserId();
-        // Fallback: Dùng findAll có limit nếu chưa có hàm custom query
-        return postRepository.findAll(limit).stream()
+        List<Post> hotPosts = postRepository.findTopHotPosts();
+
+        return hotPosts.stream()
                 .map(post -> enrichPostResponse(post, currentUserId))
                 .collect(Collectors.toList());
     }
@@ -186,35 +186,40 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Query query = new Query();
 
-        // 1. Tìm kiếm (Search)
+        // 1. SEARCH
         if (search != null && !search.trim().isEmpty()) {
-            Criteria searchCriteria = new Criteria().orOperator(
+            query.addCriteria(new Criteria().orOperator(
                     Criteria.where("content").regex(search, "i"),
                     Criteria.where("authorName").regex(search, "i")
-            );
-            query.addCriteria(searchCriteria);
+            ));
         }
 
-        // 2. Lọc theo Event (Filter)
-        if (eventId != null && !eventId.equals("all")) {
-            if (eventId.equals("global")) {
-                query.addCriteria(Criteria.where("isGlobal").is(true));
-            } else {
-                Channel channel = channelRepository.findByEventId(eventId).orElse(null);
-                if (channel != null) {
-                    query.addCriteria(Criteria.where("channelId").is(channel.getId()));
-                } else {
-                    query.addCriteria(Criteria.where("_id").is("non-existent-id"));
-                }
+        // 2. EVENT FILTER (CỐT LÕI BỊ THIẾU)
+        if (eventId != null && !eventId.isBlank() && !"all".equals(eventId)) {
+
+            // Global feed
+            if ("global".equals(eventId) || "GLOBAL_FEED".equals(eventId)) {
+                query.addCriteria(Criteria.where("eventId").is("GLOBAL_FEED"));
+            }
+            // Event cụ thể
+            else {
+                query.addCriteria(Criteria.where("eventId").is(eventId));
             }
         }
 
+        // 3. PAGINATION
         long total = mongoTemplate.count(query, Post.class);
         query.with(pageable);
+
         List<Post> posts = mongoTemplate.find(query, Post.class);
 
-        return new PageImpl<>(posts, pageable, total)
-                .map(post -> enrichPostResponse(post, null));
+        return new PageImpl<>(
+                posts.stream()
+                        .map(p -> enrichPostResponse(p, getSafeCurrentUserId()))
+                        .toList(),
+                pageable,
+                total
+        );
     }
 
     // ========================================================================
