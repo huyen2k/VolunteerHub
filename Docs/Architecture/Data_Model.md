@@ -32,19 +32,16 @@ Lưu thông tin người dùng gồm 3 vai trò: **volunteer**, **event_manager*
 
 ```js
 {
-  _id: ObjectId,
+  _id: String,
   email: String, // unique
   password_hash: String,
   role: String, // enum: ['volunteer', 'event_manager', 'admin']
-  profile: {
-    full_name: String,
-    avatar_url: String,
-    phone: String,
-    address: String,
-    bio: String
-  },
+  full_name: String,
+  avatar_url: String,
+  phone: String,
+  address: String,
+  bio: String,
   is_active: Boolean,
-  last_login: Date,
   created_at: Date,
   updated_at: Date
 }
@@ -58,14 +55,14 @@ Quản lý thông tin sự kiện và trạng thái duyệt.
 
 ```js
 {
-  _id: ObjectId,
+  _id: String,
   title: String,
   description: String,
   date: Date,
   location: String,
   status: String, // 'pending', 'approved', 'rejected', 'completed'
-  createdBy: ObjectId, // Ref -> users (role: event_manager)
-  approvedBy: ObjectId, // Ref -> users (role: admin)
+  createdBy: String, // Ref -> users (role: event_manager)
+  approvedBy: String, // Ref -> users (role: admin)
   createdAt: Date,
   updatedAt: Date
 }
@@ -79,13 +76,12 @@ Quản lý việc đăng ký, thoái đăng ký và hoàn thành sự kiện c�
 
 ```js
 {
-  _id: ObjectId,
-  eventId: ObjectId, // Ref -> events
-  userId: ObjectId,  // Ref -> users
+  _id: String,
+  eventId: String, // Ref -> events
+  userId: String,  // Ref -> users
   status: String, // 'pending', 'approved', 'canceled', 'completed'
   registeredAt: Date,
   updatedAt: Date,
-  note: String
 }
 ```
 
@@ -101,8 +97,8 @@ Mỗi sự kiện sau khi được duyệt sẽ có một kênh trao đổi riê
 
 ```js
 {
-  _id: ObjectId,
-  eventId: ObjectId, // Ref -> events
+  _id: String,
+  eventId: String, // Ref -> events
   createdAt: Date,
   postCount: Number
 }
@@ -116,9 +112,9 @@ Bài viết trên kênh sự kiện, được đăng bởi quản lý hoặc tì
 
 ```js
 {
-  _id: ObjectId,
-  channelId: ObjectId, // Ref -> channels
-  authorId: ObjectId,  // Ref -> users
+  _id: String,
+  channelId: String, // Ref -> channels
+  authorId: String,  // Ref -> users
   content: String,
   images: {
     urlImg: String.
@@ -138,9 +134,9 @@ Bình luận thuộc về một bài viết trong kênh.
 
 ```js
 {
-  _id: ObjectId,
-  postId: ObjectId,   // Ref -> posts
-  authorId: ObjectId, // Ref -> users
+  _id: String,
+  postId: String,   // Ref -> posts
+  authorId: String, // Ref -> users
   content: String,
   createdAt: Date,
   updatedAt: Date
@@ -155,10 +151,10 @@ Lượt thích cho bài viết hoặc bình luận.
 
 ```js
 {
-  _id: ObjectId,
-  userId: ObjectId,     // Ref -> users
+  _id: String,
+  userId: String,     // Ref -> users
   targetType: String,   // 'post' | 'comment'
-  targetId: ObjectId,   // Ref -> posts hoặc comments
+  targetId: String,   // Ref -> posts hoặc comments
   createdAt: Date
 }
 ```
@@ -171,8 +167,8 @@ Thông báo cho người dùng (khi được duyệt, hủy, hoàn thành sự k
 
 ```js
 {
-  _id: ObjectId,
-  userId: ObjectId, // Ref -> users
+  _id: String,
+  userId: String, // Ref -> users
   type: String,     // 'event_status', 'post_activity', 'comment_activity', 'system'
   message: String,
   isRead: Boolean,
@@ -188,8 +184,8 @@ Dữ liệu cho trang Dashboard hoặc xuất báo cáo cho quản lý và admin
 
 ```js
 {
-  _id: ObjectId,
-  eventId: ObjectId, // Ref -> events
+  _id: String,
+  eventId: String, // Ref -> events
   totalVolunteers: Number,
   completedVolunteers: Number,
   postsCount: Number,
