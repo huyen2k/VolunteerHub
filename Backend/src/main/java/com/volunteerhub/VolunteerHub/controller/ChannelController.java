@@ -9,9 +9,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/channels")
@@ -19,36 +22,40 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ChannelController {
-    @Autowired
+
     ChannelService channelService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<java.util.List<com.volunteerhub.VolunteerHub.dto.response.ChannelResponse>> getChannels(){
-        return ApiResponse.<java.util.List<com.volunteerhub.VolunteerHub.dto.response.ChannelResponse>>builder()
+    public ApiResponse<Page<ChannelResponse>> getChannels(
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        // Nếu có từ khóa -> Tìm kiếm
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return ApiResponse.<Page<ChannelResponse>>builder()
+                    .result(channelService.searchChannels(keyword, page, size))
+                    .build();
+        }
+
+        // Mặc định -> Lấy danh sách phân trang (Sidebar load nhanh)
+        return ApiResponse.<Page<ChannelResponse>>builder()
+                .result(channelService.getChannels(page, size))
+                .build();
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('READ_CHANNEL')")
+    public ApiResponse<List<ChannelResponse>> getAllChannelsNoPaging(){
+        return ApiResponse.<List<ChannelResponse>>builder()
                 .result(channelService.getAllChannels())
-                .build();
-    }
-
-    @PostMapping
-    @PreAuthorize("hasAuthority('CREATE_CHANNEL')")
-    ApiResponse<ChannelResponse> createChannel(@RequestBody ChannelCreationRequest request){
-        return ApiResponse.<ChannelResponse>builder()
-                .result(channelService.createChannel(request))
-                .build();
-    }
-
-    @PutMapping("/{channelId}")
-    @PreAuthorize("hasAuthority('UPDATE_CHANNEL')")
-    ApiResponse<ChannelResponse> updateChannel(@PathVariable String channelId, @RequestBody ChannelUpdateRequest request){
-        return ApiResponse.<ChannelResponse>builder()
-                .result(channelService.updateChannel(channelId, request))
                 .build();
     }
 
     @GetMapping("/{channelId}")
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<ChannelResponse> getChannel(@PathVariable String channelId){
+    public ApiResponse<ChannelResponse> getChannel(@PathVariable String channelId){
         return ApiResponse.<ChannelResponse>builder()
                 .result(channelService.getChannel(channelId))
                 .build();
@@ -56,45 +63,63 @@ public class ChannelController {
 
     @GetMapping("/event/{eventId}")
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<ChannelResponse> getChannelByEventId(@PathVariable String eventId){
+    public ApiResponse<ChannelResponse> getChannelByEventId(@PathVariable String eventId){
         return ApiResponse.<ChannelResponse>builder()
                 .result(channelService.getChannelByEventId(eventId))
                 .build();
     }
 
-    @DeleteMapping("/{channelId}")
-    @PreAuthorize("hasAuthority('DELETE_CHANNEL')")
-    ApiResponse<Void> delete(@PathVariable String channelId){
-        channelService.deleteChannel(channelId);
-        return ApiResponse.<Void>builder()
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_CHANNEL')")
+    public ApiResponse<ChannelResponse> createChannel(@RequestBody ChannelCreationRequest request){
+        return ApiResponse.<ChannelResponse>builder()
+                .result(channelService.createChannel(request))
                 .build();
     }
 
+    @PutMapping("/{channelId}")
+    @PreAuthorize("hasAuthority('UPDATE_CHANNEL')")
+    public ApiResponse<ChannelResponse> updateChannel(@PathVariable String channelId, @RequestBody ChannelUpdateRequest request){
+        return ApiResponse.<ChannelResponse>builder()
+                .result(channelService.updateChannel(channelId, request))
+                .build();
+    }
+
+    @DeleteMapping("/{channelId}")
+    @PreAuthorize("hasAuthority('DELETE_CHANNEL')")
+    public ApiResponse<Void> delete(@PathVariable String channelId){
+        channelService.deleteChannel(channelId);
+        return ApiResponse.<Void>builder().build();
+    }
+
+
     @GetMapping("/{channelId}/messages")
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<java.util.List<java.util.Map<String, Object>>> getMessages(@PathVariable String channelId, @RequestParam(required = false) Integer limit, @RequestParam(required = false) Integer offset){
-        return ApiResponse.<java.util.List<java.util.Map<String, Object>>>builder()
-                .result(java.util.List.of())
+    public ApiResponse<List<Map<String, Object>>> getMessages(
+            @PathVariable String channelId,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer offset){
+        return ApiResponse.<List<Map<String, Object>>>builder()
+                .result(List.of())
                 .build();
     }
 
     @PostMapping("/{channelId}/messages")
     @PreAuthorize("hasAuthority('CREATE_CHANNEL')")
-    ApiResponse<Void> sendMessage(@PathVariable String channelId, @RequestBody java.util.Map<String, Object> body){
-        return ApiResponse.<Void>builder()
-                .build();
+    public ApiResponse<Void> sendMessage(@PathVariable String channelId, @RequestBody Map<String, Object> body){
+        return ApiResponse.<Void>builder().build();
     }
 
     @PutMapping("/{channelId}/read")
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<Void> markRead(@PathVariable String channelId){
-        return ApiResponse.<Void>builder()
-                .build();
+    public ApiResponse<Void> markRead(@PathVariable String channelId){
+        return ApiResponse.<Void>builder().build();
     }
 
     @GetMapping("/{channelId}/unread-count")
     @PreAuthorize("hasAuthority('READ_CHANNEL')")
-    ApiResponse<Long> getUnreadCount(@PathVariable String channelId){
+    public ApiResponse<Long> getUnreadCount(@PathVariable String channelId){
         return ApiResponse.<Long>builder()
                 .result(0L)
                 .build();

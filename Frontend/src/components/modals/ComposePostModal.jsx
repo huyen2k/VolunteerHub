@@ -3,54 +3,71 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Image as ImageIcon, MapPin, Smile, Users, Tag } from "lucide-react";
+import { Image as ImageIcon, MapPin, Smile, Users, Tag, X } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import channelService from "../../services/channelService";
 import postService from "../../services/postService";
 import eventService from "../../services/eventService";
 
-
-export default function ComposePostModal({ open, onOpenChange, defaultType = "exchange", onPosted, events: propEvents = [] }) {
+export default function ComposePostModal({ open, onOpenChange, defaultType = "exchange", onPosted, events: propEvents = [], onSubmitOptimistic }) {
   const { user } = useAuth();
   const [postType, setPostType] = useState(defaultType);
   const [content, setContent] = useState("");
-  const [images, setImages] = useState([]);
-  const [eventId, setEventId] = useState("");
 
-  const [internalEvents, setInternalEvents] = useState([]);
+  const [images, setImages] = useState([]);
+  const [rawFiles, setRawFiles] = useState([]);
+
+  const [eventId, setEventId] = useState("");
+  const [events, setEvents] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-
-  const eventList = propEvents.length > 0 ? propEvents : internalEvents;
-
+  // --- LOGIC LOAD EVENTS ---
   useEffect(() => {
-    if (open && propEvents.length === 0 && user?.role !== 'volunteer') {
-      loadEvents();
-    }
-  }, [open, user, propEvents]);
-
-  const loadEvents = async () => {
-    try {
-      let eventsData = [];
-      if (user.role === 'manager') {
-
-        eventsData = await eventService.getMyEvents().catch(() => []);
-      } else {
-        eventsData = await eventService.getEvents().catch(() => []);
+    if (open) {
+      if (propEvents && propEvents.length > 0) {
+        setEvents(propEvents);
       }
+      else if (user?.role === 'ADMIN' || user?.authorities?.some(a => a.authority === 'ROLE_ADMIN')) {
+        loadEventsForAdmin();
+      }
+      // Reset form
+      if (!content) {
+        setRawFiles([]);
+        setImages([]);
+        setPostType(defaultType);
+      }
+    }
+  }, [open, propEvents, user]);
 
-      const approved = (eventsData || []).filter(e => e.status === "approved");
-      setInternalEvents(approved.map(e => ({ id: e.id, title: e.title })));
-    } catch (e) {
-      console.error("Lỗi load events trong modal:", e);
+  const loadEventsForAdmin = async () => {
+    try {
+      const res = await eventService.getEventsForAdmin().catch(() => []);
+      const data = Array.isArray(res) ? res : (res?.result || []);
+      setEvents(data.filter(e => e.status === 'approved'));
+    } catch (error) {
+      console.error("Modal load events error:", error);
     }
   };
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
-    setSubmitting(true);
 
+    if (onSubmitOptimistic) {
+      const isGlobal = postType === 'exchange';
+      onSubmitOptimistic({
+        content,
+        imageFiles: rawFiles,
+        eventId: isGlobal ? null : eventId,
+        isGlobal,
+        postType
+      });
+      handleClose();
+      return;
+    }
+
+    setSubmitting(true);
     try {
+      // --- KHAI BÁO BIẾN channelId Ở ĐÂY ĐỂ DÙNG CHUNG ---
       let channelId;
 
       if (postType === "event") {
@@ -60,187 +77,127 @@ export default function ComposePostModal({ open, onOpenChange, defaultType = "ex
           return;
         }
 
-        // 1. Tìm kênh
         let channel = await channelService.getChannelByEventId(eventId).catch(() => null);
-
-        // 2. Nếu chưa có -> Tạo mới
+        // Fallback
         if (!channel) {
-          try {
-            const selectedEvent = eventList.find(e => e.id === eventId);
-            const channelName = selectedEvent ? `Thảo luận: ${selectedEvent.title}` : "Kênh sự kiện";
-
-            channel = await channelService.createChannel({
-              eventId: eventId,
-              name: channelName
-            });
-
-          } catch (createErr) {
-            console.error("Lỗi tạo kênh:", createErr);
-            if (createErr?.response?.status === 403) {
-              alert("Bạn không có quyền tạo kênh cho sự kiện này.");
-              setSubmitting(false);
-              return;
-            }
-            // Nếu lỗi khác, thử tiếp tục (có thể BE đã tạo rồi nhưng FE không nhận được)
-          }
+          const all = await channelService.getChannels().catch(()=>[]);
+          channel = (Array.isArray(all) ? all : (all?.result || [])).find(c => c.eventId === eventId);
         }
 
-        if (channel) channelId = channel.id;
-        else throw new Error("Không tìm thấy kênh thảo luận.");
+        if (channel) {
+          channelId = channel.id;
+        } else {
+          alert("Sự kiện này chưa có kênh thảo luận.");
+          setSubmitting(false);
+          return;
+        }
 
       } else {
-        // Xử lý Global Feed
-        const channels = await channelService.getChannels().catch(()=>[]);
-        let globalChannel = channels.find(c => !c.eventId || c.eventId === "GLOBAL_FEED");
+        // --- LOGIC TÌM KÊNH GLOBAL ĐÃ FIX ---
+        // 1. Gọi API tìm chính xác ID (nhanh hơn)
+        let globalChannel = await channelService.getChannelByEventId("GLOBAL_FEED").catch(() => null);
+
+        // 2. Fallback: Nếu API trên lỗi (404), tìm thủ công trong list
+        if (!globalChannel) {
+          const allChannels = await channelService.getChannels().catch(()=>[]);
+          globalChannel = (Array.isArray(allChannels) ? allChannels : (allChannels?.result || [])).find(c => c.eventId === "GLOBAL_FEED");
+        }
 
         if (!globalChannel) {
-          try {
-            globalChannel = await channelService.createChannel({ eventId: "GLOBAL_FEED", name: "Cộng đồng chung" });
-          } catch (err) {
-            alert("Không tìm thấy kênh cộng đồng chung.");
-            setSubmitting(false);
-            return;
-          }
+          alert("Hệ thống chưa có kênh Cộng đồng chung (GLOBAL_FEED). Hãy báo Backend chạy script tạo dữ liệu.");
+          setSubmitting(false);
+          return;
         }
+
         channelId = globalChannel.id;
       }
 
-      // 3. Tạo bài viết
-      if (channelId) {
-        await postService.createPost({ content, images, channelId });
-        setContent("");
-        setImages([]);
-        onOpenChange(false);
-        if (onPosted) onPosted();
-        alert("Đăng bài thành công!");
-      }
+      // --- GỬI API ---
+      // Lúc này biến channelId chắc chắn đã có giá trị
+      await postService.createPost({ content, images, channelId });
+
+      alert("Đăng bài thành công!");
+      handleClose();
+      if (onPosted) setTimeout(() => onPosted(), 500);
 
     } catch (err) {
-      console.error("Đăng bài thất bại:", err);
-      alert("Đăng bài thất bại: " + (err.message || "Lỗi không xác định"));
+      alert("Lỗi: " + (err.response?.data?.message || err.message));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleClose = () => {
+    onOpenChange(false);
+    setTimeout(() => { setContent(""); setImages([]); setRawFiles([]); }, 300);
+  };
+
   const handleFilesSelected = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (!files.length) return;
+    setRawFiles(prev => [...prev, ...files]);
     const readers = files.map(file => new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.readAsDataURL(file);
     }));
-    const dataUrls = await Promise.all(readers);
-    setImages(prev => [...prev, ...dataUrls]);
-  };
-
-  const removeImage = (idx) => {
-    setImages(prev => prev.filter((_, i) => i !== idx));
+    const newImages = await Promise.all(readers);
+    setImages(prev => [...prev, ...newImages]);
   };
 
   return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden">
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg p-0 bg-white">
           <DialogHeader className="px-4 py-3 border-b">
             <DialogTitle>Tạo bài viết</DialogTitle>
-            <DialogDescription className="hidden" />
+            <DialogDescription className="sr-only">New Post</DialogDescription>
           </DialogHeader>
-          <div className="px-4 py-3 space-y-4">
-            <div className="flex items-center gap-3">
+          <div className="p-4 space-y-4">
+            <div className="flex gap-3">
               <Avatar>
-                <AvatarImage src={user?.avatar || "/avatars/default.jpg"} alt="avatar" />
-                <AvatarFallback>{user?.name?.[0] || "U"}</AvatarFallback>
+                <AvatarImage src={user?.avatar || user?.avatarUrl} />
+                <AvatarFallback>U</AvatarFallback>
               </Avatar>
-              <div>
-                <div className="text-sm font-medium">{user?.name || user?.email || "Người dùng"}</div>
-                <div className="text-xs text-muted-foreground">
-                  <select className="bg-transparent" defaultValue="public">
-                    <option value="public">Công khai</option>
-                    <option value="friends">Bạn bè</option>
-                    <option value="only_me">Chỉ mình tôi</option>
+              <div className="flex-1">
+                <div className="font-semibold">{user?.name || user?.fullName || "Bạn"}</div>
+                <div className="flex gap-2 mt-1">
+                  <select className="text-xs border rounded px-1 py-0.5 bg-gray-50" value={postType} onChange={e => setPostType(e.target.value)}>
+                    <option value="exchange">Cộng đồng chung</option>
+                    <option value="event">Thảo luận Sự kiện</option>
                   </select>
+                  {postType === 'event' && (
+                      <select className="text-xs border rounded px-1 py-0.5 bg-blue-50 text-blue-700 font-medium max-w-[150px] truncate" value={eventId} onChange={e => setEventId(e.target.value)}>
+                        <option value="">-- Chọn sự kiện --</option>
+                        {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                      </select>
+                  )}
                 </div>
               </div>
             </div>
+            <Textarea placeholder="Bạn đang nghĩ gì?" className="min-h-[100px] border-none focus-visible:ring-0 text-base resize-none p-0" value={content} onChange={e => setContent(e.target.value)} />
 
-            <Textarea
-                placeholder={`${user?.name?.split(" ").slice(-1)} ơi, bạn đang nghĩ gì thế?`}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={5}
-            />
+            {images.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((src, i) => (
+                      <div key={i} className="relative aspect-square group">
+                        <img src={src} className="w-full h-full object-cover rounded-md border" alt="preview" />
+                        <button onClick={() => {
+                          setImages(prev => prev.filter((_, idx) => idx !== i));
+                          setRawFiles(prev => prev.filter((_, idx) => idx !== i));
+                        }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"><X className="w-3 h-3" /></button>
+                      </div>
+                  ))}
+                </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium">Loại bài</label>
-                <select
-                    value={postType}
-                    onChange={(e) => setPostType(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground mt-1"
-                >
-                  <option value="exchange">Bài trao đổi</option>
-                  <option value="event">Bài sự kiện</option>
-                </select>
+            <div className="flex items-center justify-between border-t pt-3">
+              <div className="flex gap-1 text-gray-500">
+                <label className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"><ImageIcon className="w-5 h-5 text-green-600" /><input type="file" multiple accept="image/*" className="hidden" onChange={handleFilesSelected} /></label>
+                <button className="p-2 hover:bg-gray-100 rounded-full"><Users className="w-5 h-5 text-blue-500" /></button>
+                <button className="p-2 hover:bg-gray-100 rounded-full"><Smile className="w-5 h-5 text-yellow-500" /></button>
               </div>
-              {postType === "event" && (
-                  <div>
-                    <label className="text-sm font-medium">Sự kiện</label>
-                    <select
-                        value={eventId}
-                        onChange={(e) => setEventId(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground mt-1"
-                    >
-                      <option value="">Chọn sự kiện</option>
-                      {eventList.map(ev => (
-                          <option key={ev.id} value={ev.id}>{ev.title}</option>
-                      ))}
-                    </select>
-                  </div>
-              )}
+              <Button onClick={handleSubmit} disabled={submitting || !content.trim()}>{submitting ? "Đang đăng..." : "Đăng bài"}</Button>
             </div>
-
-            <div className="flex items-center justify-between border rounded-md px-3 py-2">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <ImageIcon className="h-5 w-5" />
-                <Users className="h-5 w-5" />
-                <Smile className="h-5 w-5" />
-                <MapPin className="h-5 w-5" />
-                <Tag className="h-5 w-5" />
-              </div>
-              <div className="text-xs text-muted-foreground">Thêm vào bài viết của bạn</div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ảnh đính kèm</label>
-              <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFilesSelected}
-              />
-              {images.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {images.map((src, idx) => (
-                        <div key={idx} className="relative group">
-                          <img src={src} alt="preview" className="w-full h-24 object-cover rounded" />
-                          <button
-                              type="button"
-                              onClick={() => removeImage(idx)}
-                              className="absolute top-1 right-1 px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded opacity-0 group-hover:opacity-100"
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                    ))}
-                  </div>
-              )}
-            </div>
-          </div>
-          <div className="px-4 py-3 border-t">
-            <Button className="w-full" onClick={handleSubmit} disabled={submitting || !content.trim()}>
-              Đăng bài
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-// Post Service - Kết nối với Backend API
+// services/postService.js
 import apiService from "./api";
 
 export const postService = {
@@ -110,6 +110,20 @@ export const postService = {
       console.error("Error deleting comment:", error);
       throw error;
     }
+  },
+
+  async getHotPosts() {
+    return await apiService.get("/posts/hot");
+  },
+
+  async getAllPostsForAdmin(page = 0, size = 10, search = "", eventId = "all") {
+    const queryString = `?page=${page}&size=${size}&search=${encodeURIComponent(search)}&eventId=${eventId}`;
+    return await apiService.get(`/posts/admin/all${queryString}`);
+  },
+
+  async searchPosts(page = 0, size = 10, search = "", eventId = "all") {
+    const queryString = `?page=${page}&size=${size}&search=${encodeURIComponent(search)}&eventId=${eventId}`;
+    return await apiService.get(`/posts/search${queryString}`);
   },
 };
 

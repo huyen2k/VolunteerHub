@@ -28,6 +28,7 @@ public class PostResponse {
     Long commentsCount;
     Long views;
     Boolean isLiked;
+    String eventId;
 
     @CreatedDate
     Date createdAt;

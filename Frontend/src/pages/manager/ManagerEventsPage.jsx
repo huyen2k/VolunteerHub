@@ -7,9 +7,8 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Calendar, MapPin, Plus, Search, Eye, Printer, Users, FileText } from "lucide-react";
+import { Calendar, MapPin, Plus, Printer, Users, Eye, FileText, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import eventService from "../../services/eventService";
-import registrationService from "../../services/registrationService";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { ManagerEventDetailModal } from "./ManagerEventDetailModal";
 
@@ -18,9 +17,14 @@ export default function ManagerEventsPage() {
   const location = useLocation();
 
   // --- STATE ---
-  const [events, setEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]); // Chứa toàn bộ dữ liệu gốc
+  const [filteredEvents, setFilteredEvents] = useState([]); // Dữ liệu sau khi lọc
+  const [displayEvents, setDisplayEvents] = useState([]); // Dữ liệu hiển thị (phân trang)
   const [loading, setLoading] = useState(true);
+
+  // Pagination State (Client-side)
+  const [page, setPage] = useState(0);
+  const pageSize = 12;
 
   // Modal State
   const [detailId, setDetailId] = useState(null);
@@ -35,6 +39,7 @@ export default function ManagerEventsPage() {
   const printRef = useRef(null);
   const processedFilterRef = useRef(false);
 
+  // --- HELPER ---
   const safeParseInt = (value) => {
     const parsed = parseInt(value, 10);
     return isNaN(parsed) ? 0 : parsed;
@@ -50,7 +55,6 @@ export default function ManagerEventsPage() {
     return 0;
   };
 
-
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `Danh_sach_su_kien_${new Date().toISOString().slice(0, 10)}`,
@@ -62,58 +66,56 @@ export default function ManagerEventsPage() {
     `,
   });
 
-  // 1. XỬ LÝ NHẬN FILTER TỪ DASHBOARD (MỚI BỔ SUNG)
+  // 1. XỬ LÝ NHẬN FILTER TỪ DASHBOARD
   useEffect(() => {
     if (location.state?.filter && !processedFilterRef.current) {
       const filterType = location.state.filter;
-
-      // Reset các filter khác về default trước
       setFilterDate("all");
       setStatusFilter("all");
 
-      // Map logic từ Dashboard sang Filter của trang này
       if (filterType === 'upcoming') setFilterDate('upcoming');
       else if (filterType === 'happening') setFilterDate('happening');
       else if (filterType === 'ended') setFilterDate('ended');
-      else if (filterType === 'pending') setStatusFilter('pending'); // Chờ duyệt
+      else if (filterType === 'pending') setStatusFilter('pending');
       else if (filterType === 'rejected') setStatusFilter('rejected');
 
-      // Đánh dấu đã xử lý để không bị reset khi component render lại
       processedFilterRef.current = true;
-
-      // Xóa state trên URL để F5 không bị kẹt filter
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
 
+  // 2. LOAD DATA
   useEffect(() => { loadEvents(); }, []);
 
+  // 3. TẠO DANH SÁCH DANH MỤC (Merge Default + Dynamic)
   const uniqueCategories = useMemo(() => {
-    const defaultCats = ["Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa"];
-    const eventCats = events.map(e => e.category).filter(Boolean);
-    const cleanedCats = eventCats.map(c => c.trim());
-    return Array.from(new Set([...defaultCats, ...cleanedCats])).sort();
-  }, [events]);
+    const defaultCats = [
+      "Môi trường", "Giáo dục", "Cộng đồng", "Y tế", "Văn hóa",
+      "Kỹ năng", "Thể thao", "Công nghệ", "Thiện nguyện"
+    ];
+    const eventCats = allEvents.map(e => e.category).filter(Boolean).map(c => c.trim());
+    return Array.from(new Set([...defaultCats, ...eventCats])).sort();
+  }, [allEvents]);
 
-  // --- 2. XỬ LÝ FILTER LOGIC ---
+  // 4. LOGIC LỌC DỮ LIỆU (Client-side Filter)
   useEffect(() => {
-    let result = events;
+    let result = allEvents;
 
-    // Search & Category
+    // Search
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       result = result.filter(e => e.title.toLowerCase().includes(lower) || e.location.toLowerCase().includes(lower));
     }
+    // Category
     if (filterCategory !== "all") {
       result = result.filter(e => e.category === filterCategory);
     }
-
     // Date Logic
     const now = new Date();
     if (filterDate !== "all") {
       result = result.filter(e => {
         const eventDate = new Date(e.date);
-        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // 4h duration
+        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
 
         if (filterDate === "upcoming") return eventDate > now;
         if (filterDate === "happening") return now >= eventDate && now <= endDate;
@@ -126,26 +128,32 @@ export default function ManagerEventsPage() {
         return true;
       });
     }
-
-    // Status Filter (Dựa trên computedStatus)
+    // Status
     if (statusFilter !== "all") {
       result = result.filter(e => e.computedStatus === statusFilter);
     }
 
     setFilteredEvents(result);
-  }, [events, searchTerm, statusFilter, filterCategory, filterDate]);
+    setPage(0); // Reset về trang 1 khi lọc lại
+  }, [allEvents, searchTerm, statusFilter, filterCategory, filterDate]);
+
+  // 5. LOGIC PHÂN TRANG (Client-side Pagination)
+  useEffect(() => {
+    const startIndex = page * pageSize;
+    const endIndex = startIndex + pageSize;
+    setDisplayEvents(filteredEvents.slice(startIndex, endIndex));
+  }, [page, filteredEvents]);
 
 
-  // --- 3. LOAD DATA ---
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const data = await eventService.getMyEvents();
+      const data = await eventService.getMyEvents(); // API này trả về List, chưa phân trang
       const now = new Date();
 
-      const transformed = data.map((ev) => {
+      const transformed = (data || []).map((ev) => {
         const evDate = new Date(ev.date);
-        const endDate = new Date(evDate.getTime() + 4 * 60 * 60 * 1000); // Giả định 4h
+        const endDate = new Date(evDate.getTime() + 4 * 60 * 60 * 1000);
 
         const currentQty = getVal(ev, 'volunteersRegistered', 'registeredCount', 'currentVolunteers');
         const maxQty = getVal(ev, 'volunteersNeeded', 'maxVolunteers', 'limit');
@@ -196,7 +204,7 @@ export default function ManagerEventsPage() {
         };
       });
 
-      setEvents(transformed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      setAllEvents(transformed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
     } catch (err) { console.error("Load Events Error:", err); }
     finally { setLoading(false); }
@@ -208,7 +216,9 @@ export default function ManagerEventsPage() {
     setIsDetailOpen(true);
   };
 
-  if (loading) return <ManagerLayout><div className="p-10 flex justify-center"><LoadingSpinner /></div></ManagerLayout>;
+  const totalPages = Math.ceil(filteredEvents.length / pageSize);
+
+  if (loading && allEvents.length === 0) return <ManagerLayout><div className="p-10 flex justify-center"><LoadingSpinner /></div></ManagerLayout>;
 
   return (
       <ManagerLayout>
@@ -219,7 +229,12 @@ export default function ManagerEventsPage() {
             <div className="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Quản lý sự kiện</h1>
-                <p className="text-gray-500 text-sm mt-1">Quản lý, theo dõi và báo cáo các sự kiện của bạn</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Quản lý, theo dõi và báo cáo các sự kiện của bạn
+                  <span className="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs font-mono">
+                    Total: {filteredEvents.length}
+                  </span>
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => navigate("/manager/events/create")}
@@ -229,17 +244,20 @@ export default function ManagerEventsPage() {
               </div>
             </div>
 
-            {/* Filter Bar */}
-            <div className="mb-8 bg-white p-4 rounded-xl border shadow-sm">
+            {/* FILTER BA */}
+            <div className="bg-white p-4 rounded-xl border shadow-sm mb-8 sticky top-4 z-10">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-4 relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"/>
-                  <Input placeholder="Tìm kiếm tên, địa điểm..." className="pl-9 bg-gray-50" value={searchTerm}
-                         onChange={e => setSearchTerm(e.target.value)}/>
+                <div className="md:col-span-5 relative">
+                  <Input
+                      placeholder="Tìm kiếm tên, địa điểm..."
+                      className="bg-gray-50 border-gray-200"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                  />
                 </div>
-                <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="md:col-span-7 grid grid-cols-3 gap-3">
                   <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Danh mục"/></SelectTrigger>
+                    <SelectTrigger className="bg-gray-50 border-gray-200"><SelectValue placeholder="Danh mục"/></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả danh mục</SelectItem>
                       {uniqueCategories.map(c => (
@@ -249,18 +267,17 @@ export default function ManagerEventsPage() {
                   </Select>
 
                   <Select value={filterDate} onValueChange={setFilterDate}>
-                    <SelectTrigger className="bg-gray-50"><SelectValue placeholder="Thời gian"/></SelectTrigger>
+                    <SelectTrigger className="bg-gray-50 border-gray-200"><SelectValue placeholder="Thời gian"/></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả thời gian</SelectItem>
                       <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
                       <SelectItem value="happening">Đang diễn ra</SelectItem>
-                      <SelectItem value="this-week">Tuần này</SelectItem>
                       <SelectItem value="ended">Đã kết thúc</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="bg-gray-50 col-span-2 md:col-span-1"><SelectValue placeholder="Trạng thái"/></SelectTrigger>
+                    <SelectTrigger className="bg-gray-50 border-gray-200"><SelectValue placeholder="Trạng thái"/></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả trạng thái</SelectItem>
                       <SelectItem value="pending">Chờ duyệt</SelectItem>
@@ -307,14 +324,14 @@ export default function ManagerEventsPage() {
                 </table>
               </div>
 
-              {/* Grid Cards */}
+              {/* Grid Cards (Hiển thị displayEvents đã phân trang) */}
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 print:hidden">
-                {filteredEvents.length === 0 ? (
+                {displayEvents.length === 0 ? (
                     <div className="col-span-full text-center py-20 bg-white rounded-xl border border-dashed text-gray-500">
                       Không tìm thấy sự kiện nào phù hợp.
                     </div>
                 ) : (
-                    filteredEvents.map(ev => (
+                    displayEvents.map(ev => (
                         <Card key={ev.id}
                               className="group overflow-hidden hover:shadow-lg transition-all flex flex-col h-full border-gray-200">
 
@@ -382,6 +399,28 @@ export default function ManagerEventsPage() {
                     ))
                 )}
               </div>
+
+              {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-8 print:hidden">
+                    <Button
+                        variant="outline"
+                        disabled={page === 0}
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Trước
+                    </Button>
+                    <span className="text-sm font-medium">
+                          Trang {page + 1} / {totalPages}
+                      </span>
+                    <Button
+                        variant="outline"
+                        disabled={page >= totalPages - 1}
+                        onClick={() => setPage(p => p + 1)}
+                    >
+                      Tiếp <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+              )}
 
             </div>
           </div>

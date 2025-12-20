@@ -1,8 +1,10 @@
 package com.volunteerhub.VolunteerHub.config;
 
+import com.volunteerhub.VolunteerHub.collection.Channel; // ✅ Import Channel
 import com.volunteerhub.VolunteerHub.constant.Roles;
 import com.volunteerhub.VolunteerHub.collection.User;
 import com.volunteerhub.VolunteerHub.collection.Role;
+import com.volunteerhub.VolunteerHub.repository.ChannelRepository; // ✅ Import Repo
 import com.volunteerhub.VolunteerHub.repository.UserRepository;
 import com.volunteerhub.VolunteerHub.repository.RoleRepository;
 import lombok.AccessLevel;
@@ -16,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Date; // ✅ Import Date
 import java.util.HashSet;
 
 @Configuration
@@ -40,9 +43,11 @@ public class ApplicationInitConfig {
     static final String MANAGER_USER_PASSWORD = "manager";
 
     @Bean
-    ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository){
+    ApplicationRunner applicationRunner(UserRepository userRepository,
+                                        RoleRepository roleRepository,
+                                        ChannelRepository channelRepository) {
         return args -> {
-            // Create admin user if not exists
+
             if(userRepository.findUserByEmail(ADMIN_USER_EMAIL).isEmpty()){
                 var roles = new HashSet<String>();
                 roles.add(Roles.ADMIN.name());
@@ -59,7 +64,6 @@ public class ApplicationInitConfig {
                 log.warn("Admin user has been created with default credentials: {} / {}", ADMIN_USER_EMAIL, ADMIN_USER_PASSWORD);
             }
 
-            // Create manager user if not exists
             if(userRepository.findUserByEmail(MANAGER_USER_EMAIL).isEmpty()){
                 var roles = new HashSet<String>();
                 roles.add(Roles.EVEN_MANAGER.name());
@@ -76,7 +80,20 @@ public class ApplicationInitConfig {
                 log.warn("Manager user has been created with default credentials: {} / {}", MANAGER_USER_EMAIL, MANAGER_USER_PASSWORD);
             }
 
-            // Seed roles with baseline permissions if not exists
+            if (!channelRepository.existsByEventId("GLOBAL_FEED")) {
+                Channel globalChannel = new Channel();
+                globalChannel.setEventId("GLOBAL_FEED");
+                globalChannel.setName("Cộng đồng chung");
+                globalChannel.setType("PUBLIC");
+                globalChannel.setPostCount(0);
+                globalChannel.setCreatedAt(new Date());
+
+                channelRepository.save(globalChannel);
+                log.warn(">>> Channel 'Cộng đồng chung' (GLOBAL_FEED) has been created automatically.");
+            } else {
+                log.info(">>> Channel 'GLOBAL_FEED' already exists. Skipping.");
+            }
+
             seedRole(roleRepository, Roles.VOLUNTEER.name(),
                     new String[]{
                             "READ_POST", "CREATE_POST",
