@@ -50,57 +50,69 @@ export default function DashboardPage() {
       setLoading(true);
       setError("");
 
-
-      const [statsData, unreadNoti, topNewEvents, hotPosts, allPublicEvents] = await Promise.all([
+      // 1. Gọi các API chuyên biệt từ Backend
+      const [statsRes, unreadNoti, topNewEvents, hotPosts, attractiveRes] = await Promise.all([
         eventService.getDashboardStats().catch(() => null),
         notificationService.getUnreadNotifications().catch(() => []),
-        eventService.getTopNewEvents().catch(() => []), // API MỚI: Chỉ lấy 3 cái
-        postService.getHotPosts().catch(() => []),      // API MỚI: Chỉ lấy 5 cái
-        eventService.getEvents().catch(() => [])        // Vẫn cần cái này cho Attractive (hoặc tối ưu sau)
+        eventService.getTopNewEvents().catch(() => []),
+        postService.getHotPosts().catch(() => []),
+        eventService.getTopAttractiveEvents().catch(() => []) // Gọi API tính điểm sẵn từ BE
       ]);
 
-      // 1. Stats
-      if (statsData) {
-        setStats({
-          totalRegistered: statsData.totalEvents || 0,
-          completed: statsData.completedEvents || 0,
-          upcoming: statsData.upcomingEvents || 0,
-          happening: statsData.happeningEvents || 0,
-          totalHours: 0,
-          unreadNotis: unreadNoti.length || 0
-        });
-      }
+      // --- 2. CẬP NHẬT STATS (Tin tưởng hoàn toàn vào BE vì BE đã sửa logic hết ngày) ---
+      const s = statsRes?.result || statsRes || {};
+      setStats({
+        totalRegistered: s.totalEvents || 0,
+        completed: s.completedEvents || 0,
+        upcoming: s.upcomingEvents || 0,
+        happening: s.happeningEvents || 0,
+        totalHours: s.totalHours || 0,
+        unreadNotis: unreadNoti.length || 0
+      });
 
-      // 2. Newly Published (Dùng dữ liệu từ API mới)
-      setNewlyPublishedEvents(topNewEvents);
+      // --- 3. SỰ KIỆN MỚI CÔNG BỐ ---
+      setNewlyPublishedEvents(topNewEvents?.result || topNewEvents || []);
 
-      // 3. Hot Discussions (Dùng dữ liệu từ API mới - Không cần loop qua từng channel nữa!)
-      // Map lại dữ liệu hotPosts để khớp với giao diện
-      const mappedDiscussions = hotPosts.map(p => ({
-        id: p.channelId, // Lưu ý: Cần điều hướng về channel/event chứa post này
-        latestPostTitle: p.content, // Hoặc title nếu có
-        latestPostAuthor: p.authorName,
+      // --- 4. THẢO LUẬN NỔI BẬT ---
+      const discussions = (hotPosts?.result || hotPosts || []).map(p => ({
+        id: p.eventId || p.channelId,
+        latestPostTitle: p.content,
+        latestPostAuthor: p.authorName || "Người dùng",
         latestPostDate: p.createdAt,
-        likesCount: p.likesCount,
-        commentsCount: p.commentsCount,
-        // Cần thêm logic lấy title event nếu muốn hiển thị tên event
-        title: "Thảo luận cộng đồng"
+        likesCount: p.likesCount || 0,
+        commentsCount: p.commentsCount || 0,
+        title: p.eventTitle || "Thảo luận sự kiện",
+        isGlobal: !p.eventId
       }));
-      setRecentDiscussions(mappedDiscussions);
+      setRecentDiscussions(discussions);
 
-      // 4. Attractive Events (Giữ nguyên logic cũ hoặc tối ưu sau nếu còn chậm)
-      // Logic này vẫn chạy ở client nhưng vì đã giải phóng 2 phần trên nên sẽ nhanh hơn
-      const attractiveList = allPublicEvents.map(ev => ({
-        ...ev,
-        score: ((ev.volunteersRegistered || 0) * 3) + ((ev.comments || 0) * 1),
-        totalVolunteers: ev.volunteersRegistered || 0,
-        totalPosts: ev.comments || 0
-      })).sort((a, b) => b.score - a.score).slice(0, 5);
+      // --- 5. TOP SỰ KIỆN THU HÚT (Dùng trực tiếp dữ liệu từ API attractiveRes) ---
+      const attrList = attractiveRes?.result || attractiveRes || [];
+      const mappedAttr = attrList.map(ev => {
+        // Đồng bộ công thức điểm thu hút: (TNV * 3) + (Comments * 1)
+        // BE trả về 'comments' thay vì 'postsCount'
+        const volunteers = ev.volunteersRegistered || 0;
+        const posts = ev.comments || 0;
+        const score = (volunteers * 3) + (posts * 1);
 
-      setAttractiveEvents(attractiveList);
-      setMaxAttractiveScore(attractiveList.length > 0 ? Math.max(...attractiveList.map(e => e.score), 1) : 1);
+        return {
+          ...ev,
+          score: score,
+          totalVolunteers: volunteers,
+          totalPosts: posts
+        };
+      });
+
+      setAttractiveEvents(mappedAttr);
+
+      // Tính maxScore để ProgressBar hiển thị tỉ lệ đẹp mắt
+      const maxScore = mappedAttr.length > 0
+          ? Math.max(...mappedAttr.map(e => e.score))
+          : 1;
+      setMaxAttractiveScore(maxScore);
 
     } catch (e) {
+      console.error("Dashboard error:", e);
       setError("Lỗi tải dữ liệu");
     } finally {
       setLoading(false);

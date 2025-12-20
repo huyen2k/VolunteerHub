@@ -115,7 +115,9 @@ export default function ManagerEventsPage() {
     if (filterDate !== "all") {
       result = result.filter(e => {
         const eventDate = new Date(e.date);
-        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        // const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        const endDate = new Date(eventDate);
+        endDate.setHours(23, 59, 59, 999);
 
         if (filterDate === "upcoming") return eventDate > now;
         if (filterDate === "happening") return now >= eventDate && now <= endDate;
@@ -153,8 +155,9 @@ export default function ManagerEventsPage() {
 
       const transformed = (data || []).map((ev) => {
         const evDate = new Date(ev.date);
-        const endDate = new Date(evDate.getTime() + 4 * 60 * 60 * 1000);
-
+        // const endDate = new Date(evDate.getTime() + 4 * 60 * 60 * 1000);
+        const endDate = new Date(evDate);
+        endDate.setHours(23, 59, 59, 999);
         const currentQty = getVal(ev, 'volunteersRegistered', 'registeredCount', 'currentVolunteers');
         const maxQty = getVal(ev, 'volunteersNeeded', 'maxVolunteers', 'limit');
         const isFull = maxQty > 0 && currentQty >= maxQty;

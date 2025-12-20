@@ -80,7 +80,7 @@ public class EventController {
     }
 
     @GetMapping("/admin/top-attractive")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<EventResponse>> getTopAttractiveEvents() {
         return ApiResponse.<List<EventResponse>>builder()
                 .result(eventService.getTopAttractiveEvents())

@@ -91,24 +91,13 @@ public class EventService {
     }
 
     public DashboardStatsResponse getDashboardStats() {
-        // Dành cho User thường (hiển thị thống kê hệ thống chung)
         try {
-            long totalApproved = eventRepository.countByStatus("approved");
-            Date now = new Date();
-
-            long upcoming = eventRepository.countUpcomingEvents(now);
-            long completed = eventRepository.countCompletedEvents(now);
-            // Happening = Tổng approved - (Sắp tới + Đã xong)
-            long happening = Math.max(0, totalApproved - upcoming - completed);
-
-            return DashboardStatsResponse.builder()
-                    .totalEvents(totalApproved) // User chỉ quan tâm sự kiện đã duyệt
-                    .pendingEvents(0) // User không cần biết pending
-                    .upcomingEvents(upcoming)
-                    .happeningEvents(happening)
-                    .completedEvents(completed)
-                    .build();
+            // Lấy tất cả sự kiện Approved để tính toán thống kê chung cho User
+            List<Event> approvedEvents = eventRepository.findByStatus("approved");
+            // Dùng chung hàm logic "Hết ngày mới kết thúc"
+            return calculateStatsFromList(approvedEvents);
         } catch (Exception e) {
+            log.error("Error in Dashboard Stats: ", e);
             return new DashboardStatsResponse();
         }
     }
@@ -137,17 +126,30 @@ public class EventService {
             if ("pending".equals(ev.getStatus())) {
                 pending++;
             } else if ("approved".equals(ev.getStatus())) {
-                Date start = ev.getDate();
+                Date start = ev.getDate(); // Giả sử là 08:00 sáng
                 if (start == null) continue;
 
+                // 1. Tạo mốc kết thúc ngày: 23:59:59
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(start);
-                cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59);
-                Date end = cal.getTime();
+                cal.set(Calendar.HOUR_OF_DAY, 23);
+                cal.set(Calendar.MINUTE, 59);
+                cal.set(Calendar.SECOND, 59);
+                cal.set(Calendar.MILLISECOND, 999);
+                Date endOfDay = cal.getTime();
 
-                if (now.after(end)) completed++;
-                else if (now.after(start) && now.before(end)) happening++;
-                else upcoming++;
+                // 2. Phân loại logic:
+                if (now.after(endOfDay)) {
+                    // Thời gian hiện tại đã qua 23:59:59 của ngày diễn ra
+                    completed++;
+                } else if (now.after(start) || now.equals(start)) {
+                    // Thời gian hiện tại đã đến giờ bắt đầu VÀ chưa qua hết ngày
+                    // (Vì điều kiện now.after(endOfDay) đã loại bỏ trường hợp kết thúc ở trên)
+                    happening++;
+                } else {
+                    // Thời gian hiện tại vẫn còn trước giờ start
+                    upcoming++;
+                }
             }
         }
         return DashboardStatsResponse.builder()
@@ -217,16 +219,16 @@ public class EventService {
     }
 
     public List<EventResponse> getTopAttractiveEvents() {
-        // Lấy 50 sự kiện approved mới nhất để tính toán, thay vì lấy toàn bộ DB
-        // Đây là cách cân bằng giữa hiệu năng và độ chính xác
+        // Lấy top 50 để lọc, đảm bảo hiệu năng
         Pageable limit = PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return eventRepository.findByStatus("approved", limit).stream()
                 .map(this::toEnrichedResponse)
                 .sorted((a, b) -> {
+                    // Công thức: (TNV * 3) + (Comments * 1)
                     long scoreA = (safeInt(a.getVolunteersRegistered()) * 3L) + (safeLong(a.getComments()) * 1L);
                     long scoreB = (safeInt(b.getVolunteersRegistered()) * 3L) + (safeLong(b.getComments()) * 1L);
-                    return Long.compare(scoreB, scoreA); // Giảm dần
+                    return Long.compare(scoreB, scoreA);
                 })
                 .limit(5)
                 .collect(Collectors.toList());

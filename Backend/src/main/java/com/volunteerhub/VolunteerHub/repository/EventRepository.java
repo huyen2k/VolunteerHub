@@ -21,6 +21,7 @@ public interface EventRepository extends MongoRepository<Event, String> {
     long countByCreatedAtAfter(Date date); // Đếm sự kiện mới tạo
     List<Event> findTop5ByOrderByCreatedAtDesc(); // Lấy 5 sự kiện mới nhất
 
+    List<Event> findByStatus(String status);
     Page<Event> findByStatus(String status, Pageable pageable);
 
     Page<Event> findByTitleContainingIgnoreCaseAndStatus(String title, String status, Pageable pageable);
