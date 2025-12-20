@@ -52,7 +52,6 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setError("");
 
-      // ✅ GỌI API ĐÃ TỐI ƯU (BACKEND LÀM HẾT VIỆC NẶNG)
       const [statsData, pendingList, attractiveList, hotPosts] = await Promise.all([
         eventService.getAdminDashboardStats().catch(() => null), // Số liệu tổng quan
         eventService.getPendingEvents().catch(() => []),         // List chờ duyệt

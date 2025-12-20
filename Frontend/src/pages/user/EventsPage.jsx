@@ -140,8 +140,9 @@ export default function UserEventsPage() {
             if (!event.date) return true;
             const eventDate = new Date(event.date);
             const now = new Date();
-            const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
-
+            // const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+            const endDate = new Date(eventDate);
+            endDate.setHours(23, 59, 59, 999);
 
             if (filterCategory !== "all" && event.category !== filterCategory) return false;
 
@@ -310,8 +311,12 @@ export default function UserEventsPage() {
                                 {displayEvents.map((event) => {
                                     const now = new Date();
                                     const eventDate = new Date(event.date);
+                                    const endDate = new Date(eventDate);
+                                    endDate.setHours(23, 59, 59, 999);
+
                                     const isUpcoming = now < eventDate;
-                                    const isEnded = now > new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // 4h duration
+                                    // const isEnded = now > new Date(eventDate.getTime() + 4 * 60 * 60 * 1000); // 4h duration
+                                    const isEnded = now > endDate;
                                     const isHappening = !isUpcoming && !isEnded;
 
                                     const currentQty = getVal(event, 'volunteersRegistered', 'registeredCount', 'currentVolunteers');

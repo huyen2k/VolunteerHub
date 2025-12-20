@@ -130,7 +130,9 @@ export default function AdminEventsPage() {
     if (filterDate !== "all") {
       result = result.filter(e => {
         const eventDate = new Date(e.date);
-        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        // const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        const endDate = new Date(eventDate);
+        endDate.setHours(23, 59, 59, 999);
 
         if (filterDate === "upcoming") return eventDate > now;
         if (filterDate === "happening") return now >= eventDate && now <= endDate;
@@ -160,7 +162,10 @@ export default function AdminEventsPage() {
 
       const transformedEvents = rawEvents.map((event) => {
         const eventDate = new Date(event.date);
-        const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        // const endDate = new Date(eventDate.getTime() + 4 * 60 * 60 * 1000);
+        const endDate = new Date(eventDate);
+        endDate.setHours(23, 59, 59, 999);
+
         const currentQty = getVal(event, 'volunteersRegistered', 'registeredCount', 'currentVolunteers');
         const maxQty = getVal(event, 'volunteersNeeded', 'maxVolunteers', 'limit');
         const isFull = maxQty > 0 && currentQty >= maxQty;

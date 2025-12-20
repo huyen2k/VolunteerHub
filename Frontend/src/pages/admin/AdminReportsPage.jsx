@@ -66,8 +66,13 @@ export default function AdminReportsPage() {
         if (status === "pending") pending++;
         else if (status === "rejected" || status === "cancelled") rejected++;
         else if (status === "approved" || status === "confirmed") {
+          // const eventStart = new Date(ev.date || ev.startDate || ev.createdAt);
+          // const eventEnd = ev.endDate ? new Date(ev.endDate) : new Date(eventStart.getTime() + (4 * 60 * 60 * 1000));
+
           const eventStart = new Date(ev.date || ev.startDate || ev.createdAt);
-          const eventEnd = ev.endDate ? new Date(ev.endDate) : new Date(eventStart.getTime() + (4 * 60 * 60 * 1000));
+          // Tạo mốc kết thúc là 23:59:59 của ngày bắt đầu
+          const eventEnd = new Date(eventStart);
+          eventEnd.setHours(23, 59, 59, 999);
 
           if (now >= eventStart && now <= eventEnd) happening++;
           else if (now > eventEnd) completed++;
