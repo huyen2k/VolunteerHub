@@ -1,22 +1,50 @@
 import apiService from "./api";
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
 export const eventService = {
-  // 1. Lấy danh sách sự kiện (ĐÃ TỐI ƯU: KHÔNG DÙNG PROMISE.ALL DƯ THỪA)
-  async getEvents() {
+
+  // --- DASHBOARD ---
+  async getDashboardStats() {
     try {
-      // Chỉ lấy danh sách, Backend đã xử lý toEnrichedResponse rồi
-      const response = await apiService.get("/events");
-      return Array.isArray(response) ? response : [];
+      const response = await apiService.get("/events/dashboard-stats");
+      return response || {
+        totalEvents: 0, pendingEvents: 0, upcomingEvents: 0, happeningEvents: 0, completedEvents: 0, totalParticipants: 0
+      };
     } catch (error) {
-      console.error("Error fetching events:", error);
-      return []; // Trả về mảng rỗng để UI không bị văng lỗi
+      console.error("Error fetching dashboard stats:", error);
+      return { totalEvents: 0, pendingEvents: 0, upcomingEvents: 0, happeningEvents: 0, completedEvents: 0, totalParticipants: 0 };
     }
   },
 
-  // 2. Lấy sự kiện của cá nhân Manager (SỬA LẠI URL CHO ĐÚNG CONTROLLER)
+  async getManagerDashboardStats() {
+    return await apiService.get("/events/manager/dashboard-stats");
+  },
+
+  async getAdminDashboardStats() {
+    return await apiService.get("/events/admin/dashboard-stats");
+  },
+
+
+  async getEvents(keyword = "", page = 0, size = 10) {
+    try {
+      const params = new URLSearchParams();
+      // Giờ biến keyword đã được định nghĩa, code này sẽ chạy đúng
+      if (keyword) params.append("keyword", keyword);
+      params.append("page", page);
+      params.append("size", size);
+
+      return await apiService.get(`/events?${params.toString()}`);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      throw error;
+    }
+  },
+
+  // Lấy sự kiện của cá nhân Manager (Vẫn trả về List theo Controller cũ)
   async getMyEvents() {
     try {
-      // Dùng chung apiService để hưởng cấu hình baseURL và Token
       const response = await apiService.get("/events/my-events");
       return response || [];
     } catch (error) {
@@ -26,18 +54,25 @@ export const eventService = {
   },
 
   async getEventById(id) {
-    try {
-      return await apiService.get(`/events/${id}`);
-    } catch (error) {
-      console.error("Error fetching event:", error);
-      throw error;
-    }
+    return await apiService.get(`/events/${id}`);
   },
-
 
   async getEventsForAdmin() {
     return await apiService.get("/events/admin");
   },
+
+  async getPendingEvents() {
+    return await apiService.get("/events/admin/pending");
+  },
+
+  async getTopAttractiveEvents() {
+    return await apiService.get("/events/admin/top-attractive");
+  },
+
+  async getTopNewEvents() {
+    return await apiService.get("/events/top-new");
+  },
+
 
   async createEvent(eventData) {
     return await apiService.post("/events", eventData);
@@ -52,8 +87,11 @@ export const eventService = {
   },
 
   async approveEvent(id, status, reason) {
+    // Lý do (reason) có thể cần thiết nếu từ chối, hiện tại API nhận body status
     return await apiService.put(`/events/${id}/approve`, { status, reason });
   },
+
+
 
   async registerForEvent(eventId) {
     return await apiService.post("/registrations", { eventId });
@@ -67,15 +105,22 @@ export const eventService = {
     return await apiService.delete(`/registrations/${registrationId}`);
   },
 
-   async uploadEventImage(eventId, file) {
+  async uploadEventImage(eventId, file) {
     const formData = new FormData();
-    formData.append("file", file); // Key 'file' phải khớp với @RequestParam("file") ở Controller
+    formData.append("file", file);
+    const token = localStorage.getItem("token");
 
-    return apiService.request(`/events/${eventId}/upload-image`, {
-      method: "POST",
-      body: formData,
-      headers: {}
-    });
+    try {
+      const response = await axios.post(`${API_BASE_URL}/events/${eventId}/upload-image`, formData, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data.result;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
   },
 };
 

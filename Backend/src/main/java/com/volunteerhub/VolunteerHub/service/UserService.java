@@ -9,23 +9,20 @@ import com.volunteerhub.VolunteerHub.collection.User;
 import com.volunteerhub.VolunteerHub.exception.AppException;
 import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.UserMapper;
-import com.volunteerhub.VolunteerHub.repository.UserRepository;
-import com.volunteerhub.VolunteerHub.repository.EventRegistrationRepository;
-import com.volunteerhub.VolunteerHub.repository.PostRepository;
-import com.volunteerhub.VolunteerHub.repository.CommentRepository;
-import com.volunteerhub.VolunteerHub.repository.LikeRepository;
+import com.volunteerhub.VolunteerHub.repository.*;
 import com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
@@ -34,73 +31,64 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
 
-    @Autowired
-    private EventRegistrationRepository eventRegistrationRepository;
-
-    @Autowired
-    private PostRepository postRepository;
-
-    @Autowired
-    private CommentRepository commentRepository;
-
-    @Autowired
-    private LikeRepository likeRepository;
+    UserRepository userRepository;
+    EventRegistrationRepository eventRegistrationRepository;
+    PostRepository postRepository;
+    CommentRepository commentRepository;
+    LikeRepository likeRepository;
 
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
 
-    public List<UserResponse> getUsers() {
+
+    // Lấy danh sách user có phân trang (Cho Admin Table)
+    public Page<UserResponse> getUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by("full_name").ascending().and(Sort.by("id").ascending()));
+
+        return userRepository.findAll(pageable)
+                .map(userMapper::toUserResponse);
+    }
+
+    // Tìm kiếm user (Cho thanh Search Admin)
+    public Page<UserResponse> searchUsers(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by("full_name").ascending().and(Sort.by("id").ascending()));
+
+        return userRepository.searchUsers(keyword, pageable)
+                .map(userMapper::toUserResponse);
+    }
+
+    // Giữ lại hàm cũ cho các logic nội bộ khác (nếu cần), nhưng hạn chế dùng
+    public List<UserResponse> getAllUsersNoPaging() {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
+    }
+
+    public UserResponse getUserById(String id){
+        User user = userRepository.findUserById(id)
+                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String email = context.getAuthentication().getName();
-
         User user = userRepository.findUserByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-
         return userMapper.toUserResponse(user);
     }
 
-    public UserResponse updateMyInfo(UserUpdateRequest request) {
-        var context = SecurityContextHolder.getContext();
-        String userId = context.getAuthentication().getName();
-        String email = context.getAuthentication().getName();
-        User user = userRepository.findUserByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        // Mapping thủ công cho các trường cho phép (Lombok sinh ra getFull_name)
-        if (request.getFull_name() != null) user.setFull_name(request.getFull_name());
-        if (request.getAvatar_url() != null) user.setAvatar_url(request.getAvatar_url());
-        if (request.getPhone() != null) user.setPhone(request.getPhone());
-        if (request.getAddress() != null) user.setAddress(request.getAddress());
-        if (request.getBio() != null) user.setBio(request.getBio());
-
-        return userMapper.toUserResponse(userRepository.save(user));
-    }
-
-    public UserResponse getUserById(String id){
-        User user = userRepository.findUserById(id).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
-        return userMapper.toUserResponse(user);
-    }
 
     public UserResponse createUser(UserCreationRequest request){
-        if(userRepository.existsByEmail(request.getEmail()))
+        if(Boolean.TRUE.equals(userRepository.existsByEmail(request.getEmail())))
             throw new AppException(ErrorCode.USER_EXISTED);
 
         User user = userMapper.toUser(request);
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        // Sử dụng Bean PasswordEncoder đã Inject, không new thủ công
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // Set isActive chuẩn
         user.setIsActive(true);
-//        user.setCreated_at(new Date());
-//        user.setUpdated_at(new Date());
 
         HashSet<String> roles = new HashSet<>();
         if (request.getRole() != null && "manager".equalsIgnoreCase(request.getRole())) {
@@ -114,18 +102,30 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    public UserResponse updateMyInfo(UserUpdateRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String email = context.getAuthentication().getName();
+        User user = userRepository.findUserByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (request.getFull_name() != null) user.setFull_name(request.getFull_name());
+        if (request.getAvatar_url() != null) user.setAvatar_url(request.getAvatar_url());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getBio() != null) user.setBio(request.getBio());
+
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
     public UserResponse updateUser(String id, UserUpdateRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Map các trường cơ bản
         userMapper.updateUser(user, request);
 
-        // Riêng password
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        // Riêng Active (chỉ Admin)
         if(request.getIsActive() != null) user.setIsActive(request.getIsActive());
 
         return userMapper.toUserResponse(userRepository.save(user));
@@ -135,50 +135,60 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // In log ra cả object request để xem nó nhận được gì
-        log.info("Request update status payload: {}", request.toString());
-
-
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
         } else {
-            log.warn("Warning: 'active' field is still null! Check Frontend JSON key.");
+            log.warn("Warning: 'active' field is null in payload.");
         }
 
-        User savedUser = userRepository.save(user);
-        log.info("User saved with status: {}", savedUser.getIsActive());
-
-        return userMapper.toUserResponse(savedUser);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    // Bảo vệ không cho xóa Admin
     public void deleteUser(String id){
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Kiểm tra nếu user có role ADMIN thì chặn lại
         if (user.getRoles() != null && user.getRoles().contains(Roles.ADMIN.name())) {
             throw new RuntimeException("Không thể xóa tài khoản Quản trị viên!");
         }
-
         userRepository.deleteById(id);
     }
 
+
     public UserStatsResponse getUserStats(String userId) {
 
-        var registrations = eventRegistrationRepository.findByUserId(userId);
-        long totalEventsRegistered = registrations.size();
-        long completedEvents = registrations.stream().filter(r -> "completed".equals(r.getStatus())).count();
-        long pendingEvents = registrations.stream().filter(r -> "pending".equals(r.getStatus())).count();
-        long approvedEvents = registrations.stream().filter(r -> "approved".equals(r.getStatus())).count();
+        long totalEventsRegistered = 0;
+        long completedEvents = 0;
+        long pendingEvents = 0;
+        long approvedEvents = 0;
+
+        try {
+            var registrations = eventRegistrationRepository.findByUserId(userId);
+            if (registrations != null) {
+                totalEventsRegistered = registrations.size();
+                completedEvents = registrations.stream().filter(r -> "completed".equals(r.getStatus())).count();
+                pendingEvents = registrations.stream().filter(r -> "pending".equals(r.getStatus())).count();
+                approvedEvents = registrations.stream().filter(r -> "approved".equals(r.getStatus())).count();
+            }
+        } catch (Exception ignored) {}
 
         long totalPosts = 0;
-        try { var posts = postRepository.findByAuthorId(userId); if(posts != null) totalPosts = posts.size(); } catch(Exception ignored){}
+        try {
+            // PostRepository chưa có countByAuthorId trong bản update trước, nên dùng tạm findByAuthorId
+            var posts = postRepository.findByAuthorId(userId);
+            if(posts != null) totalPosts = posts.size();
+        } catch(Exception ignored){}
 
         long totalComments = 0;
-        try { var cmts = commentRepository.findByAuthorId(userId); if(cmts != null) totalComments = cmts.size(); } catch(Exception ignored){}
+        try {
+            var cmts = commentRepository.findByAuthorId(userId);
+            if(cmts != null) totalComments = cmts.size();
+        } catch(Exception ignored){}
 
         long totalLikes = 0;
-        try { var likes = likeRepository.findByUserId(userId); if(likes != null) totalLikes = likes.size(); } catch(Exception ignored){}
+        try {
+            var likes = likeRepository.findByUserId(userId);
+            if(likes != null) totalLikes = likes.size();
+        } catch(Exception ignored){}
 
         return UserStatsResponse.builder()
                 .totalEventsRegistered(totalEventsRegistered)

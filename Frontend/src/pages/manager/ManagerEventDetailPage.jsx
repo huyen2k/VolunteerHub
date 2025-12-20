@@ -99,28 +99,66 @@ export default function ManagerEventDetailPage() {
   const loadChannelPosts = async (eventId) => {
     try {
       setLoadingPosts(true);
-      const channel = await channelService.getChannelByEventId(eventId);
+      // Gọi API tìm kênh, nếu lỗi trả về null để không crash
+      const channel = await channelService.getChannelByEventId(eventId).catch(() => null);
+
       if (channel) {
-        const posts = await postService.getPostsByChannel(channel.id);
+        const res = await postService.getPostsByChannel(channel.id).catch(() => []);
+
+        // FIX LỖI: Kiểm tra kỹ cấu trúc trả về để lấy đúng mảng bài viết
+        // Backend Spring Boot thường trả về: res.result.content HOẶC res.content
+        let posts = [];
+        if (Array.isArray(res)) posts = res;
+        else if (res?.result?.content) posts = res.result.content;
+        else if (res?.content) posts = res.content;
+        else if (res?.result && Array.isArray(res.result)) posts = res.result;
+
         setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      } else {
+        setChannelPosts([]);
       }
-    } catch (err) {} finally { setLoadingPosts(false); }
+    } catch (err) {
+      console.error("Lỗi tải thảo luận:", err);
+    } finally {
+      setLoadingPosts(false);
+    }
   };
 
   const handlePostComment = async () => {
     if (!commentContent.trim()) return;
     setSubmittingComment(true);
     try {
-      let channel = null;
-      try { channel = await channelService.getChannelByEventId(event.id); } catch (e) {}
+      let channel = await channelService.getChannelByEventId(event.id).catch(() => null);
+
+      // Nếu chưa có kênh, thử tạo mới (Fallback)
       if (!channel) {
-        channel = await channelService.createChannel({ eventId: event.id, name: `Thảo luận: ${event.title}` });
+        try {
+          const res = await channelService.createChannel({
+            eventId: event.id,
+            name: `Thảo luận: ${event.title}`
+          });
+          channel = res?.result || res;
+        } catch (e) {
+          throw new Error("Sự kiện này chưa có kênh thảo luận. Vui lòng báo Admin khởi tạo.");
+        }
       }
-      await postService.createPost({ content: commentContent, channelId: channel.id, images: [] });
+
+      // Gửi bài viết
+      await postService.createPost({
+        content: commentContent,
+        channelId: channel.id,
+        images: []
+      });
+
       setCommentContent("");
-      const posts = await postService.getPostsByChannel(channel.id);
-      setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    } catch (err) { alert(err.message); } finally { setSubmittingComment(false); }
+      // Reload lại danh sách bài viết bằng hàm đã fix ở trên
+      await loadChannelPosts(event.id);
+
+    } catch (err) {
+      alert("Gửi thất bại: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const handleDeleteEvent = async () => {

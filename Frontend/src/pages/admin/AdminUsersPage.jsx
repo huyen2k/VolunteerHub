@@ -4,49 +4,101 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import { Users, Eye, Trash2, Search, Lock, Unlock, Download, Printer } from "lucide-react";
+import { Users, Eye, Trash2, Search, Lock, Unlock, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import userService from "../../services/userService";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { AdminUserDetailModal } from "./AdminUserDetailModal";
 import { useReactToPrint } from "react-to-print";
 
-
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // --- STATE CHO PHÂN TRANG & TÌM KIẾM ---
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 12;
+  // ----------------------------------------
+
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const printRef = useRef();
 
   const handlePrint = useReactToPrint({
-    contentRef: printRef, // Syntax mới của react-to-print
+    contentRef: printRef,
     documentTitle: "Danh_sach_nguoi_dung",
   });
 
+  // --- HELPER: Tạo avatar chữ cái đầu và màu nền ---
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getAvatarColor = (name) => {
+    if (!name) return "bg-gray-500";
+    const colors = [
+      "bg-red-500", "bg-orange-500", "bg-amber-500",
+      "bg-green-500", "bg-emerald-500", "bg-teal-500",
+      "bg-cyan-500", "bg-blue-500", "bg-indigo-500",
+      "bg-violet-500", "bg-purple-500", "bg-pink-500"
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+  // ------------------------------------------------
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(0);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     loadUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearchTerm]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
-      const data = await userService.getUsers();
 
-      const transformedUsers = (data || []).map((user) => ({
+      const response = await userService.getUsers(debouncedSearchTerm, page, pageSize);
+
+      // Xử lý dữ liệu Page object an toàn
+      let pageData = response;
+      if (response && response.result) {
+        pageData = response.result;
+      }
+
+      const userList = Array.isArray(pageData.content) ? pageData.content : [];
+
+      const transformedUsers = userList.map((user) => ({
         id: user.id,
         name: user.full_name || "Chưa đặt tên",
         email: user.email || "",
         role: user.roles?.[0] || "USER",
-        // Đảm bảo lấy đúng trường isActive từ API
         isActive: user.isActive,
         joinDate: user.created_at ? new Date(user.created_at).toLocaleDateString("vi-VN") : "N/A",
+        // Lấy avatar an toàn (ưu tiên avatar_url từ DB)
+        avatar: (user.avatar_url || user.avatarUrl || user.avatar || "").trim()
       }));
 
       setUsers(transformedUsers);
+      setTotalPages(pageData.totalPages || 0);
+      setTotalElements(pageData.totalElements || 0);
+
     } catch (err) {
       console.error("Error loading users:", err);
       setError(err.message || "Không thể tải danh sách người dùng");
@@ -55,56 +107,20 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleExportUsers = () => {
-    if (users.length === 0) {
-      alert("Không có dữ liệu để xuất");
-      return;
-    }
-    const headers = ["ID", "Tên", "Email", "Vai trò", "Trạng thái", "Ngày tham gia"];
-    const csvRows = [headers.join(",")];
-
-    users.forEach(user => {
-      const row = [
-        `"${user.id}"`,
-        `"${user.name}"`,
-        `"${user.email}"`,
-        `"${user.role}"`,
-        `"${user.isActive ? "Hoạt động" : "Đã khóa"}"`,
-        `"${user.joinDate}"`
-      ];
-      csvRows.push(row.join(","));
-    });
-
-    const csvString = "\uFEFF" + csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `users_export_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleToggleStatus = async (userId, currentStatus) => {
     const newStatus = !currentStatus;
     const actionText = newStatus ? "MỞ KHÓA" : "KHÓA";
-
     // eslint-disable-next-line no-restricted-globals
     if (!confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này?`)) return;
 
     try {
-      // Gọi API
       await userService.updateUserStatus(userId, newStatus);
-
-      // Cập nhật State ngay lập tức (Optimistic UI)
       setUsers(prevUsers => prevUsers.map(u =>
           u.id === userId ? { ...u, isActive: newStatus } : u
       ));
-
     } catch (err) {
       alert(`Lỗi: ` + (err.message || "Không xác định"));
-      loadUsers(); // Nếu lỗi thì load lại data cũ
+      loadUsers();
     }
   };
 
@@ -125,12 +141,8 @@ export default function AdminUsersPage() {
     setIsDetailModalOpen(true);
   };
 
-  const filteredUsers = users.filter((user) => {
-    return user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
-  });
 
-  if (loading) return <AdminLayout><div className="container mx-auto p-6"><LoadingSpinner /></div></AdminLayout>;
+  if (loading && page === 0 && users.length === 0) return <AdminLayout><div className="container mx-auto p-6"><LoadingSpinner /></div></AdminLayout>;
   if (error) return <AdminLayout><div className="p-6 text-destructive text-center">{error}</div></AdminLayout>;
 
   return (
@@ -142,23 +154,25 @@ export default function AdminUsersPage() {
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold">Quản lý người dùng</h1>
-                <p className="mt-2 text-muted-foreground">Quản lý tất cả người dùng trong hệ thống</p>
+                <p className="mt-2 text-muted-foreground">
+                  Tổng số: <b>{totalElements}</b> người dùng
+                  {debouncedSearchTerm && <span> (Kết quả tìm kiếm: "{debouncedSearchTerm}")</span>}
+                </p>
               </div>
 
               <div className="flex gap-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Tìm kiếm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                  <Input
+                      placeholder="Tìm theo tên, email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                  />
                 </div>
 
-                {/* Nút Export Excel */}
-                {/*<Button onClick={handleExportUsers} variant="outline" className="gap-2 bg-white text-slate-900 border">*/}
-                {/*  <Download className="h-4 w-4" /> Excel*/}
-                {/*</Button>*/}
-
-                {/* NÚT IN MỚI */}
                 <Button onClick={handlePrint} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                  <Printer className="h-4 w-4" /> In danh sách người dùng
+                  <Printer className="h-4 w-4" /> In danh sách
                 </Button>
               </div>
             </div>
@@ -166,36 +180,58 @@ export default function AdminUsersPage() {
             {/* --- BẮT ĐẦU VÙNG IN ẤN --- */}
             <div ref={printRef} className="p-4 bg-transparent print:bg-white print:p-8 text-black">
 
-              {/* Header chỉ hiện khi in */}
               <div className="hidden print:block text-center mb-8 border-b-2 pb-4">
                 <h1 className="text-2xl font-bold uppercase">Danh sách người dùng hệ thống</h1>
-                <p className="text-sm text-gray-500">VolunteerHub Management Report</p>
+                <p className="text-sm text-gray-500">Trang {page + 1}/{totalPages}</p>
                 <p className="text-xs text-gray-400">Ngày xuất: {new Date().toLocaleDateString("vi-VN")}</p>
               </div>
 
-              {/* Grid hiển thị trên Web (Giữ nguyên giao diện card cũ) */}
+              {/* GRID VIEW */}
               <div className="grid gap-4 print:hidden">
-                {filteredUsers.map((user) => (
-                    // ... (Giữ nguyên code hiển thị Card của bạn ở đây) ...
+                {users.map((user) => (
                     <Card key={user.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
                           {/* User Info */}
                           <div className="flex items-center gap-4">
-                            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${user.isActive ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                              <Users className="h-6 w-6" />
+
+                            {/* --- AVATAR LOGIC (Ảnh thật -> Fallback Initials) --- */}
+                            <div className="relative h-12 w-12 flex-shrink-0">
+                              {user.avatar ? (
+                                  <img
+                                      src={user.avatar}
+                                      alt={user.name}
+                                      className="h-full w-full rounded-full object-cover border border-gray-200 shadow-sm"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none'; // Ẩn ảnh lỗi
+                                        e.target.nextSibling.style.display = 'flex'; // Hiện fallback
+                                      }}
+                                  />
+                              ) : null}
+
+                              {/* Fallback: Chữ cái đầu trên nền màu */}
+                              <div
+                                  className={`absolute inset-0 flex h-full w-full items-center justify-center rounded-full text-white font-bold shadow-sm ${getAvatarColor(user.name)}`}
+                                  style={{ display: user.avatar ? 'none' : 'flex' }}
+                              >
+                                {getInitials(user.name)}
+                              </div>
                             </div>
+                            {/* ------------------------------------------------ */}
+
                             <div>
                               <h3 className="text-lg font-semibold">{user.name}</h3>
                               <p className="text-sm text-muted-foreground">{user.email}</p>
                               <div className="mt-2 flex items-center gap-2">
                                 <Badge variant="outline" className="uppercase text-[10px]">{user.role}</Badge>
-                                <Badge className={user.isActive ? "bg-green-500" : "bg-destructive"}>
+                                <Badge className={user.isActive ? "bg-green-500 hover:bg-green-600" : "bg-destructive hover:bg-destructive"}>
                                   {user.isActive ? "Hoạt động" : "Đã khóa"}
                                 </Badge>
                               </div>
                             </div>
                           </div>
+
                           {/* Actions */}
                           <div className="flex flex-col items-end gap-3">
                             <div className="text-sm text-muted-foreground">Tham gia: {user.joinDate}</div>
@@ -213,7 +249,7 @@ export default function AdminUsersPage() {
                 ))}
               </div>
 
-              {/* Table hiển thị khi IN (Thay thế cho Card grid khi in) */}
+              {/* TABLE VIEW (PRINT ONLY) */}
               <div className="hidden print:block w-full">
                 <table className="w-full text-sm text-left border-collapse border border-gray-300">
                   <thead className="bg-gray-200">
@@ -227,9 +263,9 @@ export default function AdminUsersPage() {
                   </tr>
                   </thead>
                   <tbody>
-                  {filteredUsers.map((user, idx) => (
+                  {users.map((user, idx) => (
                       <tr key={user.id}>
-                        <td className="p-2 border border-gray-300 text-center">{idx + 1}</td>
+                        <td className="p-2 border border-gray-300 text-center">{(page * pageSize) + idx + 1}</td>
                         <td className="p-2 border border-gray-300">{user.name}</td>
                         <td className="p-2 border border-gray-300">{user.email}</td>
                         <td className="p-2 border border-gray-300">{user.role}</td>
@@ -239,16 +275,35 @@ export default function AdminUsersPage() {
                   ))}
                   </tbody>
                 </table>
-                <div className="flex justify-between mt-10 px-10">
-                  <div className="text-center"><p className="font-bold">Người lập biểu</p></div>
-                  <div className="text-center"><p className="font-bold">Xác nhận của Admin</p></div>
-                </div>
               </div>
-
             </div>
             {/* --- KẾT THÚC VÙNG IN --- */}
 
-            {filteredUsers.length === 0 && <p className="text-center text-muted-foreground mt-10">Không tìm thấy người dùng nào.</p>}
+            {users.length === 0 && !loading && <p className="text-center text-muted-foreground mt-10">Không tìm thấy người dùng nào.</p>}
+
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 mt-8 print:hidden">
+                  <Button
+                      variant="outline"
+                      disabled={page === 0}
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Trước
+                  </Button>
+                  <span className="text-sm font-medium">
+                        Trang {page + 1} / {totalPages}
+                    </span>
+                  <Button
+                      variant="outline"
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage(p => p + 1)}
+                  >
+                    Tiếp <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+            )}
+
           </div>
         </div>
         <AdminUserDetailModal userId={selectedUserId} open={isDetailModalOpen} onOpenChange={(open) => {setIsDetailModalOpen(open); if(!open) setEditMode(false);}} onUpdate={loadUsers} initialEditMode={editMode} />

@@ -35,10 +35,7 @@ export default function ManagerVolunteersPage() {
       @page { size: A4; margin: 20mm; }
       @media print {
         body { -webkit-print-color-adjust: exact; }
-        /* Ép buộc mọi phần tử phải dùng Times New Roman */
-        * {
-          font-family: 'Times New Roman', Times, serif !important;
-        }
+        * { font-family: 'Times New Roman', Times, serif !important; }
       }
     `
   });
@@ -47,38 +44,68 @@ export default function ManagerVolunteersPage() {
     if (user?.id) loadData();
   }, [user]);
 
+  // --- HÀM LOAD DATA ĐÃ TỐI ƯU ---
   const loadData = async () => {
     try {
       setLoading(true);
+
+      // 1. Lấy danh sách sự kiện quản lý
       const managerEvents = await eventService.getMyEvents();
       setEvents(managerEvents);
 
+      if (!managerEvents.length) {
+        setVolunteers([]);
+        return;
+      }
+
+      // 2. Lấy TOÀN BỘ registration của các sự kiện song song (Parallel)
+      // Thay vì await trong vòng lặp, ta dùng Promise.all
+      const registrationsPromises = managerEvents.map(ev =>
+          registrationService.getRegistrationsByEvent(ev.id)
+              .then(regs => regs.map(r => ({ ...r, eventTitle: ev.title, eventId: ev.id }))) // Gắn luôn thông tin event vào
+              .catch(() => [])
+      );
+
+      const allRegistrationsArrays = await Promise.all(registrationsPromises);
+      const allRegistrations = allRegistrationsArrays.flat(); // Gộp thành 1 mảng duy nhất
+
+      // 3. Lấy thông tin User (Tránh gọi trùng lặp)
+      // Gom tất cả userId lại (Unique)
+      const userIds = [...new Set(allRegistrations.map(r => r.userId))];
+
+      // Gọi API lấy thông tin user song song
+      const userPromises = userIds.map(uid =>
+          userService.getUserById(uid).then(u => ({...u, id: uid})).catch(() => ({ id: uid, full_name: "Unknown", email: "N/A" }))
+      );
+
+      const users = await Promise.all(userPromises);
+
+      // Tạo Map để tra cứu nhanh: userId -> UserInfo
+      const userMap = users.reduce((acc, u) => {
+        acc[u.id] = u;
+        return acc;
+      }, {});
+
+      // 4. Ghép dữ liệu lại (User + Registrations)
       const volunteerMap = new Map();
 
-      for (const event of managerEvents) {
-        try {
-          const regs = await registrationService.getRegistrationsByEvent(event.id);
-          for (const reg of regs) {
-            if (!volunteerMap.has(reg.userId)) {
-              try {
-                const u = await userService.getUserById(reg.userId);
-                volunteerMap.set(reg.userId, {
-                  ...u,
-                  registrations: []
-                });
-              } catch {
-                volunteerMap.set(reg.userId, { full_name: "Unknown", email: "N/A", registrations: [] });
-              }
-            }
-            volunteerMap.get(reg.userId).registrations.push({
-              ...reg, eventTitle: event.title, eventId: event.id
-            });
-          }
-        } catch (e) { console.error(e); }
-      }
+      allRegistrations.forEach(reg => {
+        const userInfo = userMap[reg.userId] || { full_name: "Unknown", email: "N/A" };
+
+        if (!volunteerMap.has(reg.userId)) {
+          volunteerMap.set(reg.userId, {
+            ...userInfo,
+            id: reg.userId, // Đảm bảo ID là userId
+            registrations: []
+          });
+        }
+        volunteerMap.get(reg.userId).registrations.push(reg);
+      });
+
       setVolunteers(Array.from(volunteerMap.values()));
+
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi load data:", err);
     } finally {
       setLoading(false);
     }
@@ -86,10 +113,20 @@ export default function ManagerVolunteersPage() {
 
   // Filter Logic
   const filteredVolunteers = volunteers.filter(v => {
-    const matchSearch = v.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || v.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchEvent = filterEvent === 'all' || v.registrations.some(r => r.eventId === filterEvent);
-    const matchStatus = filterStatus === 'all' || v.registrations.some(r => r.status === filterStatus);
-    return matchSearch && matchEvent && matchStatus;
+    const term = searchTerm.toLowerCase();
+    const matchSearch = (v.full_name?.toLowerCase() || "").includes(term) || (v.email?.toLowerCase() || "").includes(term);
+
+    // Logic filter event & status phải kiểm tra xem user có registration nào thỏa mãn không
+    const relevantRegistrations = v.registrations.filter(r => {
+      const matchEvt = filterEvent === 'all' || r.eventId === filterEvent;
+      const matchSts = filterStatus === 'all' || r.status === filterStatus;
+      return matchEvt && matchSts;
+    });
+
+    // Nếu filter event/status được chọn, chỉ hiện user có ít nhất 1 đăng ký phù hợp
+    const hasRelevantReg = relevantRegistrations.length > 0;
+
+    return matchSearch && hasRelevantReg;
   });
 
   // Action Handlers
@@ -97,7 +134,12 @@ export default function ManagerVolunteersPage() {
     if(newStatus === 'rejected' && !confirm("Bạn có chắc muốn từ chối?")) return;
     try {
       await registrationService.updateRegistrationStatus(regId, newStatus);
-      loadData();
+      // Reload lại data nhẹ nhàng hơn (hoặc cập nhật state trực tiếp để đỡ load lại)
+      // Ở đây ta cập nhật state trực tiếp cho nhanh:
+      setVolunteers(prev => prev.map(vol => ({
+        ...vol,
+        registrations: vol.registrations.map(r => r.id === regId ? { ...r, status: newStatus } : r)
+      })));
     } catch(e) { alert(e.message); }
   };
 
@@ -114,7 +156,6 @@ export default function ManagerVolunteersPage() {
                 <p className="mt-1 text-muted-foreground">Xác nhận đăng ký và đánh dấu hoàn thành</p>
               </div>
               <div className="flex gap-2">
-                {/*<Button variant="outline" className="gap-2 bg-white"><Download className="h-4 w-4"/> Xuất Excel</Button>*/}
                 <Button onClick={handlePrint} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"><Printer className="h-4 w-4"/> In danh sách</Button>
               </div>
             </div>
@@ -150,7 +191,7 @@ export default function ManagerVolunteersPage() {
 
             <div ref={printRef}>
 
-              {/* 1. Header & Table In (Chỉ hiện khi In - hidden print:block) */}
+              {/* 1. Header & Table In (Giữ nguyên logic in ấn) */}
               <div className="hidden print:block p-10 bg-white text-black text-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
                 <div className="text-center mb-8 border-b-2 border-black pb-4">
                   <h1 className="text-2xl font-bold uppercase">DANH SÁCH TÌNH NGUYỆN VIÊN</h1>
@@ -162,7 +203,7 @@ export default function ManagerVolunteersPage() {
                     <th className="border border-black p-2 text-center w-10">STT</th>
                     <th className="border border-black p-2">Họ tên</th>
                     <th className="border border-black p-2">Email / SĐT</th>
-                    <th className="border border-black p-2">Tình nguyện viên</th>
+                    <th className="border border-black p-2">Sự kiện tham gia</th>
                     <th className="border border-black p-2 text-center">Trạng thái</th>
                   </tr>
                   </thead>
@@ -173,23 +214,26 @@ export default function ManagerVolunteersPage() {
                         <td className="border border-black p-2 font-bold">{v.full_name}</td>
                         <td className="border border-black p-2">{v.email}<br/>{v.phone}</td>
                         <td className="border border-black p-2">
-                          {v.registrations.map(r => <div key={r.id}>- {r.eventTitle}</div>)}
+                          {v.registrations.map(r => (
+                              (filterEvent === 'all' || r.eventId === filterEvent) &&
+                              (filterStatus === 'all' || r.status === filterStatus) ?
+                                  <div key={r.id}>- {r.eventTitle}</div> : null
+                          ))}
                         </td>
                         <td className="border border-black p-2 text-center">
-                          {v.registrations.map(r => <div key={r.id}>{r.status}</div>)}
+                          {v.registrations.map(r => (
+                              (filterEvent === 'all' || r.eventId === filterEvent) &&
+                              (filterStatus === 'all' || r.status === filterStatus) ?
+                                  <div key={r.id}>{r.status}</div> : null
+                          ))}
                         </td>
                       </tr>
                   ))}
                   </tbody>
                 </table>
-
-                <div className="mt-16 flex justify-between px-10">
-                  <div className="text-center"><p className="font-bold">Người lập danh sách</p></div>
-                  <div className="text-center"><p className="font-bold">Xác nhận của Quản lý</p></div>
-                </div>
               </div>
 
-              {/* 2. Web List (Ẩn khi In - print:hidden) */}
+              {/* 2. Web List */}
               <div className="grid gap-4 print:hidden">
                 {filteredVolunteers.map(vol => (
                     <Card key={vol.id}>
@@ -197,13 +241,20 @@ export default function ManagerVolunteersPage() {
                         <div className="flex flex-col md:flex-row gap-4 justify-between">
                           <div>
                             <h3 className="font-bold text-lg flex items-center gap-2">
-                              {vol.full_name} <Badge variant="outline">{vol.registrations.length} sự kiện</Badge>
+                              {vol.full_name}
+                              <Badge variant="outline" className="ml-2">
+                                {/* Đếm số lượng phù hợp với filter thay vì hiển thị tổng */}
+                                {vol.registrations.filter(r => (filterEvent === 'all' || r.eventId === filterEvent) && (filterStatus === 'all' || r.status === filterStatus)).length} đăng ký
+                              </Badge>
                             </h3>
                             <p className="text-sm text-muted-foreground">{vol.email} • {vol.phone || "No Phone"}</p>
                           </div>
                           <div className="flex-1 md:max-w-xl">
                             {vol.registrations.map(reg => {
+                              // Logic hiển thị chi tiết theo filter
                               if(filterEvent !== 'all' && reg.eventId !== filterEvent) return null;
+                              if(filterStatus !== 'all' && reg.status !== filterStatus) return null;
+
                               return (
                                   <div key={reg.id} className="flex items-center justify-between border-t pt-2 mt-2 first:border-0 first:mt-0 first:pt-0">
                                     <div className="text-sm">
@@ -211,8 +262,8 @@ export default function ManagerVolunteersPage() {
                                       <p className="text-xs text-muted-foreground">Đăng ký: {new Date(reg.registeredAt).toLocaleDateString("vi-VN")}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <Badge variant={reg.status === 'approved' ? 'default' : reg.status === 'pending' ? 'secondary' : 'outline'}>
-                                        {reg.status}
+                                      <Badge variant={reg.status === 'approved' ? 'default' : reg.status === 'pending' ? 'secondary' : reg.status === 'completed' ? 'success' : 'outline'} className={reg.status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200' : ''}>
+                                        {reg.status === 'approved' ? 'Đã duyệt' : reg.status === 'pending' ? 'Chờ duyệt' : reg.status === 'completed' ? 'Hoàn thành' : reg.status === 'rejected' ? 'Từ chối' : reg.status}
                                       </Badge>
 
                                       {/* Action Buttons */}
@@ -227,6 +278,10 @@ export default function ManagerVolunteersPage() {
                                             Hoàn thành
                                           </Button>
                                       )}
+                                      {/* Nút hoàn tác cho Completed/Rejected nếu cần */}
+                                      {(reg.status === 'completed' || reg.status === 'rejected') && (
+                                          <Button size="sm" variant="ghost" className="h-7 text-gray-500" onClick={()=>handleStatusUpdate(reg.id, 'approved')}>Hoàn tác</Button>
+                                      )}
                                     </div>
                                   </div>
                               )
@@ -236,7 +291,7 @@ export default function ManagerVolunteersPage() {
                       </CardContent>
                     </Card>
                 ))}
-                {filteredVolunteers.length === 0 && <div className="text-center py-10 text-muted-foreground">Không tìm thấy tình nguyện viên nào.</div>}
+                {filteredVolunteers.length === 0 && <div className="text-center py-10 text-muted-foreground">Không tìm thấy tình nguyện viên nào phù hợp.</div>}
               </div>
 
             </div>

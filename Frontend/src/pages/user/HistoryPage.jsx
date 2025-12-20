@@ -10,6 +10,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+// Đảm bảo import đúng UserLayout
 import { UserLayout } from "../../components/Layout";
 import {
   Calendar, MapPin, Search, CheckCircle2,
@@ -26,41 +27,67 @@ export default function UserHistoryPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- LOAD DATA (ĐÃ SỬA LOGIC) ---
+  // --- LOAD DATA (ĐÃ FIX LOGIC XỬ LÝ API) ---
   useEffect(() => {
     const load = async () => {
       if (!user?.id) return;
       try {
         setLoading(true);
 
-        // 1. Gọi song song: Lấy tất cả sự kiện (để lấy info) & Lấy lịch sử đăng ký
-        const [allEvents, userRegs] = await Promise.all([
+        // 1. Gọi API
+        // Lưu ý: getEvents có thể cần tham số phân trang nếu danh sách quá dài
+        const [eventsRes, regsRes] = await Promise.all([
           eventService.getEvents().catch(() => []),
           eventService.getUserEvents(user.id).catch(() => [])
         ]);
 
-        // 2. Map dữ liệu chuẩn xác
-        const mapped = (userRegs || []).map((r) => {
-          // Tìm thông tin sự kiện gốc trong danh sách allEvents dựa vào eventId
-          // Ưu tiên dữ liệu nested (r.event) nếu có, nếu không thì tìm trong allEvents
-          const eventInfo = r.event || allEvents.find(e => e.id === r.eventId) || {};
+        // 2. Xử lý dữ liệu Events (Tránh lỗi nếu API trả về Object bọc Array)
+        let allEvents = [];
+        if (Array.isArray(eventsRes)) {
+          allEvents = eventsRes;
+        } else if (eventsRes?.result?.content) {
+          allEvents = eventsRes.result.content;
+        } else if (eventsRes?.result) {
+          allEvents = eventsRes.result;
+        } else if (eventsRes?.content) {
+          allEvents = eventsRes.content;
+        }
+
+        // 3. Xử lý dữ liệu Registrations (Lịch sử đăng ký)
+        let userRegs = [];
+        if (Array.isArray(regsRes)) {
+          userRegs = regsRes;
+        } else if (regsRes?.result) {
+          userRegs = regsRes.result;
+        }
+
+        // Tạo Map cho Events để tìm kiếm nhanh hơn (O(1)) thay vì dùng find (O(N))
+        const eventsMap = {};
+        allEvents.forEach(e => {
+          if (e.id) eventsMap[e.id] = e;
+        });
+
+        // 4. Map dữ liệu để hiển thị
+        const mapped = userRegs.map((r) => {
+          // Ưu tiên lấy event từ nested object (nếu backend trả về kèm), nếu không thì tra cứu từ danh sách allEvents
+          const eventInfo = r.event || eventsMap[r.eventId] || {};
 
           return {
-            // QUAN TRỌNG: ID dùng để dẫn link phải là EventID, không phải RegistrationID
-            id: eventInfo.id || r.eventId,
-            registrationId: r.id, // Lưu lại ID đăng ký nếu cần dùng
+            id: eventInfo.id || r.eventId, // ID sự kiện (quan trọng để link hoạt động)
+            registrationId: r.id,          // ID đơn đăng ký (dùng làm key react)
 
-            title: eventInfo.title || "Sự kiện không còn tồn tại",
+            title: eventInfo.title || "Sự kiện không còn tồn tại hoặc đã bị xóa",
             date: eventInfo.date ? new Date(eventInfo.date) : new Date(),
             location: eventInfo.location || "Chưa cập nhật",
             status: r.status || "pending",
-            image: eventInfo.image || "https://images.unsplash.com/photo-1559027615-cd4628902d4a", // Ảnh mặc định nếu thiếu
+            image: eventInfo.image || "https://images.unsplash.com/photo-1559027615-cd4628902d4a",
             registeredAt: r.registeredAt ? new Date(r.registeredAt) : new Date(),
           };
         });
 
-        // Sắp xếp mới nhất lên đầu
+        // Sắp xếp: Mới đăng ký lên đầu
         setEvents(mapped.sort((a, b) => b.registeredAt - a.registeredAt));
+
       } catch (err) {
         console.error("Error loading history:", err);
         setEvents([]);
@@ -86,17 +113,20 @@ export default function UserHistoryPage() {
   // --- STATS CALCULATION ---
   const stats = {
     total: events.length,
-    approved: events.filter(e => e.status === 'approved' || e.status === 'completed').length,
-    pending: events.filter(e => e.status === 'pending').length,
-    rejected: events.filter(e => e.status === 'rejected' || e.status === 'cancelled').length,
+    approved: events.filter(e => e.status === 'approved' || e.status === 'CONFIRMED').length, // Check cả case uppercase nếu BE trả về
+    pending: events.filter(e => e.status === 'pending' || e.status === 'PENDING').length,
+    rejected: events.filter(e => e.status === 'rejected' || e.status === 'cancelled' || e.status === 'REJECTED').length,
   };
 
   // --- HELPER: BADGE ---
   const getStatusBadge = (status) => {
-    switch (status) {
+    const s = status?.toLowerCase(); // Chuẩn hóa về chữ thường để so sánh
+    switch (s) {
       case "completed":
+      case "done":
         return <Badge className="bg-purple-100 text-purple-700 border-purple-200">Hoàn thành</Badge>;
       case "approved":
+      case "confirmed":
         return <Badge className="bg-green-100 text-green-700 border-green-200">Đã tham gia</Badge>;
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Chờ duyệt</Badge>;
@@ -124,7 +154,7 @@ export default function UserHistoryPage() {
               </p>
             </div>
 
-            {/* Stats Cards - Thống kê thực tế */}
+            {/* Stats Cards */}
             <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="border-l-4 border-l-blue-500 shadow-sm">
                 <CardContent className="p-6">
@@ -183,14 +213,12 @@ export default function UserHistoryPage() {
               </Card>
             </div>
 
-            {/* Filters & Main Content */}
+            {/* Filters & Content */}
             <div className="grid gap-8 lg:grid-cols-4">
-
               {/* Sidebar Filters */}
               <div className="lg:col-span-1 space-y-4">
                 <div className="bg-white p-4 rounded-xl border shadow-sm sticky top-4">
                   <h3 className="font-semibold mb-4 text-gray-900">Bộ lọc tìm kiếm</h3>
-
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-gray-500 mb-1.5 block">Từ khóa</label>
@@ -251,24 +279,25 @@ export default function UserHistoryPage() {
                           </div>
                           <h3 className="text-lg font-medium text-gray-900">Chưa có dữ liệu</h3>
                           <p className="text-gray-500 max-w-sm mx-auto mt-1">
-                            Bạn chưa tham gia sự kiện nào hoặc không tìm thấy kết quả phù hợp với bộ lọc.
+                            Bạn chưa tham gia sự kiện nào hoặc không tìm thấy kết quả phù hợp.
                           </p>
                           <Button className="mt-4" asChild>
-                            <Link to="/user/events">Khám phá sự kiện ngay</Link>
+                            <Link to="/events">Khám phá sự kiện ngay</Link>
                           </Button>
                         </div>
                     ) : (
                         filteredEvents.map((event) => (
                             <div
-                                key={event.id} // Lúc này event.id đã là ID của sự kiện (chuẩn)
+                                key={event.registrationId} // Sử dụng registrationId để đảm bảo unique
                                 className="group bg-white p-5 border rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-5 items-start sm:items-center"
                             >
-                              {/* Thumbnail (Clickable) */}
+                              {/* Thumbnail */}
                               <Link to={`/events/${event.id}`} className="w-full sm:w-32 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer block">
                                 <img
                                     src={event.image}
                                     alt={event.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    onError={(e) => {e.target.src = "https://images.unsplash.com/photo-1559027615-cd4628902d4a"}}
                                 />
                               </Link>
 
@@ -276,7 +305,6 @@ export default function UserHistoryPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
                                   <h3 className="text-lg font-bold text-gray-900 truncate pr-2">
-                                    {/* Link chuẩn tới ID sự kiện */}
                                     <Link to={`/events/${event.id}`} className="hover:text-primary transition-colors">
                                       {event.title}
                                     </Link>
@@ -285,18 +313,18 @@ export default function UserHistoryPage() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-                              <span className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4 text-blue-500" />
-                                {event.date.toLocaleDateString("vi-VN")}
-                              </span>
                                   <span className="flex items-center gap-1.5">
-                                  <MapPin className="h-4 w-4 text-red-500" />
-                                  <span className="truncate max-w-[200px]">{event.location}</span>
-                              </span>
+                                      <Calendar className="h-4 w-4 text-blue-500" />
+                                    {event.date.toLocaleDateString("vi-VN")}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                      <MapPin className="h-4 w-4 text-red-500" />
+                                      <span className="truncate max-w-[200px]">{event.location}</span>
+                                  </span>
                                   <span className="flex items-center gap-1.5 text-xs text-gray-400">
-                                  <Clock className="h-3.5 w-3.5" />
-                                  Đăng ký: {event.registeredAt.toLocaleDateString("vi-VN")}
-                              </span>
+                                      <Clock className="h-3.5 w-3.5" />
+                                      Đăng ký: {event.registeredAt.toLocaleDateString("vi-VN")}
+                                  </span>
                                 </div>
                               </div>
 
@@ -314,7 +342,6 @@ export default function UserHistoryPage() {
                   </CardContent>
                 </Card>
               </div>
-
             </div>
           </div>
         </div>

@@ -129,19 +129,32 @@ export default function EventDetailPage() {
   const loadChannel = async (eventId) => {
     try {
       setLoadingPosts(true);
-      const channel = await channelService.getChannelByEventId(eventId);
+      const channel = await channelService.getChannelByEventId(eventId).catch(() => null);
+
       if (channel) {
         setCurrentChannel(channel);
-        const posts = await postService.getPostsByChannel(channel.id);
+        const res = await postService.getPostsByChannel(channel.id).catch(() => []);
+
+        // FIX LỖI: Kiểm tra kỹ cấu trúc trả về để lấy đúng mảng bài viết
+        let posts = [];
+        if (Array.isArray(res)) posts = res;
+        else if (res?.result?.content) posts = res.result.content;
+        else if (res?.content) posts = res.content;
+        else if (res?.result && Array.isArray(res.result)) posts = res.result;
+
         setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      } else {
+        // Nếu không có kênh thì thôi, không báo lỗi, chỉ để trống
+        setChannelPosts([]);
       }
     } catch (err) {
-      // Lazy load: chưa có channel thì thôi
+      console.error("Lỗi tải thảo luận:", err);
     } finally {
       setLoadingPosts(false);
     }
   };
 
+  // --- HÀM 2: Đăng comment (Đã fix lỗi) ---
   const handlePostComment = async () => {
     if (!isAuthenticated) return navigate("/login");
     if (!commentContent.trim()) return;
@@ -150,13 +163,19 @@ export default function EventDetailPage() {
     try {
       let targetChannelId = currentChannel?.id;
 
+      // Nếu chưa có kênh, thử lấy lại lần nữa
       if (!targetChannelId) {
-        const newChannel = await channelService.createChannel({
-          eventId: id,
-          name: `Thảo luận: ${event.title}`
-        });
-        targetChannelId = newChannel.id;
-        setCurrentChannel(newChannel);
+        const ch = await channelService.getChannelByEventId(id).catch(() => null);
+        if (ch) {
+          targetChannelId = ch.id;
+          setCurrentChannel(ch);
+        } else {
+          // User thường KHÔNG ĐƯỢC TỰ TẠO KÊNH nếu chưa có
+          // Chỉ Admin/Manager mới tạo được. Nên ở đây ta báo lỗi lịch sự.
+          alert("Sự kiện này chưa mở kênh thảo luận. Vui lòng quay lại sau.");
+          setSubmittingComment(false);
+          return;
+        }
       }
 
       await postService.createPost({
@@ -166,11 +185,11 @@ export default function EventDetailPage() {
       });
 
       setCommentContent("");
-      const posts = await postService.getPostsByChannel(targetChannelId);
-      setChannelPosts(posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      // Reload lại danh sách (gọi lại hàm đã fix ở trên)
+      loadChannel(id);
 
     } catch (err) {
-      alert("Lỗi đăng bài: " + err.message);
+      alert("Lỗi đăng bài: " + (err.response?.data?.message || err.message));
     } finally {
       setSubmittingComment(false);
     }
