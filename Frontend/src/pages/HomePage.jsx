@@ -90,7 +90,7 @@ export default function HomePage() {
   }, []);
 
   const featuredEvents = useMemo(() => {
-    if (!events || events.length === 0) return [];
+    if (!Array.isArray(events) || !events || events.length === 0) return [];
     const withLikes = [...events].sort(
       (a, b) => (b.likes || 0) - (a.likes || 0)
     );

@@ -71,8 +71,8 @@ Vui lòng không sử dụng mã nguồn này cho các mục đích thương m�
 ## 6. Thông tin nhóm thực hiện
 
 - Sinh viên thực hiện:
-  - Trương Mạnh Khiêm - 23020000
-  - Nguyễn Hữu Hiếu - 23020000
-  - Nguyễn Thị Huyền - 23020083
+  - Trương Mạnh Khiêm
+  - Nguyễn Hữu Hiếu
+  - Nguyễn Thị Huyền
 - Môn học: Lập trình ứng dụng Web
-- Giảng viên hướng dẫn: Lê Đình Thanh
+- Giảng viên: Lê Đình Thanh
