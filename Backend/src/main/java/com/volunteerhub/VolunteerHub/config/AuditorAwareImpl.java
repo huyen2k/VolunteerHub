@@ -16,9 +16,8 @@ public class AuditorAwareImpl implements AuditorAware<String> {
     public Optional<String> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // Kiểm tra xem authentication có null không, và đã đăng nhập chưa
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            return Optional.empty(); // Trả về rỗng nếu chưa đăng nhập (hoặc hệ thống tự chạy)
+            return Optional.empty(); 
         }
 
         return Optional.of(authentication.getName());

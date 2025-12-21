@@ -12,8 +12,8 @@ public class CloudinaryConfig {
     @Bean
     public Cloudinary cloudinary() {
         Map<String, String> config = new HashMap<>();
-        config.put("cloud_name", "dlloqj3ch"); // Thay bằng của bạn
-        config.put("api_key", "827766818572521");       // Thay bằng của bạn
+        config.put("cloud_name", "dlloqj3ch"); 
+        config.put("api_key", "827766818572521");   
         config.put("api_secret", "9zWvZ0LH_q5aDrc4fdc2cfxRpBg");
         config.put("secure", "true");
         return new Cloudinary(config);
