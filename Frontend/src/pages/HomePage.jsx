@@ -78,8 +78,14 @@ export default function HomePage() {
       try {
         setLoading(true);
         setError("");
-        const data = await eventService.getEvents();
-        setEvents(data || []);
+        const response = await eventService.getEvents();
+        // Kiểm tra nếu response là Page object (có content) hoặc List
+        const eventList = response.content
+          ? response.content
+          : Array.isArray(response)
+          ? response
+          : [];
+        setEvents(eventList);
       } catch (e) {
         setError(e?.message || "Không thể tải danh sách sự kiện");
       } finally {
@@ -92,7 +98,7 @@ export default function HomePage() {
   const featuredEvents = useMemo(() => {
     if (!Array.isArray(events) || !events || events.length === 0) return [];
     const withLikes = [...events].sort(
-      (a, b) => (b.likes || 0) - (a.likes || 0)
+      (a, b) => (b.volunteersRegistered || 0) - (a.volunteersRegistered || 0)
     );
     return withLikes.slice(0, 3);
   }, [events]);
