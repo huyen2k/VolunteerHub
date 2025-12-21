@@ -1,4 +1,5 @@
 ###
+<<<<<<< HEAD
 GET http://localhost:8080/api/v1/events
 Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjM0NjI1OTksImlhdCI6MTc2MzQ1ODk5OSwianRpIjoiMDA5Mzk3ZWEtMWIzZS00NjNlLTg1YjAtNGRmNmJkZTY2ODU4Iiwicm9sZXMiOlsiQURNSU4iXX0.b0nqyktn3fB_zUH2G6ZXIxS2mSBP_3yo8wKGByHvywEWd0TpLOPIIcwhnOuddiOzoEzVFdtnMqytgvr6qjZ2vQ
 
@@ -7,6 +8,19 @@ GET http://localhost:8080/api/v1/events/manager?createdBy=admin@example.com
 Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjM0NjI1OTksImlhdCI6MTc2MzQ1ODk5OSwianRpIjoiMDA5Mzk3ZWEtMWIzZS00NjNlLTg1YjAtNGRmNmJkZTY2ODU4Iiwicm9sZXMiOlsiQURNSU4iXX0.b0nqyktn3fB_zUH2G6ZXIxS2mSBP_3yo8wKGByHvywEWd0TpLOPIIcwhnOuddiOzoEzVFdtnMqytgvr6qjZ2vQ
 
 ###
+=======
+### Lấy danh sách tất cả người dùng (có Basic Auth)
+GET http://localhost:8080/api/v1/users
+Authorization: Basic YWRtaW46MTIzNDU2
+Accept: application/json
+
+###
+GET http://localhost:8080/api/v1/events
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjE5NzExOTQsImlhdCI6MTc2MTk2NzU5NH0.-vD0igVkIjnLLR9yAzQciqNVNPCCDoI4uNxNYACnkNYHW8k9yUtqG6FJSH1fh5YwgCSYPdZXmxgwAEVNuE4FFw
+Accept: application/json
+
+### Đăng nhập (lấy JWT token)
+>>>>>>> Hieu
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -15,6 +29,7 @@ Content-Type: application/json
   "password": "admin"
 }
 
+<<<<<<< HEAD
 ###
 PUT http://localhost:8080/api/v1/events/691bd8588b390cbbefd5f8a1
 Content-Type: application/json
@@ -57,3 +72,16 @@ Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic
 {
   "permissions": ["POST_EVENT", "UPDATE_EVENT", "DELETE_EVENT", "APPROVE_EVENT"]
 }
+=======
+### Send POST request with json body
+POST http://localhost:8080/api/v1/events
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjE5NzAwNTEsImlhdCI6MTc2MTk2NjQ1MX0.YUkMzDvmMCY4yiE0FvP9hYa8OPt4qt1C3nPvu4bzcZGvnAKO5lobH7AoYUAiw5I4_GCPQmaFG_D10DKAEAnP1Q
+Content-Type: application/json
+
+{
+  "title": "Dọn rác bãi biển",
+  "description": "Chiến dịch làm sạch bãi biển Đà Nẵng cuối tuần này.",
+  "date": "2025-11-05T08:00:00Z",
+  "location": "Đà Nẵng"
+}
+>>>>>>> Hieu

@@ -1,0 +1,7 @@
+{
+  "code": 1000,
+  "result": {
+    "token": "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJ2b2x1bnRlZXJodWIuY29tIiwic3ViIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjE5NzExMjYsImlhdCI6MTc2MTk2NzUyNn0.YFvkQFE0Ig4WJUowhl4Q8mps-HDgHupjM6n--bPPtNvoycVPoDEx1l8K2ZD5s_QCf410tnX9FacbLkhfrXgM_w",
+    "authenticated": true
+  }
+}

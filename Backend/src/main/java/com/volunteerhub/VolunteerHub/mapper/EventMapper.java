@@ -1,5 +1,6 @@
 package com.volunteerhub.VolunteerHub.mapper;
 
+<<<<<<< HEAD
 import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
@@ -20,4 +21,13 @@ public interface EventMapper {
     @Mapping(target = "createdBy", ignore = true)
     void updateEvent(@MappingTarget Event event, EventUpdateRequest request);
     EventResponse toEventResponse(Event request);
+=======
+import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
+import com.volunteerhub.VolunteerHub.entity.Event;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface  EventMapper {
+    Event toEvent(EventCreationRequest eventCreationRequest);
+>>>>>>> Hieu
 }

@@ -1,21 +1,31 @@
 package com.volunteerhub.VolunteerHub.mapper;
 
+<<<<<<< HEAD
 import com.volunteerhub.VolunteerHub.collection.Event;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
 import com.volunteerhub.VolunteerHub.dto.response.EventResponse;
+=======
+import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
+import com.volunteerhub.VolunteerHub.entity.Event;
+>>>>>>> Hieu
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
+<<<<<<< HEAD
     date = "2025-12-18T22:19:12+0700",
+=======
+    date = "2025-11-01T10:06:48+0700",
+>>>>>>> Hieu
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Microsoft)"
 )
 @Component
 public class EventMapperImpl implements EventMapper {
 
     @Override
+<<<<<<< HEAD
     public Event toEvent(EventCreationRequest request) {
         if ( request == null ) {
             return null;
@@ -77,5 +87,15 @@ public class EventMapperImpl implements EventMapper {
         eventResponse.volunteersRegistered( request.getVolunteersRegistered() );
 
         return eventResponse.build();
+=======
+    public Event toEvent(EventCreationRequest eventCreationRequest) {
+        if ( eventCreationRequest == null ) {
+            return null;
+        }
+
+        Event event = new Event();
+
+        return event;
+>>>>>>> Hieu
     }
 }

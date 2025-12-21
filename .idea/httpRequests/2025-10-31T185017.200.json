@@ -1,0 +1,62 @@
+[
+  {
+    "id": "6901907f0e31c30d82a7d66a",
+    "email": "nguyenvananh@example.com",
+    "password": "$2a$10$BofoUX1E.bQgp/Bx9lHou.LCWgD39KnNd3RoPizWGpWx4l88B2sxi",
+    "role": null,
+    "full_name": "Nguyễn Văn Anh",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1729860001/avatar1.jpg",
+    "phone": "0912345678",
+    "address": "123 Trần Duy Hưng, Cầu Giấy, Hà Nội",
+    "bio": "Tình nguyện viên năng động, thích tham gia các hoạt động xã hội.",
+    "is_active": true,
+    "created_at": "2025-10-29T03:56:47.114+00:00",
+    "updated_at": "2025-10-29T03:56:47.114+00:00",
+    "last_login": null
+  },
+  {
+    "id": "690190c30e31c30d82a7d66b",
+    "email": "tranthimai@example.com",
+    "password": "$2a$10$lh0/q1hEdngqT.6tIMoqjOUnNBpCcR.m6KqNiFd5183SM0uRaOa56",
+    "role": null,
+    "full_name": "Trần Thị Mai",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1729860001/avatar2.jpg",
+    "phone": "0987654321",
+    "address": "456 Nguyễn Huệ, Quận 1, TP.HCM",
+    "bio": "Quản lý sự kiện với hơn 5 năm kinh nghiệm trong tổ chức cộng đồng.",
+    "is_active": true,
+    "created_at": "2025-10-29T03:57:55.178+00:00",
+    "updated_at": "2025-10-29T03:57:55.178+00:00",
+    "last_login": null
+  },
+  {
+    "id": "690190fc0e31c30d82a7d66c",
+    "email": "lethanhdat@example.com",
+    "password": "$2a$10$73uen0Svapyt0J6GyekcMu3k193Gy8P0oAyYPcjAjzUxJA/MFnl9y",
+    "role": null,
+    "full_name": "Lê Thành Đạt",
+    "avatar_url": "https://res.cloudinary.com/demo/image/upload/v1729860001/avatar4.jpg",
+    "phone": "0978666999",
+    "address": "12 Nguyễn Tri Phương, Huế",
+    "bio": "Sinh viên UET, đam mê công nghệ và hoạt động tình nguyện.",
+    "is_active": true,
+    "created_at": "2025-10-29T03:58:52.772+00:00",
+    "updated_at": "2025-10-29T03:58:52.772+00:00",
+    "last_login": null
+  },
+  {
+    "id": "6901967c5bc711a929e3933b",
+    "email": "admin@example.com",
+    "password": "$2a$10$96rw99Ks4wzZfL4tD1eiDebsQNjT9aNsp0ofl8FnypevTS/0xqv9.",
+    "role": null,
+    "full_name": null,
+    "avatar_url": null,
+    "phone": null,
+    "address": null,
+    "bio": null,
+    "is_active": null,
+    "created_at": "2025-10-29T04:22:20.000+00:00",
+    "updated_at": "2025-10-29T04:22:20.000+00:00",
+    "last_login": null
+  }
+]
