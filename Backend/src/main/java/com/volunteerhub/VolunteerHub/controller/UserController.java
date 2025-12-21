@@ -3,6 +3,7 @@ package com.volunteerhub.VolunteerHub.controller;
 import com.volunteerhub.VolunteerHub.dto.request.User.UserCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.User.UserStatusRequest;
 import com.volunteerhub.VolunteerHub.dto.request.User.UserUpdateRequest;
+import com.volunteerhub.VolunteerHub.dto.request.User.ChangePasswordRequest;
 import com.volunteerhub.VolunteerHub.dto.response.ApiResponse;
 import com.volunteerhub.VolunteerHub.dto.response.UserResponse;
 import com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse;
@@ -67,6 +68,11 @@ public class UserController {
                 .build();
     }
 
+    @PutMapping("/change-password")
+    public ApiResponse<Void> changePassword(@RequestBody @Validated ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ApiResponse.<Void>builder().build();
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EVEN_MANAGER', 'VOLUNTEER')")

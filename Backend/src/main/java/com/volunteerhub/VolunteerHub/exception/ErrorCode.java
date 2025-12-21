@@ -29,7 +29,8 @@ public enum ErrorCode {
     NOTIFICATION_NOT_EXISTED(1021, "Notification not existed", HttpStatus.NOT_FOUND),
 
     EVENT_NOT_EXISTED(1022, "Event not existed", HttpStatus.NOT_FOUND),
-    EVENT_FULL(1023, "Event is full", HttpStatus.BAD_REQUEST)
+    EVENT_FULL(1023, "Event is full", HttpStatus.BAD_REQUEST),
+    PASSWORD_INCORRECT(1024, "Password incorrect", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

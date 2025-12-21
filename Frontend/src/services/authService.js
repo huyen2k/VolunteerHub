@@ -58,4 +58,12 @@ export const authService = {
   async refreshToken(token) {
     return apiService.post("/auth/refresh", { token });
   },
+
+  // 7. Đổi mật khẩu
+  async changePassword(currentPassword, newPassword) {
+    return apiService.put("/users/change-password", {
+      currentPassword,
+      newPassword,
+    });
+  },
 };

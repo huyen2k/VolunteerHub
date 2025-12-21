@@ -11,6 +11,7 @@ import com.volunteerhub.VolunteerHub.exception.ErrorCode;
 import com.volunteerhub.VolunteerHub.mapper.UserMapper;
 import com.volunteerhub.VolunteerHub.repository.*;
 import com.volunteerhub.VolunteerHub.dto.response.UserStatsResponse;
+import com.volunteerhub.VolunteerHub.dto.request.User.ChangePasswordRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -100,6 +101,21 @@ public class UserService {
 
         userRepository.save(user);
         return userMapper.toUserResponse(user);
+    }
+
+    public void changePassword(ChangePasswordRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+
+        User user = userRepository.findUserByEmail(name)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     public UserResponse updateMyInfo(UserUpdateRequest request) {

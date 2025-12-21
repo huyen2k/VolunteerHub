@@ -25,13 +25,21 @@ import {
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuth";
 import { Textarea } from "../../components/ui/textarea";
+import { Input } from "../../components/ui/input";
 import reportService from "../../services/reportService";
+import { authService } from "../../services/authService";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const [systemReport, setSystemReport] = React.useState("");
   const [sendingReport, setSendingReport] = React.useState(false);
+
+  // Change Password State
+  const [currentPassword, setCurrentPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [changingPassword, setChangingPassword] = React.useState(false);
 
   const submitSystemReport = async () => {
     if (!systemReport.trim()) return;
@@ -48,6 +56,33 @@ export default function SettingsPage() {
       alert("Không thể gửi báo cáo: " + (err.message || "Lỗi không xác định"));
     } finally {
       setSendingReport(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Mật khẩu mới không khớp");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      alert("Đổi mật khẩu thành công");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      alert(
+        "Đổi mật khẩu thất bại: " + (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -154,11 +189,40 @@ export default function SettingsPage() {
                 <Shield className="h-5 w-5" />
                 Bảo mật
               </CardTitle>
-              <CardDescription>
-                Cài đặt bảo mật và quyền riêng tư
-              </CardDescription>
+              <CardDescription>Quản lý mật khẩu và bảo mật</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Đổi mật khẩu</Label>
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder="Mật khẩu hiện tại"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Mật khẩu mới"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Xác nhận mật khẩu mới"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <Button
+                    className="w-full"
+                    onClick={handleChangePassword}
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? "Đang xử lý..." : "Đổi mật khẩu"}
+                  </Button>
+                </div>
+              </div>
+              <Separator />
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Hiển thị hồ sơ công khai</Label>
@@ -178,11 +242,6 @@ export default function SettingsPage() {
                 </div>
                 <Switch />
               </div>
-              <Separator />
-              <Button variant="outline" className="w-full">
-                <Shield className="mr-2 h-4 w-4" />
-                Đổi mật khẩu
-              </Button>
             </CardContent>
           </Card>
 
@@ -223,7 +282,12 @@ export default function SettingsPage() {
                   onChange={(e) => setSystemReport(e.target.value)}
                   rows={4}
                 />
-                <Button variant="outline" className="w-full" onClick={submitSystemReport} disabled={sendingReport || !systemReport.trim()}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={submitSystemReport}
+                  disabled={sendingReport || !systemReport.trim()}
+                >
                   Gửi báo cáo
                 </Button>
               </div>
