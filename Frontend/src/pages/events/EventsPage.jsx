@@ -36,8 +36,15 @@ export default function EventsPage() {
       try {
         setLoading(true);
         setError("");
-        const data = await eventService.getEvents();
-        const mappedEvents = (data || []).map((event) => ({
+        const response = await eventService.getEvents();
+        // Kiểm tra nếu response là Page object (có content) hoặc List
+        const eventList = response.content
+          ? response.content
+          : Array.isArray(response)
+          ? response
+          : [];
+
+        const mappedEvents = eventList.map((event) => ({
           id: event.id || event._id,
           title: event.title || "Không có tiêu đề",
           description: event.description || "",

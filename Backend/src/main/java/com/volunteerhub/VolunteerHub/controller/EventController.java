@@ -1,6 +1,5 @@
 package com.volunteerhub.VolunteerHub.controller;
 
-<<<<<<< HEAD
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventApprovalRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventCreationRequest;
 import com.volunteerhub.VolunteerHub.dto.request.Event.EventUpdateRequest;
@@ -19,21 +18,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-=======
-import com.volunteerhub.VolunteerHub.dto.request.EventCreationRequest;
-import com.volunteerhub.VolunteerHub.entity.Event;
-import com.volunteerhub.VolunteerHub.entity.User;
-import com.volunteerhub.VolunteerHub.service.EventService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
->>>>>>> Hieu
 
 import java.util.List;
 
 @RestController
-<<<<<<< HEAD
 @RequestMapping("/events")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -202,24 +190,3 @@ public class EventController {
                 .build();
     }
 }
-=======
-@RequestMapping("api/v1/events")
-public class EventController {
-    @Autowired
-    private EventService eventService;
-    public EventController(EventService eventService) {
-        this.eventService = eventService;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Event>> getAllEvents() {
-        return new ResponseEntity<List<Event>>(eventService.allEvents(), HttpStatus.OK);
-    }
-
-    @PostMapping
-    public ResponseEntity<Event> addEvent(@RequestBody EventCreationRequest eventCreationRequest) {
-        Event createdEvent = eventService.createEvent(eventCreationRequest);
-        return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
-    }
-}
->>>>>>> Hieu

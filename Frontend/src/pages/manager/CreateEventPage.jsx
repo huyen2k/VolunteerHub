@@ -66,7 +66,8 @@ export default function CreateEventPage() {
     }
   };
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0] || null;
@@ -82,20 +83,11 @@ export default function CreateEventPage() {
 
   const uploadImageIfNeeded = async () => {
     if (!imageFile) return null;
-    const form = new FormData();
-    form.append("file", imageFile);
-    const resp = await fetch(`${API_BASE_URL}/uploads/images`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-      body: form,
-    });
-    const data = await resp.json();
-    if (!resp.ok || data.code !== 1000) {
-      throw new Error(data.message || "Tải ảnh thất bại");
+    try {
+      return await eventService.uploadImage(imageFile);
+    } catch (error) {
+      throw new Error(error.message || "Tải ảnh thất bại");
     }
-    return data.result?.url || null;
   };
 
   const handleBlur = (e) => {
@@ -126,7 +118,9 @@ export default function CreateEventPage() {
     const eventData = {
       ...formData,
       date: formData.date ? new Date(formData.date) : null,
-      image: imageFile ? "https://waiting-for-upload.com/temp.jpg" : formData.image,
+      image: imageFile
+        ? "https://waiting-for-upload.com/temp.jpg"
+        : formData.image,
     };
 
     console.log("2. Dữ liệu chuẩn bị validate:", eventData);
@@ -169,7 +163,9 @@ export default function CreateEventPage() {
         location: formData.location.trim(),
         category: formData.category?.trim() || undefined,
         image: imageUrl || formData.image?.trim() || undefined,
-        volunteersNeeded: formData.maxVolunteers ? parseInt(formData.maxVolunteers, 10) : undefined,
+        volunteersNeeded: formData.maxVolunteers
+          ? parseInt(formData.maxVolunteers, 10)
+          : undefined,
       };
 
       console.log("8. Dữ liệu cuối cùng gửi đi (Payload):", submitData);
@@ -180,7 +176,6 @@ export default function CreateEventPage() {
 
       console.log("10. TẠO SỰ KIỆN THÀNH CÔNG! Chuyển trang...");
       navigate("/manager/events", { replace: true });
-
     } catch (err) {
       console.error("❌ LỖI XẢY RA (Catch Block):", err);
       setSubmitError(err.message || "Không thể tạo sự kiện. Vui lòng thử lại.");
@@ -297,84 +292,101 @@ export default function CreateEventPage() {
                   )}
                 </div>
 
-              {/* Location */}
-              <div className="space-y-2">
-                <Label htmlFor="location" className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Địa điểm <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="location"
-                  name="location"
-                  type="text"
-                  placeholder="Ví dụ: Bãi biển Vũng Tàu, TP. Vũng Tàu"
-                  value={formData.location}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors.location ? "border-destructive" : ""}
-                  required
-                />
-                {errors.location && (
-                  <p className="text-sm text-destructive">
-                    {errors.location}
-                  </p>
-                )}
-              </div>
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Địa điểm <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="location"
+                    name="location"
+                    type="text"
+                    placeholder="Ví dụ: Bãi biển Vũng Tàu, TP. Vũng Tàu"
+                    value={formData.location}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={errors.location ? "border-destructive" : ""}
+                    required
+                  />
+                  {errors.location && (
+                    <p className="text-sm text-destructive">
+                      {errors.location}
+                    </p>
+                  )}
+                </div>
 
-              {/* Category */}
-              <div className="space-y-2">
-                <Label htmlFor="category" className="flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  Danh mục
-                </Label>
-                <Input
-                  id="category"
-                  name="category"
-                  type="text"
-                  placeholder="Ví dụ: Môi trường, Giáo dục"
-                  value={formData.category}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors.category ? "border-destructive" : ""}
-                />
-                {errors.category && (
-                  <p className="text-sm text-destructive">{errors.category}</p>
-                )}
-              </div>
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Danh mục
+                  </Label>
+                  <Input
+                    id="category"
+                    name="category"
+                    type="text"
+                    placeholder="Ví dụ: Môi trường, Giáo dục"
+                    value={formData.category}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={errors.category ? "border-destructive" : ""}
+                  />
+                  {errors.category && (
+                    <p className="text-sm text-destructive">
+                      {errors.category}
+                    </p>
+                  )}
+                </div>
 
-              {/* Image URL */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Ảnh bìa (tải lên)
-                </Label>
-                <Input id="imageFile" name="imageFile" type="file" accept="image/*" onChange={handleImageSelect} />
-                {imagePreview && (
-                  <img src={imagePreview} alt="preview" className="mt-2 h-40 rounded object-cover" />
-                )}
-              </div>
+                {/* Image URL */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Ảnh bìa (tải lên)
+                  </Label>
+                  <Input
+                    id="imageFile"
+                    name="imageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                  />
+                  {imagePreview && (
+                    <img
+                      src={imagePreview}
+                      alt="preview"
+                      className="mt-2 h-40 rounded object-cover"
+                    />
+                  )}
+                </div>
 
-              {/* Max Volunteers */}
-              <div className="space-y-2">
-                <Label htmlFor="maxVolunteers" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Số người tối đa
-                </Label>
-                <Input
-                  id="maxVolunteers"
-                  name="maxVolunteers"
-                  type="number"
-                  min={1}
-                  placeholder="Ví dụ: 50"
-                  value={formData.maxVolunteers}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={errors.maxVolunteers ? "border-destructive" : ""}
-                />
-                {errors.maxVolunteers && (
-                  <p className="text-sm text-destructive">{errors.maxVolunteers}</p>
-                )}
-              </div>
+                {/* Max Volunteers */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="maxVolunteers"
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    Số người tối đa
+                  </Label>
+                  <Input
+                    id="maxVolunteers"
+                    name="maxVolunteers"
+                    type="number"
+                    min={1}
+                    placeholder="Ví dụ: 50"
+                    value={formData.maxVolunteers}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={errors.maxVolunteers ? "border-destructive" : ""}
+                  />
+                  {errors.maxVolunteers && (
+                    <p className="text-sm text-destructive">
+                      {errors.maxVolunteers}
+                    </p>
+                  )}
+                </div>
 
                 {/* Buttons */}
                 <div className="flex gap-4 pt-4">

@@ -74,7 +74,6 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-<<<<<<< HEAD
 			<version>${lombok.version}</version>
 			<scope>provided</scope>
 		</dependency>
@@ -85,12 +84,6 @@
 			<version>${mapstruct.version}</version>
 		</dependency>
 
-=======
-			<version>1.18.32</version>
-			<scope>provided</scope>
-		</dependency>
-
->>>>>>> Hieu
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -114,7 +107,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-<<<<<<< HEAD
 				<version>3.13.0</version>
 				<configuration>
 					<source>${java.version}</source>
@@ -122,17 +114,10 @@
 					<compilerArgs>
 						<arg>-Amapstruct.defaultComponentModel=spring</arg>
 					</compilerArgs>
-=======
-				<version>3.10.1</version>
-				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
->>>>>>> Hieu
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
-<<<<<<< HEAD
 							<version>${lombok.version}</version>
 						</path>
 						<path>
@@ -144,18 +129,11 @@
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok-mapstruct-binding</artifactId>
 							<version>0.2.0</version>
-=======
-							<version>1.18.32</version>
->>>>>>> Hieu
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Hieu
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

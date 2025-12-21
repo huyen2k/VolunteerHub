@@ -1,5 +1,4 @@
 package com.volunteerhub.VolunteerHub.repository;
-<<<<<<< HEAD
 
 import com.volunteerhub.VolunteerHub.collection.Event;
 import org.springframework.data.domain.Page;
@@ -43,17 +42,4 @@ public interface EventRepository extends MongoRepository<Event, String> {
     // Tìm kiếm cho USER (Chỉ lấy Approved)
     @Query("{ $and: [ { 'status': 'approved' }, { $or: [ { 'title': { $regex: ?0, $options: 'i' } }, { 'location': { $regex: ?0, $options: 'i' } } ] } ] }")
     Page<Event> searchApprovedEvents(String keyword, Pageable pageable);
-=======
-import com.volunteerhub.VolunteerHub.entity.Event;
-import com.volunteerhub.VolunteerHub.entity.User;
-import org.bson.types.ObjectId;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
-
-
-@Repository
-public interface EventRepository extends MongoRepository<Event, ObjectId> {
->>>>>>> Hieu
 }
