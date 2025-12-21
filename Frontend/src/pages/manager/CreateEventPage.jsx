@@ -84,7 +84,7 @@ export default function CreateEventPage() {
     if (!imageFile) return null;
     const form = new FormData();
     form.append("file", imageFile);
-    const resp = await fetch(`${API_BASE_URL}/uploads/images`, {
+    const resp = await fetch(`${API_BASE_URL}/file-service/upload-image`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token") || ""}`,

@@ -66,6 +66,16 @@ export default function ManagerEventsPage() {
     `,
   });
 
+  const API_BASE_URL = "http://localhost:8080";
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=300";
+    // Nếu là link Cloudinary (bắt đầu bằng http) -> Giữ nguyên
+    if (imagePath.startsWith("http")) return imagePath;
+    // Nếu là link local (/uploads/...) -> Nối thêm domain backend
+    return `${API_BASE_URL}${imagePath}`;
+  };
+
   // 1. XỬ LÝ NHẬN FILTER TỪ DASHBOARD
   useEffect(() => {
     if (location.state?.filter && !processedFilterRef.current) {
@@ -341,9 +351,13 @@ export default function ManagerEventsPage() {
                           <div className="relative aspect-video bg-gray-100 overflow-hidden cursor-pointer"
                                onClick={(e) => openDetailModal(e, ev.id)}>
                             <img
-                                src={ev.image || "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=300"}
+                                src={getImageUrl(ev.image)}
                                 alt={ev.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={(e) => { // Thêm xử lý khi ảnh lỗi hẳn
+                                  e.target.onerror = null;
+                                  e.target.src = "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&q=80&w=300";
+                                }}
                             />
 
                             <div className="absolute top-3 right-3">
@@ -352,8 +366,10 @@ export default function ManagerEventsPage() {
                               </Badge>
                             </div>
 
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10">
-                              <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm text-xs">
+                            <div
+                                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10">
+                              <Badge variant="secondary"
+                                     className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm text-xs">
                                 {ev.category || 'Hoạt động'}
                               </Badge>
                             </div>
